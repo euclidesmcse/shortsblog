@@ -1,0 +1,76 @@
+{% extends "_base.html" %}
+{% block title %}Sites sem leitura — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  input[type=text], input[type=url], input[type=search]{font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--border);
+        border-radius:8px; background:var(--bg); color:var(--text); width:100%}
+  label.f{display:block; font-size:12px; color:var(--muted); margin:10px 0 3px}
+  .row{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer}
+  .mini-btn.no{border-color:var(--bad); color:var(--bad)}
+  details.e{border-bottom:1px solid var(--border); padding:6px 0}
+  details.e summary{cursor:pointer; display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:14px}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:960px">
+  <p style="margin:0 0 6px"><a href="/dashboard/config">← Configuração</a></p>
+  <header style="margin-bottom:12px"><h1 style="margin:0">Sites sem leitura</h1></header>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+  <div class="card">
+    <p class="muted" style="margin-top:0; font-size:14px">Os termos destes sites proíbem robôs, raspagem, IA ou uso comercial (D-070):
+      o motor não lê a página nem a entrega ao modelo; o feed fica só como pauta. Com <strong>rss: false</strong> (D-071) os termos
+      limitam o próprio RSS: nem como pauta, e o feed não pode ser acrescentado. Vale para o domínio e os subdomínios; uma mudança
+      chega aos workers em até 1 minuto.</p>
+    <h2 style="font-size:16px">Acrescentar</h2>
+    <form method="post" action="/dashboard/config/sem-leitura">
+      <input type="hidden" name="version" value="{{ version }}">
+      <input type="hidden" name="action" value="add">
+      <div class="row">
+        <div><label class="f">Domínio</label><input type="text" name="domain" required placeholder="exemplo.com"></div>
+        <div><label class="f">Termos de uso (link)</label><input type="url" name="terms_url" placeholder="https://…"></div>
+      </div>
+      <label class="f">Motivo (o que os termos proíbem)</label><input type="text" name="reason" required maxlength="300">
+      <label style="display:flex; gap:8px; align-items:center; margin-top:10px; font-size:14px"><input type="checkbox" name="no_rss" value="true"> rss: false — os termos limitam o próprio RSS</label>
+      <p style="margin:12px 0 0"><button class="btn" type="submit" style="padding:8px 16px; font-size:14px">Acrescentar</button></p>
+    </form>
+  </div>
+
+  <div class="card">
+    <form method="get" style="display:flex; gap:8px; margin-bottom:10px">
+      <input type="search" name="q" value="{{ q }}" placeholder="filtrar por domínio ou motivo">
+      <button class="mini-btn" type="submit">Filtrar</button></form>
+    <p class="muted" style="font-size:13px">{{ entries|length }} de {{ total }} ·
+      <a href="/dashboard/config/export/sem-leitura.yaml">Exportar sem-leitura.yaml</a></p>
+    {% for e in entries %}
+    <details class="e">
+      <summary><strong>{{ e.domain }}</strong>{% if e.rss is sameas false %} <span class="pill bad">rss: false</span>{% endif %}
+        <span class="muted">{{ e.reason }}</span></summary>
+      <form method="post" action="/dashboard/config/sem-leitura" style="margin:8px 0">
+        <input type="hidden" name="version" value="{{ version }}">
+        <input type="hidden" name="action" value="edit"><input type="hidden" name="domain" value="{{ e.domain }}">
+        <div class="row">
+          <div><label class="f">Motivo</label><input type="text" name="reason" value="{{ e.reason }}" required maxlength="300"></div>
+          <div><label class="f">Termos de uso</label><input type="url" name="terms_url" value="{{ e.terms or '' }}"></div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; margin-top:8px; flex-wrap:wrap">
+          <label style="display:flex; gap:6px; align-items:center; font-size:13px"><input type="checkbox" name="no_rss" value="true" {% if e.rss is sameas false %}checked{% endif %}> rss: false</label>
+          <button class="mini-btn" type="submit">Gravar</button></div>
+      </form>
+      <form method="post" action="/dashboard/config/sem-leitura" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 6px">
+        <input type="hidden" name="version" value="{{ version }}">
+        <input type="hidden" name="action" value="remove"><input type="hidden" name="domain" value="{{ e.domain }}">
+        <input type="text" name="justification" placeholder="justificativa para tirar (licença ou leitura nova dos termos)" style="flex:1 1 280px" required minlength="10">
+        <button class="mini-btn no" type="submit">Tirar da lista</button></form>
+    </details>
+    {% else %}<p class="muted">Nada encontrado.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

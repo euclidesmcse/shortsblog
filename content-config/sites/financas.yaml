@@ -1,0 +1,30 @@
+# ShortsBlog — site "financas" (E4.2). Sem segredos: credenciais ficam no Infisical.
+# A base de dados é sincronizada a partir deste ficheiro (python -m app.core.migrate).
+site_key: financas
+name: "Finanças"
+description: "Finanças pessoais, investimentos e economia no mundo todo: bancos centrais, mercados, moedas e custo de vida de qualquer país."
+base_url: https://financas.shortsblog.com
+wordpress_api_url: https://financas.shortsblog.com/wp-json
+hosting_group: oracle-arm-1
+timezone: Europe/Lisbon  # D-066: slots às 07:00 de Lisboa
+language: pt-BR
+languages: [pt-BR, en, es, zh-CN]
+# Piloto ligado em 2026-10-29 (virada para publicar em 30/10, pedida pelo Euclides; E14.3,
+# D-091, runbook piloto-financas.md): 1 post/dia, slot às 07:14 de Lisboa, min_sources 2.
+enabled: true
+daily_target: 1
+# Desfasamento dos slots em minutos (spec §5.2): 0, 7, 14, 21, 28, 35.
+slot_offset_minutes: 14
+seo_plugin: ""
+taxonomy_version: "1"
+editorial_policy_version: "1"
+# Categorias aceites (taxonomia v1); as do WordPress são criadas na E8.6.
+categories:
+  - "Economia"
+  - "Investimentos"
+  - "Finanças Pessoais"
+  - "Impostos"
+  - "Mercados"
+  - "Guias"
+# Fontes mínimas por artigo (gate da E6.7).
+min_sources: 2

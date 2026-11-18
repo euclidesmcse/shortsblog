@@ -1,0 +1,256 @@
+{% extends "_base.html" %}
+{% block title %}Provedores de IA — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px;
+        font-weight:600; border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)}
+  .pill.warn{color:var(--warn); border-color:var(--warn)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .inline-form{display:inline}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:5px 11px; font-size:13px; cursor:pointer}
+  .mini-btn.go{border-color:var(--ok); color:var(--ok)}
+  .mini-btn.no{border-color:var(--bad); color:var(--bad)}
+  .mini-btn:disabled{opacity:.4; cursor:default}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px}
+  .notice.bad{border-left-color:var(--bad)}
+  .notice.warn{border-left-color:var(--warn)}
+  input[type=text], input[type=password], input[type=url], select{
+    font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--border);
+    border-radius:8px; background:var(--bg); color:var(--text); max-width:100%}
+  label{display:block; font-size:12px; color:var(--muted); margin-bottom:3px}
+  .fields{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .fields input{width:100%}
+  code, .code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px}
+  .code{display:block; background:var(--bg); border:1px solid var(--border); border-radius:8px;
+        padding:9px 11px; overflow-x:auto; white-space:pre}
+  .bigcode{font-size:26px; font-weight:700; letter-spacing:.08em}
+  .chain{display:flex; flex-direction:column; gap:6px; margin:0; padding:0; list-style:none}
+  .chain li{display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--bg);
+            border:1px solid var(--border); border-radius:10px; padding:7px 10px}
+  .chain .pos{color:var(--muted); font-variant-numeric:tabular-nums; width:1.4em}
+  .chain .name{font-weight:600; flex:1 1 auto}
+  .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  td form{margin:0}
+</style>
+{% endblock %}
+
+{% macro health_pill(status) -%}
+  <span class="pill {{ 'ok' if status == 'ok' else ('warn' if status in ('error', 'unknown') else 'bad') }}">
+    {{ health_labels.get(status, status) }}</span>
+{%- endmacro %}
+
+{% block body %}
+<div class="wrap">
+
+  <header style="margin-bottom:18px">
+    <h1 style="margin:0">Provedores de IA</h1>
+  </header>
+
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+  {% for problem in problems %}
+    <div class="card notice bad"><strong>Configuração inválida:</strong> {{ problem }}</div>
+  {% endfor %}
+
+  {% if login.status == 'running' and login.code %}
+  <div class="card notice warn" id="login-codex">
+    <h2>Autenticar o Codex</h2>
+    <p>1. Abra <a href="{{ login.url }}" target="_blank" rel="noopener noreferrer">{{ login.url }}</a>
+       e entre na sua conta ChatGPT.</p>
+    <p>2. <strong>Nessa página da OpenAI</strong> (não aqui no painel), introduza este código
+       (expira em {{ (login.expires_in_s // 60) }} min):</p>
+    <p class="code bigcode">{{ login.code }}</p>
+    <p class="muted">Só continue se foi você que iniciou este login. Depois de autorizar:</p>
+    <form method="post" action="/dashboard/ai/providers/codex/probe">
+      <button class="btn" type="submit">Já autorizei — verificar</button></form>
+  </div>
+  {% elif login.status == 'failed' %}
+  <div class="card notice bad">O último login do Codex falhou ou expirou. Inicie outro.</div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Estado</h2>
+    <p class="muted" style="margin-top:-6px">Verificado a cada 5 minutos. Um provedor não
+      autenticado ou com cota esgotada fica fora das cadeias até a verificação passar
+      (cota esgotada: {{ cooldown }} min de espera, ou “Verificar”).</p>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Provedor</th><th>Tipo</th><th>Família</th><th>Modelo</th><th>Estado</th>
+        <th>Ligado</th><th></th></tr></thead>
+      <tbody>
+      {% for p in providers %}
+        <tr>
+          <td><strong>{{ p.name }}</strong>
+            {% if p.kind == 'api' %}<div class="muted code">{{ p.base_url }}</div>{% endif %}</td>
+          <td>{{ 'assinatura' if p.kind == 'subscription' else 'API key' }}</td>
+          <td>{{ p.family }}</td>
+          <td>
+            <form method="post" action="/dashboard/ai/providers/{{ p.name }}/model"
+                  style="display:flex; gap:6px">
+              <input type="text" name="model" value="{{ p.model }}" size="20"
+                     placeholder="padrão da CLI" aria-label="Modelo de {{ p.name }}">
+              <button class="mini-btn" type="submit">Guardar</button></form>
+          </td>
+          <td>{{ health_pill(p.health) }}
+            {% if p.kind == 'api' and not p.has_api_key %}<span class="pill bad">sem chave</span>{% endif %}
+            {% if p.health_detail and p.health != 'ok' %}
+              <div class="muted" style="font-size:12px">{{ p.health_detail }}</div>{% endif %}</td>
+          <td>
+            <form method="post" action="/dashboard/ai/providers/{{ p.name }}/toggle">
+              <input type="hidden" name="enabled" value="{{ 'false' if p.enabled else 'true' }}">
+              <button class="mini-btn {{ 'no' if p.enabled else 'go' }}" type="submit">
+                {{ 'Desligar' if p.enabled else 'Ligar' }}</button></form>
+          </td>
+          <td style="white-space:nowrap">
+            <form class="inline-form" method="post"
+                  action="/dashboard/ai/providers/{{ p.name }}/probe">
+              <button class="mini-btn" type="submit" {{ 'disabled' if not p.enabled }}>Verificar</button></form>
+            {% if p.name == 'codex' and p.health != 'ok' %}
+            {# Só sem login: iniciar um login novo apaga a credencial atual. #}
+            <form class="inline-form" method="post" action="/dashboard/ai/providers/codex/login">
+              <button class="mini-btn go" type="submit">Autenticar</button></form>
+            {% elif p.kind == 'api' %}
+            <form class="inline-form" method="post"
+                  action="/dashboard/ai/api-providers/{{ p.name }}/delete">
+              <button class="mini-btn no" type="submit">Apagar</button></form>
+            {% endif %}
+          </td>
+        </tr>
+        <tr><td colspan="7" style="background:var(--bg)">
+          <form method="post" action="/dashboard/ai/providers/{{ p.name }}/limits"
+                style="display:flex; flex-wrap:wrap; gap:10px; align-items:end">
+            {% if p.kind == 'subscription' %}
+            <div><label for="l-calls-{{ p.name }}">Chamadas por dia (vazio = sem limite)</label>
+              <input id="l-calls-{{ p.name }}" type="text" inputmode="numeric" size="8"
+                     name="daily_call_limit" value="{{ p.daily_call_limit if p.daily_call_limit is not none }}"></div>
+            <div class="muted" style="font-size:13px; padding-bottom:8px">hoje:
+              <strong>{{ p.calls_today }}</strong>{% if p.daily_call_limit is not none %} de {{ p.daily_call_limit }}{% endif %} chamadas</div>
+            {% else %}
+            <div><label for="l-pin-{{ p.name }}">Preço entrada (US$/M tokens)</label>
+              <input id="l-pin-{{ p.name }}" type="text" inputmode="decimal" size="8"
+                     name="price_in_usd_mtok" value="{{ p.price_in_usd_mtok if p.price_in_usd_mtok is not none }}"></div>
+            <div><label for="l-pout-{{ p.name }}">Preço saída (US$/M tokens)</label>
+              <input id="l-pout-{{ p.name }}" type="text" inputmode="decimal" size="8"
+                     name="price_out_usd_mtok" value="{{ p.price_out_usd_mtok if p.price_out_usd_mtok is not none }}"></div>
+            <div><label for="l-day-{{ p.name }}">Orçamento diário (US$)</label>
+              <input id="l-day-{{ p.name }}" type="text" inputmode="decimal" size="8"
+                     name="daily_budget_usd" value="{{ p.daily_budget_usd if p.daily_budget_usd is not none }}"></div>
+            <div><label for="l-month-{{ p.name }}">Orçamento mensal (US$)</label>
+              <input id="l-month-{{ p.name }}" type="text" inputmode="decimal" size="8"
+                     name="monthly_budget_usd" value="{{ p.monthly_budget_usd if p.monthly_budget_usd is not none }}"></div>
+            <div class="muted" style="font-size:13px; padding-bottom:8px">hoje:
+              <strong>US$ {{ '%.4f'|format(p.cost_today) }}</strong> · mês:
+              <strong>US$ {{ '%.4f'|format(p.cost_month) }}</strong> · {{ p.calls_today }} chamadas hoje
+              {% if p.price_in_usd_mtok is none and p.price_out_usd_mtok is none %}
+                · <span class="pill warn">sem preço: custo contado como 0</span>{% endif %}</div>
+            {% endif %}
+            <button class="mini-btn" type="submit">Guardar limites</button>
+            {% if p.limit_reached %}<span class="pill bad">{{ limit_labels.get(p.limit_reached, p.limit_reached) }} — fora da cadeia</span>{% endif %}
+          </form>
+        </td></tr>
+        {% if p.name in login_help and p.health != 'ok' %}
+        <tr><td colspan="7">
+          <strong>Autenticar {{ p.name }}:</strong> este provedor autentica-se no servidor, por SSH.
+          Corra o comando abaixo e depois carregue em “Verificar”.
+          <span class="code">{{ login_help[p.name] }}</span>
+        </td></tr>
+        {% endif %}
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <h2 style="margin-top:22px">Ordem por papel</h2>
+  <p class="muted" style="margin-top:-6px">O primeiro disponível responde; se falhar, passa ao
+    seguinte. O revisor salta sempre a família de quem escreveu o artigo.</p>
+  <div class="grid">
+  {% for role in roles %}
+    <div class="card">
+      <h3>{{ role.label }}</h3>
+      <ol class="chain">
+      {% for p in role.chain %}
+        <li>
+          <span class="pos">{{ loop.index }}.</span>
+          <span class="name">{{ p.name }} <span class="muted" style="font-weight:400">· {{ p.family }}</span></span>
+          {% if not p.enabled %}<span class="pill warn">desligado</span>
+          {% else %}{{ health_pill(p.health or 'unknown') }}{% endif %}
+          {% for action, label in (('up', '↑'), ('down', '↓'), ('remove', '×')) %}
+          <form class="inline-form" method="post" action="/dashboard/ai/chain/{{ role.key }}">
+            <input type="hidden" name="provider" value="{{ p.name }}">
+            <input type="hidden" name="action" value="{{ action }}">
+            <button class="mini-btn" type="submit"
+              aria-label="{{ {'up': 'Subir', 'down': 'Descer', 'remove': 'Remover'}[action] }} {{ p.name }} em {{ role.label }}"
+              {{ 'disabled' if (action == 'up' and loop.first) or (action == 'down' and loop.last) }}>{{ label }}</button></form>
+          {% endfor %}
+        </li>
+      {% endfor %}
+      </ol>
+      {% if role.available %}
+      <form method="post" action="/dashboard/ai/chain/{{ role.key }}"
+            style="margin-top:10px; display:flex; gap:6px">
+        <input type="hidden" name="action" value="add">
+        <select name="provider" aria-label="Provedor a acrescentar a {{ role.label }}">
+          {% for name in role.available %}<option>{{ name }}</option>{% endfor %}</select>
+        <button class="mini-btn" type="submit">Acrescentar</button></form>
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Orçamento por blog</h2>
+    <p class="muted" style="margin-top:-6px">Teto de custo de cada blog nos provedores pagos
+      (API key). Atingido o teto, esse blog passa a usar só as assinaturas até ao dia ou mês
+      seguinte. Os dois campos vazios apagam o orçamento.</p>
+    {% if site_budgets %}
+    <div class="scroll"><table>
+      <thead><tr><th>Blog</th><th>Hoje</th><th>Diário</th><th>Mês</th><th>Mensal</th></tr></thead>
+      <tbody>{% for b in site_budgets %}
+        <tr><td><strong>{{ b.site }}</strong></td>
+          <td>US$ {{ '%.4f'|format(b.cost_today) }}</td>
+          <td>{{ 'US$ %s'|format(b.daily_budget_usd) if b.daily_budget_usd is not none else '—' }}</td>
+          <td>US$ {{ '%.4f'|format(b.cost_month) }}</td>
+          <td>{{ 'US$ %s'|format(b.monthly_budget_usd) if b.monthly_budget_usd is not none else '—' }}</td></tr>
+      {% endfor %}</tbody></table></div>
+    {% endif %}
+    <form method="post" action="/dashboard/ai/site-budgets" style="margin-top:12px">
+      <div class="fields">
+        <div><label for="b-site">Blog (identificador)</label>
+          <input id="b-site" type="text" name="site" required placeholder="cloud"></div>
+        <div><label for="b-day">Orçamento diário (US$)</label>
+          <input id="b-day" type="text" inputmode="decimal" name="daily_budget_usd"></div>
+        <div><label for="b-month">Orçamento mensal (US$)</label>
+          <input id="b-month" type="text" inputmode="decimal" name="monthly_budget_usd"></div>
+      </div>
+      <p style="margin:14px 0 0"><button class="mini-btn" type="submit">Guardar orçamento</button></p>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Provedor por API key</h2>
+    <p class="muted" style="margin-top:-6px">Qualquer serviço compatível com a API da OpenAI
+      (OpenRouter, Groq, NVIDIA NIM…). A chave é guardada cifrada e nunca volta a ser mostrada;
+      para atualizar um provedor existente use o mesmo nome (chave em branco = manter a atual).</p>
+    <form method="post" action="/dashboard/ai/api-providers" autocomplete="off">
+      <div class="fields">
+        <div><label for="f-name">Nome</label>
+          <input id="f-name" type="text" name="name" required placeholder="openrouter"></div>
+        <div><label for="f-family">Família do modelo</label>
+          <input id="f-family" type="text" name="family" required placeholder="openai, anthropic, google, meta…"></div>
+        <div><label for="f-url">Endereço (https)</label>
+          <input id="f-url" type="url" name="base_url" required placeholder="https://openrouter.ai/api/v1"></div>
+        <div><label for="f-model">Modelo</label>
+          <input id="f-model" type="text" name="model" required></div>
+        <div><label for="f-key">API key</label>
+          <input id="f-key" type="password" name="api_key" autocomplete="new-password"></div>
+      </div>
+      <p style="margin:14px 0 0"><button class="btn" type="submit">Guardar provedor</button></p>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

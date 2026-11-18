@@ -1,0 +1,15 @@
+# Lint do gateway. Corre na imagem de testes: `make lint`.
+target-version = "py312"
+line-length = 100
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+# B008: `Depends(...)`/`Query(...)` como valor por omissão é o idioma do FastAPI.
+ignore = ["B008"]
+
+[lint.isort]
+known-first-party = ["app", "tests"]
+
+[lint.per-file-ignores]
+# Os testes embutem scripts das CLIs falsas em strings; linhas longas ficam legíveis assim.
+"tests/*" = ["E501"]

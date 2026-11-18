@@ -1,0 +1,6 @@
+# Gerados pelo install.sh (segredos e configuração desta instalação)
+.env
+.env.*
+wp-credentials.env
+config/
+searxng/

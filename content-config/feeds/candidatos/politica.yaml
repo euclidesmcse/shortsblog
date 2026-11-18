@@ -1,0 +1,344 @@
+# Candidatos a feeds do site "politica" (E5.1). Só entram em ../politica.yaml os que
+# passarem scripts/validate_feeds.py. tier: oficial | agencia | veiculo | fornecedor | academico.
+site_key: politica
+feeds:
+- name: Senado Notícias
+  url: https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS
+  tier: oficial
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Câmara — Política
+  url: https://www.camara.leg.br/noticias/rss/dinamico/POLITICA
+  tier: oficial
+  lang: pt
+- name: Câmara — Últimas notícias
+  url: https://www.camara.leg.br/noticias/rss/ultimas-noticias
+  tier: oficial
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: STF — Notícias
+  url: https://noticias.stf.jus.br/feed/
+  tier: oficial
+  lang: pt
+- name: TSE — Notícias
+  url: https://www.tse.jus.br/comunicacao/noticias/rss
+  tier: oficial
+  lang: pt
+- name: STJ — Notícias
+  url: https://res.stj.jus.br/hrestp-c-portalp/RSS.xml
+  tier: oficial
+  lang: pt
+- name: Planalto — Notícias
+  url: https://www.gov.br/planalto/pt-br/acompanhe-o-planalto/noticias/RSS
+  tier: oficial
+  lang: pt
+  notes: 'comunicação do governo: fonte primária da posição oficial, não avaliação independente'
+- name: Agência Gov — Notícias
+  url: https://agenciagov.ebc.com.br/RSS
+  tier: oficial
+  lang: pt
+  notes: 'agregador oficial (EBC) das notícias de todos os ministérios; comunicação do governo:
+    fonte primária da posição oficial, não avaliação independente; feed generalista: filtrar por
+    tema antes de virar ideia'
+- name: CGU — Notícias
+  url: https://www.gov.br/cgu/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: TCU — Notícias
+  url: https://portal.tcu.gov.br/RSS/noticias.xml
+  tier: oficial
+  lang: pt
+- name: MPF — Notícias
+  url: https://www.mpf.mp.br/pgr/noticias-pgr/RSS
+  tier: oficial
+  lang: pt
+- name: Itamaraty — Notas à imprensa
+  url: https://www.gov.br/mre/pt-br/canais_atendimento/imprensa/notas-a-imprensa/RSS
+  tier: oficial
+  lang: pt
+- name: Ministério da Justiça — Notícias
+  url: https://www.gov.br/mj/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: CNJ — Notícias
+  url: https://www.cnj.jus.br/feed/
+  tier: oficial
+  lang: pt
+- name: UN News
+  url: https://news.un.org/feed/subscribe/en/news/all/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: ONU News (português)
+  url: https://news.un.org/feed/subscribe/pt/news/all/rss.xml
+  tier: oficial
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Agência Brasil — Política
+  url: https://agenciabrasil.ebc.com.br/rss/politica/feed.xml
+  tier: agencia
+  lang: pt
+  notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
+- name: Agência Brasil — Justiça
+  url: https://agenciabrasil.ebc.com.br/rss/justica/feed.xml
+  tier: agencia
+  lang: pt
+  notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
+- name: Agência Brasil — Internacional
+  url: https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml
+  tier: agencia
+  lang: pt
+  notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
+- name: Folha — Poder
+  url: https://feeds.folha.uol.com.br/poder/rss091.xml
+  tier: veiculo
+  lang: pt
+- name: G1 Política
+  url: https://g1.globo.com/rss/g1/politica/
+  tier: veiculo
+  lang: pt
+- name: Estadão — Política
+  url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/politica/
+  tier: veiculo
+  lang: pt
+- name: O Globo — Política
+  url: https://oglobo.globo.com/rss/politica/
+  tier: veiculo
+  lang: pt
+- name: CNN Brasil — Política
+  url: https://www.cnnbrasil.com.br/politica/feed/
+  tier: veiculo
+  lang: pt
+- name: Poder360
+  url: https://www.poder360.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Gazeta do Povo — República
+  url: https://www.gazetadopovo.com.br/feed/rss/republica.xml
+  tier: veiculo
+  lang: pt
+  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+- name: CartaCapital — Política
+  url: https://www.cartacapital.com.br/politica/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+- name: Congresso em Foco
+  url: https://www.congressoemfoco.com.br/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'host próprio desde 11/2026: o antigo congressoemfoco.uol.com.br ficou sem DNS (visto em 2 e 8/11)'
+- name: Consultor Jurídico
+  url: https://www.conjur.com.br/rss.xml
+  tier: veiculo
+  lang: pt
+- name: Agência Pública
+  url: https://apublica.org/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+- name: Nexo Jornal
+  url: https://www.nexojornal.com.br/rss.xml
+  tier: veiculo
+  lang: pt
+- name: Veja — Política
+  url: https://veja.abril.com.br/politica/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+- name: Jovem Pan — Política
+  url: https://jovempan.com.br/noticias/politica/feed
+  tier: veiculo
+  lang: pt
+- name: Aos Fatos (checagem)
+  url: https://www.aosfatos.org/noticias/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'checagem de factos: útil para verificar afirmações, não como fonte única de notícia'
+- name: DW Brasil
+  url: https://rss.dw.com/rdf/rss-br-all
+  tier: veiculo
+  lang: pt
+- name: Secom — Notícias
+  url: https://www.gov.br/secom/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+  notes: 'comunicação do governo: fonte primária da posição oficial, não avaliação independente'
+- name: AGU — Notícias
+  url: https://www.gov.br/agu/pt-br/comunicacao/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Casa Civil — Notícias
+  url: https://www.gov.br/casacivil/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+  notes: 'comunicação do governo: fonte primária da posição oficial, não avaliação independente'
+- name: Câmara — Administração Pública
+  url: https://www.camara.leg.br/noticias/rss/dinamico/ADMINISTRACAO-PUBLICA
+  tier: oficial
+  lang: pt
+- name: Câmara — Direito e Justiça
+  url: https://www.camara.leg.br/noticias/rss/dinamico/DIREITO-E-JUSTICA
+  tier: oficial
+  lang: pt
+- name: Câmara — Relações Exteriores
+  url: https://www.camara.leg.br/noticias/rss/dinamico/RELACOES-EXTERIORES
+  tier: oficial
+  lang: pt
+- name: Câmara — Direitos Humanos
+  url: https://www.camara.leg.br/noticias/rss/dinamico/DIREITOS-HUMANOS
+  tier: oficial
+  lang: pt
+- name: Senado — Agência Senado (áudio)
+  url: https://www12.senado.leg.br/radio/feed/RSS
+  tier: oficial
+  lang: pt
+- name: TSE — Notícias (portal)
+  url: https://www.tse.jus.br/comunicacao/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Ministério das Relações Exteriores — Notícias
+  url: https://www.gov.br/mre/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Parlamento Europeu — Imprensa
+  url: https://www.europarl.europa.eu/rss/doc/press-releases/pt.xml
+  tier: oficial
+  lang: pt
+- name: Comissão Europeia — Comunicados
+  url: https://ec.europa.eu/commission/presscorner/api/rss?language=pt
+  tier: oficial
+  lang: en
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Metrópoles — Política
+  url: https://www.metropoles.com/brasil/politica-brasil/feed
+  tier: veiculo
+  lang: pt
+- name: UOL Notícias — Política
+  url: https://rss.uol.com.br/feed/noticias.xml
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Correio Braziliense — Política
+  url: https://www.correiobraziliense.com.br/arc/outboundfeeds/rss/category/politica/?outputType=xml
+  tier: veiculo
+  lang: pt
+- name: R7 — Brasília
+  url: https://noticias.r7.com/brasilia/feed.xml
+  tier: veiculo
+  lang: pt
+- name: The Intercept Brasil
+  url: https://www.intercept.com.br/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+- name: O Antagonista
+  url: https://oantagonista.com.br/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+- name: Revista Oeste
+  url: https://revistaoeste.com/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+- name: Brasil de Fato
+  url: https://www.brasildefato.com.br/rss2.xml
+  tier: veiculo
+  lang: pt
+  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+- name: El País Brasil
+  url: https://feeds.elpais.com/mrss-s/pages/ep/site/brasil.elpais.com/portada
+  tier: veiculo
+  lang: pt
+- name: RFI Brasil
+  url: https://www.rfi.fr/br/rss
+  tier: veiculo
+  lang: pt
+# E14.5f (D-064, aprovados pelo Euclides em 2026-10-26): cobertura internacional.
+# BBC, Guardian, NPR e Al Jazeera ficaram fora (rss: false em sem-leitura.yaml, D-071).
+- name: UN Press — Meetings coverage
+  url: https://press.un.org/en/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'Conselho de Segurança e Assembleia Geral'
+- name: Noticias ONU (español)
+  url: https://news.un.org/feed/subscribe/es/news/all/rss.xml
+  tier: oficial
+  lang: es
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: GOV.UK — News
+  url: https://www.gov.uk/search/news-and-communications.atom
+  tier: oficial
+  lang: en
+  notes: 'feed generalista: filtrar por tema antes de virar ideia; Open Government Licence'
+- name: DW — World
+  url: https://rss.dw.com/rdf/rss-en-world
+  tier: veiculo
+  lang: en
+  notes: 'Alemanha/Europa'
+- name: DW Español
+  url: https://rss.dw.com/rdf/rss-sp-all
+  tier: veiculo
+  lang: es
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: France 24 — English
+  url: https://www.france24.com/en/rss
+  tier: veiculo
+  lang: en
+  notes: 'feed generalista: filtrar por tema antes de virar ideia; só pauta (sem-leitura: termos proíbem ler a página)'
+- name: France 24 — Español
+  url: https://www.france24.com/es/rss
+  tier: veiculo
+  lang: es
+  notes: 'feed generalista: filtrar por tema antes de virar ideia; só pauta (sem-leitura: termos proíbem ler a página)'
+- name: Politico Europe
+  url: https://www.politico.eu/feed/
+  tier: veiculo
+  lang: en
+  notes: 'União Europeia'
+- name: MercoPress
+  url: https://en.mercopress.com/rss
+  tier: veiculo
+  lang: en
+  notes: 'América do Sul, Mercosul'
+- name: Infobae — América
+  url: https://www.infobae.com/arc/outboundfeeds/rss/category/america/
+  tier: veiculo
+  lang: es
+  notes: 'América Latina; volume alto (feed_max_items limita)'
+- name: RTP Notícias — Mundo
+  url: https://www.rtp.pt/noticias/rss/mundo
+  tier: veiculo
+  lang: pt
+  notes: 'serviço público português'
+- name: Público — Mundo
+  url: https://feeds.feedburner.com/PublicoMundo
+  tier: veiculo
+  lang: pt
+  notes: 'Portugal'
+- name: Al Jazeera English
+  url: https://www.aljazeera.com/xml/rss/all.xml
+  tier: veiculo
+  lang: en
+  notes: 'INVÁLIDO (10/11): sem-leitura marca o RSS da aljazeera.com como proibido para uso comercial — nem pauta'
+- name: Global Voices em Português
+  url: https://pt.globalvoices.org/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'CC BY 3.0; cidadãos e jornalistas do mundo todo (D-110)'
+- name: Global Voices
+  url: https://globalvoices.org/feed/
+  tier: veiculo
+  lang: en
+  notes: 'CC BY 3.0; cidadãos e jornalistas do mundo todo (D-110)'
+- name: ONU News — Paz e segurança
+  url: https://news.un.org/feed/subscribe/pt/news/topic/peace-and-security/feed/rss.xml
+  tier: oficial
+  lang: pt
+  notes: 'conflitos e diplomacia no mundo (D-110); crédito à ONU'
+- name: ONU News — Direitos humanos
+  url: https://news.un.org/feed/subscribe/pt/news/topic/human-rights/feed/rss.xml
+  tier: oficial
+  lang: pt
+  notes: 'direitos humanos no mundo (D-110); crédito à ONU'

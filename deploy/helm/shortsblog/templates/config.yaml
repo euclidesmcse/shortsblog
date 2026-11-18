@@ -1,0 +1,26 @@
+{{- /* ./config do pacote: os modelos de deploy/package/config-template com os dados do blog.
+       É a SEMENTE (E18.3a, D-104): a migração só acrescenta; depois a fonte da verdade é o banco
+       (tela Configuração do portal). */ -}}
+{{- $v := .Values -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sb.fullname" . }}-config
+  labels:
+    {{- include "sb.labels" . | nindent 4 }}
+data:
+  # Chaves achatadas; os `items` de cada volume montam a árvore /config/<pasta>/<arquivo>.
+  sites.yaml: |-
+    {{- include "sb.fill" (list $v (.Files.Get "files/config-template/sites/site.yaml")) | nindent 4 }}
+  policies-comum.md: |-
+    {{- include "sb.fill" (list $v (.Files.Get "files/config-template/policies/_comum.md")) | nindent 4 }}
+  policies-site.md: |-
+    {{- include "sb.fill" (list $v (.Files.Get "files/config-template/policies/site.md")) | nindent 4 }}
+  feeds.yaml: |-
+    {{- include "sb.fill" (list $v (.Files.Get "files/config-template/feeds/site.yaml")) | nindent 4 }}
+  wordpress-site.json: |-
+    {{- include "sb.fill" (list $v (.Files.Get "files/config-template/wordpress-sites/site.json")) | nindent 4 }}
+  sem-leitura.yaml: |-
+    {{- include "sb.fill" (list $v (.Files.Get "files/config-template/sem-leitura.yaml")) | nindent 4 }}
+  newsletters.yaml: |-
+    {{- include "sb.fill" (list $v (.Files.Get "files/config-template/newsletters.yaml")) | nindent 4 }}

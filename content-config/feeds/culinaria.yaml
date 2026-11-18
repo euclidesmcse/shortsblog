@@ -1,0 +1,147 @@
+# ShortsBlog — feeds do site "culinaria" (E5.3). Gerado por scripts/validate_feeds.py.
+# Só contém feeds que passaram a validação (HTTPS, 200, XML válido, item recente
+# com link e data). Para acrescentar um feed: pô-lo em candidatos/ e correr o script.
+#
+# USO (D-013): o RSS serve para DESCOBRIR notícias e CITAR a fonte. Nunca se copia
+# o texto nem as imagens do feed; o artigo é escrito de raiz, com atribuição e link.
+site_key: culinaria
+feeds:
+- name: Casa e Jardim — Receitas
+  url: https://revistacasaejardim.globo.com/rss/casaejardim/
+  domain: revistacasaejardim.globo.com
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Casa Vogue — Gastronomia
+  url: https://casavogue.globo.com/rss/casavogue/
+  domain: casavogue.globo.com
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Claudia — Receitas
+  url: https://claudia.abril.com.br/receitas/feed/
+  domain: claudia.abril.com.br
+  tier: veiculo
+  lang: pt
+- name: Directo al Paladar
+  url: https://www.directoalpaladar.com/feedburner.xml
+  domain: www.directoalpaladar.com
+  tier: veiculo
+  lang: es
+- name: Estadão Paladar
+  url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/paladar/
+  domain: www.estadao.com.br
+  tier: veiculo
+  lang: pt
+- name: Folha — Comida
+  url: https://feeds.folha.uol.com.br/comida/rss091.xml
+  domain: feeds.folha.uol.com.br
+  tier: veiculo
+  lang: pt
+- name: Guia da Cozinha
+  url: https://guiadacozinha.com.br/feed/
+  domain: guiadacozinha.com.br
+  tier: veiculo
+  lang: pt
+- name: Joy the Baker
+  url: https://joythebaker.com/feed/
+  domain: joythebaker.com
+  tier: veiculo
+  lang: en
+- name: La Dolce Rita
+  url: https://ladolcerita.net/feed/
+  domain: ladolcerita.net
+  tier: veiculo
+  lang: pt
+- name: Love and Lemons
+  url: https://www.loveandlemons.com/feed/
+  domain: www.loveandlemons.com
+  tier: veiculo
+  lang: en
+- name: Love and Olive Oil
+  url: https://www.loveandoliveoil.com/feed
+  domain: www.loveandoliveoil.com
+  tier: veiculo
+  lang: en
+- name: Metrópoles — Gastronomia
+  url: https://www.metropoles.com/gastronomia/feed
+  domain: www.metropoles.com
+  tier: veiculo
+  lang: pt
+- name: Minimalist Baker
+  url: https://minimalistbaker.com/feed/
+  domain: minimalistbaker.com
+  tier: veiculo
+  lang: en
+- name: Omnivore's Cookbook
+  url: https://omnivorescookbook.com/feed/
+  domain: omnivorescookbook.com
+  tier: veiculo
+  lang: en
+  notes: cozinha chinesa; sem termos no site (amarelo); anti-bot pode dar 403 na leitura
+- name: Prazeres da Mesa
+  url: https://www.prazeresdamesa.com.br/feed/
+  domain: www.prazeresdamesa.com.br
+  tier: veiculo
+  lang: pt
+- name: Receitas que Amo
+  url: https://www.receitasqueamo.com.br/feed/
+  domain: www.receitasqueamo.com.br
+  tier: veiculo
+  lang: pt
+- name: Saveur
+  url: https://www.saveur.com/feed/
+  domain: www.saveur.com
+  tier: veiculo
+  lang: en
+- name: The Kitchn
+  url: https://www.thekitchn.com/main.rss
+  domain: www.thekitchn.com
+  tier: veiculo
+  lang: en
+- name: The Woks of Life
+  url: https://thewoksoflife.com/feed/
+  domain: thewoksoflife.com
+  tier: veiculo
+  lang: en
+  notes: 'cozinha chinesa; só pauta (robots.txt exclui robôs de IA e o servidor dá 403: a página não é
+    lida)'
+- name: Vegan Richa
+  url: https://www.veganricha.com/feed/
+  domain: www.veganricha.com
+  tier: veiculo
+  lang: en
+- name: Veja SP — Comer & Beber
+  url: https://vejasp.abril.com.br/comer-e-beber/feed/
+  domain: vejasp.abril.com.br
+  tier: veiculo
+  lang: pt
+- name: King Arthur Baking
+  url: https://www.kingarthurbaking.com/blog/feed
+  domain: www.kingarthurbaking.com
+  tier: fornecedor
+  lang: en
+  notes: 'blog de uma marca: fonte primária do produto, não avaliação independente'
+- name: Jornal da USP
+  url: https://jornal.usp.br/feed/
+  domain: jornal.usp.br
+  tier: academico
+  lang: pt
+- name: Revista Pesquisa FAPESP
+  url: https://revistapesquisa.fapesp.br/feed/
+  domain: revistapesquisa.fapesp.br
+  tier: academico
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: ScienceDaily — Nutrition
+  url: https://www.sciencedaily.com/rss/health_medicine/nutrition.xml
+  domain: www.sciencedaily.com
+  tier: academico
+  lang: en
+  notes: 'agregador de comunicados de imprensa: localizar e citar o estudo original; não é fonte de corroboração'
+- name: FAO — Newsroom
+  url: https://www.fao.org/feeds/fao-newsroom-rss
+  domain: www.fao.org
+  tier: oficial
+  lang: en
+  notes: 'só pauta (sem-leitura fao.org): termos limitam a produtos/serviços não comerciais; dizer o organismo (FAO/ONU)'

@@ -1,0 +1,142 @@
+{% extends "_base.html" %}
+{% block title %}Painel — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .grid{display:grid; gap:14px}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(168px,1fr))}
+  .cols2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+  .kpi .label{font-size:11px; text-transform:uppercase; letter-spacing:.07em;
+               color:var(--muted); margin-bottom:6px}
+  .kpi .value{font-size:26px; font-weight:700; line-height:1.15;
+              font-variant-numeric:tabular-nums}
+  .kpi .sub{font-size:12px; color:var(--muted); margin-top:4px}
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px;
+        font-weight:600; border:1px solid var(--border)}
+  .pill.ok{color:var(--ok); border-color:var(--ok)}
+  .pill.warn{color:var(--warn); border-color:var(--warn)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .inline-form{display:inline}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:5px 11px; font-size:13px; cursor:pointer}
+  .mini-btn.go{border-color:var(--ok); color:var(--ok)}
+  .mini-btn.no{border-color:var(--bad); color:var(--bad)}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="wrap">
+
+  <header style="display:flex; flex-wrap:wrap; gap:12px; align-items:baseline;
+                 justify-content:space-between; margin-bottom:18px">
+    <div>
+      <h1 style="margin:0">Sala de controle</h1>
+      <p class="muted" style="margin:2px 0 0">últimos {{ days }} dias</p>
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap">
+      {% if config.dry_run %}<span class="pill warn">DRY RUN</span>{% endif %}
+      <span class="pill {{ 'ok' if config.human_gate else 'warn' }}">
+        gate humano: {{ 'on' if config.human_gate else 'off' }}</span>
+      <span class="pill {{ 'ok' if config.ready.writer.ok else 'bad' }}"
+            title="{{ config.ready.writer.providers|join(', ') or 'nenhum provedor ok' }}">Redação</span>
+      <span class="pill {{ 'ok' if config.ready.reviewer.ok else 'bad' }}"
+            title="{{ config.ready.reviewer.providers|join(', ') or 'nenhum provedor ok' }}">Revisão</span>
+      <span class="pill {{ 'ok' if config.ready.wordpress.ok else 'bad' }}"
+            title="{{ 'sem credencial: ' ~ config.ready.wordpress.missing|join(', ') if config.ready.wordpress.missing else 'credencial de todos os sites' }}">WordPress {{ config.ready.wordpress.have }}/{{ config.ready.wordpress.total }}</span>
+      <span class="pill {{ 'ok' if config.mail else 'warn' }}">E-mail</span>
+    </div>
+  </header>
+
+  {% if setup_pending %}
+  <div class="card" role="status" style="border-left:4px solid var(--warn)">
+    <strong>Configuração inicial incompleta.</strong> O motor ainda não consegue produzir posts:
+    siga os <a href="/dashboard/setup">Primeiros passos</a> (IA, WordPress e ligar o blog).
+  </div>
+  {% endif %}
+
+  {% set t = data.totals %}
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="label">Publicados</div>
+      <div class="value">{{ t.published }}</div>
+      <div class="sub">nos últimos {{ days }} dias</div></div>
+    <div class="card kpi"><div class="label">À espera de aprovação</div>
+      <div class="value">{{ t.awaiting }}</div>
+      <div class="sub"><a href="/dashboard/review">abrir a fila</a></div></div>
+    <div class="card kpi"><div class="label">Bloqueados ou expirados</div>
+      <div class="value">{{ t.stuck }}</div>
+      <div class="sub">nos últimos {{ days }} dias</div></div>
+    <div class="card kpi"><div class="label">Chamadas de IA</div>
+      <div class="value">{{ t.ai_calls }}</div>
+      <div class="sub">{% for p in data.providers %}{{ p.provider }} {{ p.calls }}{% if p.failed %} ({{ p.failed }} falhas){% endif %}{{ ' · ' if not loop.last }}{% else %}nenhuma{% endfor %}</div></div>
+    <div class="card kpi"><div class="label">Custo de IA</div>
+      <div class="value">US$ {{ '%.2f'|format(t.cost_usd) }}</div>
+      <div class="sub">assinaturas não contam</div></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:16px">Blogs
+      <span class="muted" style="font-weight:400; font-size:13px">
+        — publicação {{ config.publish_mode }}; 1.º slot às {{ config.first_slot }} de Lisboa (D-066)</span></h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Blog</th><th>Estado</th><th>7 dias</th><th>{{ days }} dias</th><th>Total</th>
+        <th>Ideias novas</th><th>Último post</th><th>Próximo slot</th></tr></thead>
+      <tbody>
+      {% for b in data.blogs %}
+        <tr>
+          <td><a href="{{ b.base_url }}" rel="noopener" target="_blank">{{ b.name }}</a></td>
+          <td><span class="pill {{ 'ok' if b.enabled else '' }}">{{ ('ligado · %d/dia'|format(b.daily_target)) if b.enabled else 'desligado' }}</span></td>
+          <td>{{ b.week }}</td><td>{{ b.period }}</td><td>{{ b.total }}</td>
+          <td>{{ b.ideas_new }}</td>
+          <td>{% if b.last_url %}<a href="{{ b.last_url }}" rel="noopener" target="_blank">{{ b.last_at|when }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td class="muted">{{ b.next_due|when }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  {% if pending %}
+  <div class="card">
+    <h2 style="font-size:16px">Aguardando aprovação
+      <span class="muted" style="font-weight:400; font-size:13px">
+        — aprovar basta: o post sai no horário do slot</span></h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Job</th><th>Blog</th><th>Artigo</th><th>Slot</th></tr></thead>
+      <tbody>
+      {% for j in pending %}
+        <tr>
+          <td><a href="/dashboard/review/{{ j.id }}">#{{ j.id }}</a></td>
+          <td>{{ j.site_key }}</td>
+          <td><a href="/dashboard/review/{{ j.id }}">{{ j.title or '(sem título)' }}</a></td>
+          <td class="muted">{{ j.due_at_utc|when }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2 style="font-size:16px">Últimos jobs</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Job</th><th>Blog</th><th>Artigo</th><th>Estado</th><th>Slot</th>
+        <th>Publicado</th></tr></thead>
+      <tbody>
+      {% for j in recent %}
+        <tr>
+          <td><a href="/dashboard/review/{{ j.id }}">#{{ j.id }}</a></td>
+          <td>{{ j.site_key }}</td>
+          <td>{% if j.wordpress_url %}<a href="{{ j.wordpress_url }}" rel="noopener" target="_blank">{{ j.title or j.wordpress_url }}</a>{% else %}{{ j.title or '—' }}{% endif %}
+            {% if j.blocked_reason and j.status != 'PUBLISHED_CONFIRMED' %}<div class="muted" style="font-size:12px">{{ j.blocked_reason }}</div>{% endif %}</td>
+          <td><span class="pill {{ 'ok' if j.status == 'PUBLISHED_CONFIRMED'
+                    else ('bad' if j.status in ('BLOCKED', 'FAILED', 'EXPIRED', 'REJECTED') else 'warn') }}">{{ j.status }}</span></td>
+          <td class="muted">{{ j.due_at_utc|when }}</td>
+          <td class="muted">{{ j.published_at_utc|when }}</td>
+        </tr>
+      {% else %}<tr><td colspan="6" class="muted">Nenhum job ainda.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

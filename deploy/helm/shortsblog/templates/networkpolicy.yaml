@@ -1,0 +1,33 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- /* Só entrada (o equivalente às redes `internal`/`wp` do compose): quem não é motor não fala
+       com os bancos, o Redis, o SearXNG nem o gateway; quem não é o WordPress não fala com o
+       MariaDB. A API e o WordPress ficam abertos ao Ingress. */ -}}
+{{- $fn := include "sb.fullname" . -}}
+{{- range $t := list (dict "c" "postgres" "port" 5432 "from" "engine")
+                     (dict "c" "redis" "port" 6379 "from" "engine")
+                     (dict "c" "searxng" "port" 8080 "from" "engine")
+                     (dict "c" "ai-gateway" "port" 8080 "from" "engine")
+                     (dict "c" "mariadb" "port" 3306 "from" "wp") }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fn }}-{{ $t.c }}
+  labels: {{- include "sb.labels" $ | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "sb.selector" (list $ $t.c) | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ $.Release.Name }}
+              {{- if eq $t.from "engine" }}
+              {{- include "sb.engineClient" $ | nindent 14 }}
+              {{- else }}
+              {{- include "sb.wpClient" $ | nindent 14 }}
+              {{- end }}
+      ports: [{port: {{ $t.port }}, protocol: TCP}]
+{{- end }}
+{{- end }}

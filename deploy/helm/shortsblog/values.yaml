@@ -1,0 +1,98 @@
+# =========================================================================
+#  ShortsBlog — valores do Helm chart (E19.4). Mínimo para instalar:
+#
+#    helm install sb ./deploy/helm/shortsblog -n shortsblog --create-namespace \
+#      --set panel.host=painel.seudominio.com --set site.host=blog.seudominio.com \
+#      --set admin.email=voce@seudominio.com
+#
+#  Um blog por release (como o pacote compose). Senhas internas: geradas no 1.º install e
+#  guardadas no Secret `<release>-secrets` (mantidas nos upgrades; GUARDE UMA CÓPIA DO
+#  `secretKey`, que abre o cofre do portal). Ou traga o seu Secret em `existingSecret`.
+# =========================================================================
+
+panel:
+  host: ""               # obrigatório: nome do portal (ex.: painel.seudominio.com)
+site:
+  host: ""               # obrigatório: nome do blog
+  key: exemplo           # identificador: minúsculas, dígitos e hífen
+  name: Tecnologia pelo Mundo
+  tagline: Tecnologia, IA e segurança, do mundo todo, em português.
+admin:
+  email: ""              # obrigatório: 1.º usuário do portal e administrador do WordPress
+  wpUser: admin
+timezone: America/Sao_Paulo
+# draft = os posts nascem rascunho e esperam aprovação no portal; live = publica direto.
+wpPublishMode: draft
+# https (padrão, com o TLS no Ingress) ou http (só para conhecer o portal; o blog não publica).
+scheme: https
+
+image:
+  registry: ghcr.io/euclidesmcse
+  tag: ""                # vazio = v<appVersion>
+  pullPolicy: IfNotPresent
+  engine: shortsblog-engine
+  gateway: shortsblog-ai-gateway
+  wpAssets: shortsblog-wp-assets
+# Enquanto as imagens do GHCR forem privadas: um Secret docker-registry com read:packages.
+imagePullSecrets: []
+#  - name: ghcr
+
+# Imagens de terceiros, fixadas por digest (as mesmas do pacote compose).
+thirdParty:
+  postgres: postgres:16.15-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+  redis: redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+  searxng: searxng/searxng@sha256:5903efa50bc6b99293fa059f7a0ff37eddd910210196af77d02e5536ccdfb387
+  wordpress: wordpress:6.9.4-php8.3-apache@sha256:5d2c212561c4b5442ebc4d98933a9cbadcf3dee8888ed3fd9ed44667c27cc905
+  wpcli: wordpress:cli-2.12.0-php8.3@sha256:36243da432a0f0a3b56dc3240ecee9b159108d71305e7c064d987a20a465bfde
+  mariadb: mariadb:11.8.9@sha256:6422478cb8e159f080fb1d8ccf65101e26fe51385787fde7d16c3b165a331f15
+
+# Secret próprio com as chaves: dbAdminPassword, dbAppPassword, apiToken, secretKey,
+# panelPassword, wpDbPassword, wpDbRootPassword, wpAdminPassword, wpAppPassword (24 letras/dígitos),
+# searxngSecret. Vazio = o chart gera e guarda.
+existingSecret: ""
+
+ingress:
+  enabled: true
+  className: ""          # ex.: nginx, traefik
+  annotations: {}
+  #  cert-manager.io/cluster-issuer: letsencrypt
+  #  nginx.ingress.kubernetes.io/proxy-body-size: 32m
+  tls:
+    enabled: true
+    # Um Secret TLS por nome; com cert-manager, só dar o nome e a anotação acima.
+    panelSecretName: ""  # vazio = <release>-panel-tls
+    siteSecretName: ""   # vazio = <release>-site-tls
+
+# Políticas de rede (só entrada): bancos, Redis, SearXNG e gateway só aceitam o motor; o MariaDB
+# só aceita o WordPress. Exige um CNI que aplique NetworkPolicy.
+networkPolicy:
+  enabled: true
+
+persistence:
+  storageClass: ""       # vazio = a padrão do cluster
+  postgres: 8Gi
+  redis: 1Gi
+  mariadb: 4Gi
+  wordpress: 4Gi
+  gateway: 1Gi           # cada um dos 3 (Claude, Codex, Gemini)
+  # Imagens geradas: a API serve, os workers gravam. ReadWriteOnce = todos os pods do motor no
+  # mesmo nó (afinidade automática); com uma storage class RWX, use ReadWriteMany.
+  media: 4Gi
+  mediaAccessMode: ReadWriteOnce
+
+resources:
+  api:          {requests: {cpu: 50m,  memory: 256Mi}, limits: {memory: 512Mi}}
+  worker:       {requests: {cpu: 100m, memory: 384Mi}, limits: {memory: 768Mi}}
+  workerFast:   {requests: {cpu: 50m,  memory: 192Mi}, limits: {memory: 384Mi}}
+  scheduler:    {requests: {cpu: 20m,  memory: 96Mi},  limits: {memory: 192Mi}}
+  migrate:      {requests: {cpu: 50m,  memory: 128Mi}, limits: {memory: 256Mi}}
+  gateway:      {requests: {cpu: 50m,  memory: 256Mi}, limits: {memory: 1Gi}}
+  postgres:     {requests: {cpu: 50m,  memory: 256Mi}, limits: {memory: 512Mi}}
+  redis:        {requests: {cpu: 20m,  memory: 64Mi},  limits: {memory: 256Mi}}
+  searxng:      {requests: {cpu: 20m,  memory: 128Mi}, limits: {memory: 512Mi}}
+  wordpress:    {requests: {cpu: 50m,  memory: 256Mi}, limits: {memory: 512Mi}}
+  wpSidecar:    {requests: {cpu: 10m,  memory: 64Mi},  limits: {memory: 256Mi}}
+  mariadb:      {requests: {cpu: 50m,  memory: 192Mi}, limits: {memory: 384Mi}}
+
+nodeSelector: {}
+tolerations: []

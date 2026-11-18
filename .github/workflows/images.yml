@@ -1,0 +1,199 @@
+# Imagens multi-arch do pacote (E19.3): motor, AI Gateway e os arquivos do WordPress (E19.4),
+# linux/amd64 + linux/arm64, no GHCR. Depois: smoke por arquitetura e o Helm chart num cluster
+# kind descartável (E19.4), com as imagens recém-publicadas.
+#
+# Quando: tag `v*` (versão do pacote) ou à mão (Actions → Imagens → Run workflow).
+# Os pacotes nascem ligados a este repositório (label org.opencontainers.image.source) e, como o
+# repositório é privado, herdam a visibilidade PRIVADA. Torná-los públicos é decisão da E19.6
+# (D-OPEN-18) — não mudar a visibilidade aqui.
+#
+# Sem segredos além do GITHUB_TOKEN do próprio job; nada fala com a nossa produção.
+name: Imagens
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build e push (${{ matrix.image }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: shortsblog-engine
+            context: apps/engine
+            file: apps/engine/Dockerfile
+            license: AGPL-3.0-only
+            build_args: ""
+          # E19.6 (D-112): a imagem publicada sai SEM Claude Code e agy (proprietários).
+          - image: shortsblog-ai-gateway
+            context: apps/ai-gateway
+            file: apps/ai-gateway/Dockerfile
+            license: AGPL-3.0-only
+            build_args: PROPRIETARY_CLIS=false
+          # mu-plugins, tema e setup do WordPress, para o Helm chart (E19.4).
+          - image: shortsblog-wp-assets
+            context: wordpress
+            file: wordpress/Dockerfile.assets
+            license: GPL-2.0-or-later AND OFL-1.1
+            build_args: ""
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: vars
+        name: Nome e tag
+        run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "name=ghcr.io/${owner}/${{ matrix.image }}" >>"$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then
+            echo "tag=${GITHUB_REF_NAME}" >>"$GITHUB_OUTPUT"
+          else
+            echo "tag=sha-${GITHUB_SHA::12}" >>"$GITHUB_OUTPUT"
+          fi
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.vars.outputs.name }}
+          # tag v*: a versão e `latest`; à mão: sha-<12> e `edge`.
+          tags: |
+            type=raw,value=${{ steps.vars.outputs.tag }}
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=edge,enable=${{ github.ref_type != 'tag' }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image }}
+            org.opencontainers.image.vendor=ShortsBlog
+            org.opencontainers.image.licenses=${{ matrix.license }}
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          build-args: ${{ matrix.build_args }}
+          target: runtime
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  smoke:
+    name: Smoke (${{ matrix.platform }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    steps:
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Motor importa a aplicação e as migrações estão na imagem
+        run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          img="ghcr.io/${owner}/shortsblog-engine:${{ needs.build.outputs.tag }}"
+          docker run --rm --platform '${{ matrix.platform }}' --network none \
+            -e ENVIRONMENT=test "$img" \
+            sh -c 'python -c "import platform, app.main; print(platform.machine())" && ls db/migrations | tail -1 && test -s /licenses/THIRD-PARTY-NOTICES.md'
+      - name: Gateway publicado só com o Codex (sem Claude Code e agy, D-112) e as licenças
+        run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          img="ghcr.io/${owner}/shortsblog-ai-gateway:${{ needs.build.outputs.tag }}"
+          docker run --rm --platform '${{ matrix.platform }}' --network none --entrypoint sh "$img" -c \
+            'uname -m && codex --version && ! command -v claude && ! command -v agy && test -s /licenses/LICENSE-AGPL-3.0.txt && test -s /licenses/Apache-2.0-codex.txt && cd /app && python -c "import app.main"'
+
+  helm:
+    name: Helm chart num cluster kind
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - uses: helm/kind-action@v1
+        with:
+          version: v0.30.0
+          cluster_name: sb
+      - name: Imagens privadas do GHCR para dentro do kind
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          for i in shortsblog-engine shortsblog-ai-gateway shortsblog-wp-assets; do
+            docker pull "ghcr.io/${owner}/${i}:${TAG}"
+            kind load docker-image --name sb "ghcr.io/${owner}/${i}:${TAG}"
+          done
+      - name: helm install (sem Ingress; scheme http)
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          helm install sb deploy/helm/shortsblog -n sb --create-namespace \
+            --set image.registry="ghcr.io/${owner}" --set image.tag="${TAG}" \
+            --set image.pullPolicy=Never \
+            --set panel.host=painel.exemplo.test --set site.host=blog.exemplo.test \
+            --set admin.email=admin@exemplo.test --set scheme=http --set ingress.enabled=false \
+            --wait --wait-for-jobs --timeout 15m
+      - name: helm test
+        run: helm test sb -n sb --logs --timeout 5m
+      - name: helm upgrade mantém as senhas e o blog
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          before=$(kubectl -n sb get secret sb-secrets -o jsonpath='{.data}' | sha256sum)
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          helm upgrade sb deploy/helm/shortsblog -n sb --reuse-values \
+            --set image.registry="ghcr.io/${owner}" --set image.tag="${TAG}" \
+            --wait --wait-for-jobs --timeout 10m
+          after=$(kubectl -n sb get secret sb-secrets -o jsonpath='{.data}' | sha256sum)
+          [ "$before" = "$after" ] || { echo "FALHA: o upgrade trocou as senhas"; exit 1; }
+          helm test sb -n sb --logs --timeout 5m
+      - name: Diagnóstico (se falhou)
+        if: failure()
+        run: |
+          kubectl -n sb get pods,pvc,jobs -o wide || true
+          kubectl -n sb describe pods | tail -n 200 || true
+          for p in $(kubectl -n sb get pods -o name); do
+            echo "=== $p"; kubectl -n sb logs "$p" --all-containers --tail=60 || true
+          done

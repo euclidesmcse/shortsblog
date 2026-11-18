@@ -1,0 +1,22 @@
+# Blog do pacote (E19.2). Gerado pelo install.sh a partir de config-template/sites/site.yaml.
+# O banco é a fonte da verdade depois da 1.ª subida: mude pelo portal (Configuração).
+site_key: @@SITE_KEY@@
+name: "@@SITE_NAME@@"
+description: "@@SITE_TAGLINE@@"
+base_url: https://@@SITE_HOST@@
+wordpress_api_url: https://@@SITE_HOST@@/wp-json
+timezone: @@TZ@@
+language: pt-BR
+languages: [pt-BR, en, es, zh-CN]
+# Desligado até as chaves de IA estarem na tela de IA do portal; ligue pela tela do blog.
+enabled: false
+daily_target: 1
+slot_offset_minutes: 0
+taxonomy_version: "1"
+editorial_policy_version: "1"
+categories:
+  - "Notícias"
+  - "Inteligência Artificial"
+  - "Segurança"
+  - "Guias"
+min_sources: 2

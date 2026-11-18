@@ -1,0 +1,176 @@
+{% extends "_base.html" %}
+{% from "_system_cards.html" import cards_css, email_form, wp_form %}
+{% block title %}Primeiros passos — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+{{ cards_css() }}
+<style>
+  .steps{list-style:none; margin:0 0 16px; padding:0; display:grid; gap:6px}
+  .steps li{display:flex; gap:10px; align-items:baseline; font-size:14px}
+  .steps a{font-weight:600}
+  .mark{display:inline-block; min-width:1.6em; text-align:center; border-radius:99px; font-size:12px; font-weight:700;
+        padding:0 6px; border:1px solid var(--border)}
+  .mark.done{border-color:var(--ok); color:var(--ok)} .mark.todo{border-color:var(--warn); color:var(--warn)}
+  .mark.opt{color:var(--muted)}
+  .step h2 .mark{margin-right:6px; vertical-align:2px}
+  .step .state{font-size:14px; margin:0 0 12px}
+  select, textarea{font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--border); border-radius:8px;
+        background:var(--bg); color:var(--text); width:100%; box-sizing:border-box}
+  details summary{cursor:pointer; font-size:14px}
+</style>
+{% endblock %}
+{% macro mark(s) -%}
+  {% if s.done %}<span class="mark done" aria-label="feito">✓</span>
+  {%- elif s.required %}<span class="mark todo" aria-label="por fazer">!</span>
+  {%- else %}<span class="mark opt" aria-label="opcional">–</span>{% endif %}
+{%- endmacro %}
+{% block body %}
+{% set by = {} %}{% for s in steps %}{% set _ = by.update({s.key: s}) %}{% endfor %}
+<div class="wrap" style="max-width:980px">
+  <header style="margin-bottom:12px"><h1 style="margin:0">Primeiros passos</h1>
+    <p class="muted" style="margin:4px 0 0; font-size:14px">O que a instalação precisa para produzir posts, na ordem. Cada passo
+      mostra o estado <strong>real</strong> do sistema (não uma lista para marcar à mão); tudo aqui também está nas telas
+      Sistema, Provedores de IA e Configuração.</p></header>
+  {% if msg %}<div class="card notice" role="status">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad" role="alert">{{ err }}</div>{% endif %}
+
+  <div class="card">
+    {% if required_left %}
+      <p style="margin:0 0 10px"><strong>Falta{{ 'm' if required_left > 1 else '' }} {{ required_left }} passo{{ 's' if required_left > 1 else '' }} obrigatório{{ 's' if required_left > 1 else '' }}.</strong></p>
+    {% else %}
+      <p style="margin:0 0 10px"><strong>Tudo pronto.</strong> As pautas chegam para aprovação em
+        <a href="/dashboard/review">Aprovações</a>; o andamento fica na <a href="/">Sala de controle</a>.</p>
+    {% endif %}
+    <ol class="steps">
+      {% for s in steps %}
+      <li>{{ mark(s) }}<span><a href="#{{ s.key }}">{{ s.title }}</a>{% if not s.required %} <span class="muted">(opcional)</span>{% endif %}
+        — <span class="muted">{{ s.summary }}</span></span></li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  {# 1. Administrador #}
+  <div class="card step" id="admin">
+    <h2>{{ mark(by.admin) }}1. Administrador</h2>
+    <p class="state">{{ by.admin.summary }}.</p>
+    <p class="muted" style="margin:0; font-size:13px">Mais pessoas (operadores, que aprovam mas não mexem na configuração) em
+      <a href="/dashboard/users">Usuários</a>. Sua senha: <a href="/conta/senha">Minha senha</a>.</p>
+  </div>
+
+  {# 2. Blog #}
+  <div class="card step" id="blog">
+    <h2>{{ mark(by.blog) }}2. O blog</h2>
+    {% for s in by.blog.detail.sites %}
+      <form method="post" action="/dashboard/setup/site/{{ s.site_key }}">
+        <input type="hidden" name="version" value="{{ site_versions.get(s.site_key, '') }}">
+        <div class="grid">
+          <div class="field"><label for="n-{{ s.site_key }}">Nome do blog</label>
+            <input type="text" id="n-{{ s.site_key }}" name="name" value="{{ s.name }}" maxlength="120" required></div>
+          <div class="field"><label for="d-{{ s.site_key }}">Descrição (o tema do blog, para a pauta e o redator)</label>
+            <input type="text" id="d-{{ s.site_key }}" name="description" value="{{ s.description or '' }}" maxlength="400"></div>
+        </div>
+        <p class="muted" style="font-size:13px; margin:6px 0 0">Endereço: {{ s.base_url }} · os blogs cobrem o mundo, em
+          português. Feeds, políticas, posts por dia e idiomas em <a href="/dashboard/config/sites/{{ s.site_key }}">Configuração</a>.</p>
+        <p class="actions"><button class="btn" type="submit">Gravar</button></p>
+      </form>
+    {% else %}
+      <p class="state">Nenhum blog no banco: a instalação semeia um a partir de <code>config/sites/</code>.</p>
+    {% endfor %}
+  </div>
+
+  {# 3. IA #}
+  <div class="card step" id="ai">
+    <h2>{{ mark(by.ai) }}3. Inteligência artificial</h2>
+    <p class="state">{{ by.ai.summary }}.</p>
+    <p class="muted" style="margin:0 0 12px; font-size:13px">O motor precisa de um <strong>redator</strong> e de um
+      <strong>revisor de outra família</strong> de modelo (quem escreve nunca revê o próprio texto): o ideal são duas chaves de
+      provedores diferentes. Cada chave é verificada na hora e, se passar, vai para a frente das cadeias. A chave fica cifrada
+      no banco e nunca volta a aparecer.</p>
+    <form method="post" action="/dashboard/setup/ai" id="ai-form">
+      <div class="grid">
+        <div class="field"><label for="ai-preset">Provedor</label>
+          <select id="ai-preset" name="preset">
+            {% for key, p in presets.items() %}<option value="{{ key }}">{{ p.label }}</option>{% endfor %}
+          </select></div>
+        <div class="field"><label for="ai-model">Modelo</label>
+          <input type="text" id="ai-model" name="model" required maxlength="120" placeholder="{{ presets.openai.hint }}"></div>
+        <div class="field"><label for="ai-key">Chave de API</label>
+          <input type="password" id="ai-key" name="api_key" autocomplete="new-password" maxlength="4000"
+                 placeholder="em branco mantém a guardada (provedor já cadastrado)"></div>
+      </div>
+      <details style="margin-top:10px"><summary>Endereço, família e nome (preenchidos pelo provedor escolhido)</summary>
+        <div class="grid" style="margin-top:8px">
+          <div class="field"><label for="ai-base">Endereço (compatível com a API da OpenAI)</label>
+            <input type="text" id="ai-base" name="base_url" value="{{ presets.openai.base_url }}" maxlength="400"></div>
+          <div class="field"><label for="ai-family">Família do modelo</label>
+            <input type="text" id="ai-family" name="family" value="{{ presets.openai.family }}" maxlength="31"
+                   placeholder="ex.: openai, anthropic, google, meta"></div>
+          <div class="field"><label for="ai-name">Nome no portal</label>
+            <input type="text" id="ai-name" name="name" value="{{ presets.openai.name }}" maxlength="31"></div>
+        </div>
+      </details>
+      <p class="actions"><button class="btn" type="submit">Verificar e usar</button></p>
+    </form>
+    {% set api = providers|selectattr('kind', 'equalto', 'api')|list %}
+    {% if api %}
+    <div class="scroll" style="margin-top:12px"><table>
+      <tr><th>Provedor</th><th>Família</th><th>Modelo</th><th>Estado</th></tr>
+      {% for p in api %}<tr><td>{{ p.name }}</td><td>{{ p.family }}</td><td><code>{{ p.model }}</code></td>
+        <td>{{ health_labels.get(p.health, p.health) }}{% if not p.enabled %} · desligado{% endif %}</td></tr>{% endfor %}
+    </table></div>
+    {% endif %}
+    <p class="muted" style="font-size:13px; margin:10px 0 0">Assinaturas (Claude, Codex, Gemini por login), limites diários e a
+      ordem das cadeias: <a href="/dashboard/ai">Provedores de IA</a>.</p>
+  </div>
+
+  {# 4. E-mail #}
+  <div class="card step" id="email">
+    <h2>{{ mark(by.email) }}4. E-mail (SMTP) <span class="muted" style="font-size:13px; font-weight:400">opcional</span></h2>
+    <p class="state">{{ by.email.summary }}.</p>
+    {{ email_form(email, email_version, 'setup') }}
+  </div>
+
+  {# 5. WordPress #}
+  <div class="card step" id="wordpress">
+    <h2>{{ mark(by.wordpress) }}5. Credencial do WordPress</h2>
+    <p class="state">{{ by.wordpress.summary }}. {% if by.wordpress.done %}O instalador já a criou; troque só se refizer o blog.{% else %}
+      Crie uma <em>Application Password</em> no perfil do usuário publicador do WordPress (papel autor ou editor) e cole aqui.{% endif %}</p>
+    {% for b in blogs %}
+      <div id="wp-{{ b.site_key }}">
+        {% if blogs|length > 1 %}<h3 style="font-size:15px; margin:8px 0">{{ b.name }}</h3>{% endif %}
+        {{ wp_form(b, 'setup') }}
+      </div>
+    {% endfor %}
+  </div>
+
+  {# 6. Ligar #}
+  <div class="card step" id="enable">
+    <h2>{{ mark(by.enable) }}6. Ligar o blog</h2>
+    <p class="state">{{ by.enable.summary }}.</p>
+    {% for s in by.blog.detail.sites if not s.enabled %}
+      <form method="post" action="/dashboard/setup/site/{{ s.site_key }}/enable">
+        <input type="hidden" name="version" value="{{ site_versions.get(s.site_key, '') }}">
+        {% if not can_enable[0] %}<p class="muted" style="font-size:13px; margin:0 0 8px">{{ can_enable[1] }}</p>{% endif %}
+        <p class="actions" style="margin-top:0"><button class="btn" type="submit" {% if not can_enable[0] %}disabled{% endif %}>Ligar {{ s.name }}</button></p>
+      </form>
+    {% endfor %}
+    <p class="muted" style="font-size:13px; margin:8px 0 0">Ligado, o motor planeja os slots do dia, lê os feeds, escreve e
+      revisa; cada post espera a sua aprovação em <a href="/dashboard/review">Aprovações</a> (nada é publicado sem uma pessoa).</p>
+  </div>
+</div>
+<script>
+(function(){
+  var presets = {{ presets|tojson }};
+  var sel = document.getElementById('ai-preset');
+  if (!sel) return;
+  sel.addEventListener('change', function(){
+    var p = presets[sel.value] || {};
+    document.getElementById('ai-base').value = p.base_url || '';
+    document.getElementById('ai-family').value = p.family || '';
+    document.getElementById('ai-name').value = p.name || '';
+    document.getElementById('ai-model').placeholder = p.hint || '';
+    if (sel.value === 'custom') document.querySelector('#ai-form details').open = true;
+  });
+})();
+</script>
+{% endblock %}

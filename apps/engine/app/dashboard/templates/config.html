@@ -1,0 +1,111 @@
+{% extends "_base.html" %}
+{% block title %}Configuração — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .pill.add{color:var(--ok); border-color:var(--ok)}
+  .pill.update{color:var(--warn); border-color:var(--warn)}
+  .pill.disable, .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px}
+  .notice.bad{border-left-color:var(--bad)} .notice.warn{border-left-color:var(--warn)}
+  .change{border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:0 0 10px}
+  .change h3{font-size:15px; margin:0 0 6px; display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .change table td{font-size:13px; vertical-align:top}
+  code, pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px}
+  pre{background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px 10px;
+      overflow-x:auto; max-height:320px; margin:6px 0 0}
+  .key{word-break:break-all}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <header style="margin-bottom:18px">
+    <h1 style="margin:0">Configuração</h1>
+    <p class="muted" style="margin:2px 0 0">Configuração editorial: blogs, políticas, feeds e newsletters de pauta</p>
+  </header>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+
+  <div class="card">
+    <h2 style="font-size:17px">Blogs</h2>
+    <div class="scroll"><table>
+      <tr><th>Blog</th><th>Estado</th><th>Posts/dia</th><th></th></tr>
+      {% for b in blogs %}
+      <tr><td><strong>{{ b.name }}</strong> <span class="muted">{{ b.site_key }}</span></td>
+          <td>{% if b.enabled %}<span class="pill add">ligado</span>{% else %}<span class="pill">desligado</span>{% endif %}</td>
+          <td>{{ b.daily_target }}</td>
+          <td style="white-space:nowrap"><a class="mini" href="/dashboard/config/sites/{{ b.site_key }}">Editar</a>
+              · <a class="mini" href="/dashboard/config/feeds/{{ b.site_key }}">Feeds</a>
+              · <a class="mini" href="/dashboard/config/export/sites/{{ b.site_key }}.yaml">Exportar YAML</a></td></tr>
+      {% endfor %}
+    </table></div>
+    <p style="margin:12px 0 0"><a href="/dashboard/config/policies">Políticas editoriais</a>
+      <span class="muted">— regras comuns e de cada blog</span></p>
+    <p style="margin:6px 0 0"><a href="/dashboard/config/newsletters">Newsletters de pauta</a>
+      <span class="muted">— remetentes autorizados (D-094)</span></p>
+    <p style="margin:6px 0 0"><a href="/dashboard/config/sem-leitura">Sites sem leitura</a>
+      <span class="muted">— termos que proíbem robôs/IA (D-070/D-071)</span></p>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px">Reimportar do YAML</h2>
+    <p class="muted" style="margin-top:0">O banco é a fonte da verdade (D-104). O deploy só acrescenta blogs e feeds
+      novos; alterações e desligamentos feitos no YAML de <code>content-config/</code> só chegam à produção por aqui
+      (ou por <code>make reimport-apply</code>). Cada mudança fica na auditoria com o antes e o depois.</p>
+    {% if problem %}
+      <div class="notice bad">{{ problem }}</div>
+    {% elif not changes %}
+      <p><span class="pill add">em dia</span> O banco já está igual ao YAML.</p>
+    {% else %}
+      <p><strong>{{ changes|length }}</strong> mudança(s) do YAML para o banco.
+        {% if edited %}<span class="pill bad">{{ edited }} sobrescreve(m) edição feita no portal</span>{% endif %}</p>
+      {% for c in changes %}
+      <div class="change">
+        <h3><span class="pill {{ c.kind }}">{{ kinds[c.kind] }}</span> {{ entities[c.entity] }}
+          <span class="key"><code>{{ c.key }}</code></span>
+          {% if c.edited_in_portal %}<span class="pill bad">editado no portal depois da última importação</span>{% endif %}</h3>
+        {% if c.note %}<p class="muted" style="margin:0 0 6px; font-size:13px">{{ c.note }}</p>{% endif %}
+        {% if c.kind != 'add' %}
+        <div class="scroll"><table>
+          <tr><th>Campo</th><th>Banco (hoje)</th><th>YAML</th></tr>
+          {% for f in c.fields %}{% set pair = c.short(f) %}
+          <tr><td><code>{{ f }}</code></td><td>{{ pair[0] }}</td><td>{{ pair[1] }}</td></tr>
+          {% endfor %}
+        </table></div>
+        {% for name, diff in c.text_diffs() %}<pre>{{ diff }}</pre>{% endfor %}
+        {% endif %}
+      </div>
+      {% endfor %}
+      <form method="post" action="/dashboard/config/import"
+            onsubmit="return confirm('Aplicar as {{ changes|length }} mudança(s) do YAML no banco de produção?')">
+        <input type="hidden" name="fingerprint" value="{{ fingerprint }}">
+        <button class="btn" type="submit">Reimportar {{ changes|length }} mudança(s)</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px">Histórico</h2>
+    <p class="muted" style="margin-top:0">Importações, edições no portal e desfazer. «Desfazer» volta ao valor de antes
+      do registro — só se nada mudou depois dele.</p>
+    <div class="scroll"><table>
+      <tr><th>Quando (UTC)</th><th>Quem</th><th>O quê</th><th>Alvo</th><th>Campos</th><th></th></tr>
+      {% for h in history %}
+      <tr><td class="muted">{{ h.at.strftime('%d/%m %H:%M') }}</td><td>{{ h.actor }}</td>
+          <td>{{ actions.get(h.action, h.action) }}{% if h.kind and h.kind != 'update' %} ({{ kinds.get(h.kind, h.kind) }}){% endif %}
+              {% if h.via %}<span class="muted">via regras comuns</span>{% endif %}</td>
+          <td class="key"><code>{{ h.target }}</code></td>
+          <td class="muted" style="font-size:12px">{{ (h.fields or [])|join(', ') }}</td>
+          <td>{% if h.kind != 'add' and not h.via %}
+            <form method="post" action="/dashboard/config/history/{{ h.id }}/undo" style="margin:0"
+                  onsubmit="return confirm('Desfazer este registro em {{ h.target }}?')">
+              <button class="mini-btn" type="submit">Desfazer</button></form>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="6" class="muted">Sem registros.</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}

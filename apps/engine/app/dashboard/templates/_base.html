@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}{{ brand }}{% endblock %}</title>
+{% block head %}{% endblock %}
+<style>
+  :root{
+    --primary: {{ primary }};
+    --accent: {{ accent }};
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #15181d;
+    --muted: #5f6672;
+    --border: #e4e7ec;
+    --ok: #0f9d58;
+    --warn: #e8a13a;
+    --bad: #d63b3b;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#111418; --surface:#181c22; --text:#e8eaed; --muted:#9aa3af;
+      --border:#2a3038; color-scheme: dark;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text); line-height:1.6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+  }
+  img{max-width:100%}
+  a{color:var(--primary)}
+  @media (prefers-color-scheme: dark){ a{color:var(--accent)} }
+  .wrap{max-width:1180px; margin:0 auto; padding:24px 16px}
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:20px; margin-bottom:16px;
+  }
+  h1,h2,h3{line-height:1.25; margin:0 0 12px}
+  .muted{color:var(--muted)}
+  table{width:100%; border-collapse:collapse; font-size:14px}
+  th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border)}
+  th{color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase;
+     letter-spacing:.04em}
+  .scroll{overflow-x:auto}
+  .btn{
+    display:inline-block; background:var(--primary); color:#fff; border:0;
+    border-radius:10px; padding:13px 22px; font-size:16px; font-weight:600;
+    cursor:pointer; text-decoration:none;
+  }
+  .btn:hover{filter:brightness(1.08)}
+  /* E18.4a: menu único do portal */
+  .sb-nav{background:var(--surface); border-bottom:1px solid var(--border)}
+  .sb-nav .in{max-width:1180px; margin:0 auto; padding:8px 16px; display:flex; align-items:center;
+              gap:10px; flex-wrap:wrap}
+  .sb-nav .brand{font-weight:700; color:var(--text); text-decoration:none; margin-right:6px;
+                 white-space:nowrap}
+  .sb-nav .links{display:flex; gap:2px; overflow-x:auto; flex:1 1 auto; min-width:0;
+                 scrollbar-width:thin}
+  .sb-nav .links a{padding:6px 10px; border-radius:8px; font-size:14px; color:var(--muted);
+                   text-decoration:none; white-space:nowrap}
+  .sb-nav .links a:hover{background:var(--bg); color:var(--text)}
+  .sb-nav .links a[aria-current=page]{background:var(--bg); color:var(--text); font-weight:600;
+                                      box-shadow:inset 0 -2px 0 var(--primary)}
+  .sb-nav .me{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted);
+              white-space:nowrap}
+  .sb-nav .me a{color:var(--muted)}
+  .sb-nav .me button{border:1px solid var(--border); background:var(--surface); color:var(--text);
+                     border-radius:8px; padding:4px 10px; font-size:13px; cursor:pointer}
+  .sb-nav .role{border:1px solid var(--border); border-radius:99px; padding:0 7px; font-size:11px}
+  @media (max-width:640px){ .sb-nav .me .who{display:none} }
+</style>
+</head>
+<body>
+{% set sb_left = request.state.session_seconds_left if request is defined and request.state.session_seconds_left is defined else none %}
+{% if sb_left is not none %}
+<div id="sb-expired" role="alert" hidden
+     style="position:sticky;top:0;z-index:50;background:var(--bad);color:#fff;padding:12px 16px;font-weight:600">
+  A sessão do painel expirou: nada do que for enviado agora será aplicado.
+  <button type="button" onclick="location.reload()"
+          style="margin-left:8px;background:#fff;color:var(--bad);border:0;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer">
+    Recarregar e entrar de novo</button>
+</div>
+<script>
+(function () {
+  // Prazo relativo ao relógio do servidor (o do navegador pode estar errado); 60 s de margem.
+  var deadline = Date.now() + ({{ sb_left|int }} - 60) * 1000;
+  var banner = document.getElementById('sb-expired');
+  function expired() { return Date.now() >= deadline; }
+  function check() { if (expired()) { banner.hidden = false; } }
+  document.addEventListener('submit', function (e) {
+    if (expired()) { e.preventDefault(); banner.hidden = false; banner.scrollIntoView(); }
+  }, true);
+  document.addEventListener('visibilitychange', check);
+  setInterval(check, 30000);
+  check();
+})();
+</script>
+{% endif %}
+{% block nav %}
+{% set sb_user = request.state.panel_user if request is defined and request.state.panel_user is defined else none %}
+{% if sb_user %}
+{% set sb_path = request.url.path %}
+{% set sb_admin = request.state.panel_role == 'admin' %}
+{% set sb_items = [
+     ('/', 'Sala de controle', false),
+     ('/dashboard/review', 'Aprovações', false),
+     ('/dashboard/jobs', 'Jobs', false),
+     ('/dashboard/ideas', 'Pauta', false),
+     ('/dashboard/sites', 'Sites', false),
+     ('/dashboard/health', 'Saúde', false),
+     ('/dashboard/ai', 'Provedores de IA', true),
+     ('/dashboard/users', 'Usuários', true),
+     ('/dashboard/config', 'Configuração', true),
+     ('/dashboard/system', 'Sistema', true),
+     ('/dashboard/setup', 'Primeiros passos', true),
+   ] %}
+<nav class="sb-nav" aria-label="Menu do portal"><div class="in">
+  <a class="brand" href="/">{{ brand }}</a>
+  <div class="links">
+    {% for href, label, admin_only in sb_items if sb_admin or not admin_only %}
+      <a href="{{ href }}" {% if (href == '/' and sb_path == '/') or (href != '/' and sb_path.startswith(href)) %}aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="me">
+    <span class="who" title="{{ sb_user }}">{{ sb_user }}</span>
+    <span class="role">{{ request.state.panel_role }}</span>
+    <a href="/conta/senha" {% if sb_path.startswith('/conta/senha') %}aria-current="page"{% endif %}>Minha senha</a>
+    <form method="post" action="/logout" style="margin:0"><button type="submit">Sair</button></form>
+  </div>
+</div></nav>
+{% endif %}
+{% endblock %}
+{% block body %}{% endblock %}
+</body>
+</html>

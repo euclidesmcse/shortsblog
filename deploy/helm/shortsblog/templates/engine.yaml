@@ -1,0 +1,165 @@
+{{- $fn := include "sb.fullname" . -}}
+{{- $sec := include "sb.secretName" . -}}
+{{- $cfg := include "sb.fill" (list .Values (.Files.Get "files/config-template/sites/site.yaml")) | sha256sum | trunc 16 -}}
+# --- Migrações: um Job por revisão (o motor não tem trava para migrar em paralelo) ----------------
+# Aplica as migrações, cria o papel sb_app (só DML) e semeia a configuração do blog (/config).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $fn }}-migrate-{{ .Release.Revision }}
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 20
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        {{- include "sb.selector" (list . "migrate") | nindent 8 }}
+        {{- include "sb.engineClient" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      {{- include "sb.scheduling" . | nindent 6 }}
+      securityContext: {runAsUser: 10001, runAsGroup: 10001}
+      containers:
+        - name: migrate
+          image: {{ include "sb.image.engine" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "app.core.migrate"]
+          env:
+            - {name: ENVIRONMENT, value: production}
+            - name: SB_DB_ADMIN_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $sec }}, key: dbAdminPassword}}
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://sb_admin:$(SB_DB_ADMIN_PASSWORD)@{{ $fn }}-postgres:5432/sb"
+            - {name: SB_DB_APP_USER, value: sb_app}
+            - name: SB_DB_APP_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $sec }}, key: dbAppPassword}}
+          volumeMounts: [{name: config, mountPath: /config, readOnly: true}]
+          securityContext: {{- include "sb.restricted" . | nindent 12 }}
+          resources: {{- toYaml .Values.resources.migrate | nindent 12 }}
+      volumes:
+        {{- include "sb.configVolume" . | nindent 8 }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fn }}-media
+  labels: {{- include "sb.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [{{ .Values.persistence.mediaAccessMode }}]
+  {{- include "sb.storageClass" . | nindent 2 }}
+  resources: {requests: {storage: {{ .Values.persistence.media }}}}
+---
+# --- API e portal -----------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fn }}-api
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "sb.selector" (list . "api") | nindent 4 }}
+  ports: [{name: http, port: 8000, targetPort: 8000}]
+{{- $components := list
+      (dict "name" "api" "res" "api" "cmd" (list) "queues" "" "config" "all")
+      (dict "name" "worker" "res" "worker" "cmd" (list "python" "-m" "app.jobs.worker") "queues" "content,low,default" "config" "sem-leitura")
+      (dict "name" "worker-fast" "res" "workerFast" "cmd" (list "python" "-m" "app.jobs.worker") "queues" "fast,high" "config" "sem-leitura")
+      (dict "name" "scheduler" "res" "scheduler" "cmd" (list "python" "-m" "app.jobs.scheduler") "queues" "" "config" "none") }}
+{{- range $c := $components }}
+{{- $media := ne $c.name "scheduler" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fn }}-{{ $c.name }}
+  labels: {{- include "sb.labels" $ | nindent 4 }}
+spec:
+  replicas: 1
+  # Um pod por vez com o volume ReadWriteOnce e o agendador interno (nunca dois disparando).
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {{- include "sb.selector" (list $ $c.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sb.selector" (list $ $c.name) | nindent 8 }}
+        {{- include "sb.engineClient" $ | nindent 8 }}
+        {{- if $media }}
+        shortsblog.io/media: {{ $.Release.Name | quote }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ $cfg }}
+    spec:
+      {{- include "sb.scheduling" $ | nindent 6 }}
+      {{- if $media }}
+      {{- include "sb.mediaAffinity" $ | nindent 6 }}
+      {{- end }}
+      securityContext: {runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001}
+      initContainers:
+        {{- include "sb.waitMigrations" $ | nindent 8 }}
+      containers:
+        - name: {{ $c.name }}
+          image: {{ include "sb.image.engine" $ }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          {{- with $c.cmd }}
+          command: {{ toJson . }}
+          {{- end }}
+          env:
+            {{- include "sb.engineEnv" $ | nindent 12 }}
+            {{- with $c.queues }}
+            - {name: WORKER_QUEUES, value: {{ . | quote }}}
+            {{- end }}
+          {{- if eq $c.name "api" }}
+          ports: [{name: http, containerPort: 8000}]
+          readinessProbe:
+            httpGet: {path: /health/live, port: 8000}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health/live, port: 8000}
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 5
+          {{- else if eq $c.name "scheduler" }}
+          livenessProbe:
+            exec: {command: [python, -m, app.jobs.scheduler, --healthcheck]}
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 3
+          {{- else }}
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import socket,sys; from rq import Worker; from app.core.cache import rq_redis; sys.exit(0 if any(w.hostname == socket.gethostname() for w in Worker.all(connection=rq_redis)) else 1)"
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          {{- end }}
+          # Sem readOnlyRootFilesystem: o compose também não o usa no motor (bibliotecas gravam cache).
+          securityContext: {{- include "sb.restricted" $ | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+            {{- if $media }}
+            - {name: media, mountPath: /data/media}
+            {{- end }}
+            {{- if eq $c.config "all" }}
+            - {name: config, mountPath: /config, readOnly: true}
+            {{- else if eq $c.config "sem-leitura" }}
+            - {name: config, mountPath: /config/sem-leitura.yaml, subPath: sem-leitura.yaml, readOnly: true}
+            {{- end }}
+          resources: {{- toYaml (index $.Values.resources $c.res) | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 256Mi}
+        {{- if $media }}
+        - name: media
+          persistentVolumeClaim: {claimName: {{ $fn }}-media}
+        {{- end }}
+        {{- if ne $c.config "none" }}
+        {{- include "sb.configVolume" $ | nindent 8 }}
+        {{- end }}
+{{- end }}

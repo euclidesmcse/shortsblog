@@ -1,0 +1,88 @@
+{% extends "_base.html" %}
+{% block title %}{{ site.name }} — Configuração — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  .notice.warn{border-left-color:var(--warn)}
+  label.f{display:block; font-size:12px; color:var(--muted); margin:12px 0 3px}
+  input[type=text], input[type=number], textarea{font:inherit; font-size:15px; padding:8px 10px; width:100%;
+        border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text)}
+  textarea{min-height:110px; resize:vertical; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px}
+  .row{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .check{display:flex; gap:8px; align-items:center; font-size:14px; margin-top:12px}
+  .hint{font-size:12px; color:var(--muted); margin-top:3px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px}
+  dl{display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:0; font-size:13px}
+  dt{color:var(--muted)} dd{margin:0; word-break:break-all}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:900px">
+  <p style="margin:0 0 6px"><a href="/dashboard/config">← Configuração</a></p>
+  <header style="margin-bottom:18px">
+    <h1 style="margin:0">{{ site.name }} <span class="muted" style="font-size:16px">{{ site.site_key }}</span></h1>
+  </header>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+
+  <form method="post" action="/dashboard/config/sites/{{ site.site_key }}">
+  <input type="hidden" name="version" value="{{ version }}">
+  <div class="card">
+    <h2 style="font-size:17px">Operação</h2>
+    <label class="check"><input type="checkbox" name="enabled" value="true" {% if site.enabled %}checked{% endif %}>
+      <strong>Blog ligado</strong> <span class="muted">(desligado, não é planejado nem produzido)</span></label>
+    <div class="row">
+      <div><label class="f" for="daily_target">Posts por dia (0–5)</label>
+        <input type="number" id="daily_target" name="daily_target" min="0" max="5" required value="{{ site.daily_target }}"></div>
+      <div><label class="f" for="slot_offset_minutes">Deslocamento do horário (min, 0–59)</label>
+        <input type="number" id="slot_offset_minutes" name="slot_offset_minutes" min="0" max="59" required value="{{ site.slot_offset_minutes }}"></div>
+      <div><label class="f" for="min_sources">Fontes mínimas por artigo</label>
+        <input type="number" id="min_sources" name="min_sources" min="1" max="10" required value="{{ cfg.min_sources or 2 }}"></div>
+    </div>
+    <label class="f">Idiomas publicados</label>
+    <div style="display:flex; gap:14px; flex-wrap:wrap">
+      {% for lang in languages %}
+      <label class="check" style="margin:0"><input type="checkbox" name="languages" value="{{ lang }}"
+        {% if lang in site.languages %}checked{% endif %} {% if lang == site.language %}onclick="return false" title="idioma principal"{% endif %}>
+        {{ lang }}{% if lang == site.language %} <span class="muted">(principal)</span>{% endif %}</label>
+      {% endfor %}
+    </div>
+    <div class="hint">Ligar ou desligar um idioma também precisa do WordPress/Polylang do blog preparado.</div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px">Editorial</h2>
+    <label class="f" for="name">Nome</label>
+    <input type="text" id="name" name="name" required maxlength="120" value="{{ site.name }}">
+    <label class="f" for="description">Descrição <span class="muted">(entra nos prompts da triagem, da pesquisa e do resgate — premissa mundial, D-102)</span></label>
+    <textarea id="description" name="description" style="min-height:70px; font-family:inherit; font-size:15px">{{ cfg.description or '' }}</textarea>
+    <label class="f" for="categories">Categorias <span class="muted">(uma por linha)</span></label>
+    <textarea id="categories" name="categories">{{ (cfg.categories or [])|join('\n') }}</textarea>
+    <div class="hint">Categoria nova também precisa existir no WordPress do blog.</div>
+    <label class="check"><input type="checkbox" name="recipe_mode" value="true" {% if cfg.recipe_mode %}checked{% endif %}>
+      Modo receita <span class="muted">(estrutura de receita, seções fixas, busca sem filtro de data)</span></label>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px">Busca de reforço</h2>
+    <label class="check"><input type="checkbox" name="official_only" value="true" {% if search.official_only %}checked{% endif %}>
+      Só domínios oficiais <span class="muted">(governos, parlamentos, tribunais, universidades, organismos, revistas científicas) e os listados abaixo</span></label>
+    <label class="f" for="allow_domains">Domínios permitidos além dos oficiais <span class="muted">(um por linha)</span></label>
+    <textarea id="allow_domains" name="allow_domains">{{ (search.allow_domains or [])|join('\n') }}</textarea>
+  </div>
+
+  <p><button class="btn" type="submit">Gravar</button>
+     <span class="muted" style="font-size:13px">Validado como no deploy; fica no histórico com «Desfazer».</span></p>
+  </form>
+
+  <div class="card">
+    <h2 style="font-size:17px">Técnico <span class="muted" style="font-size:13px; font-weight:400">— só leitura</span></h2>
+    <dl>
+      {% for f in readonly %}<dt>{{ f }}</dt><dd><code>{{ site[f] if site[f] not in (none, '') else '—' }}</code></dd>{% endfor %}
+    </dl>
+    <p class="hint" style="margin-top:10px">Mudam pelo YAML (<code>content-config/sites/{{ site.site_key }}.yaml</code>) e reimportação:
+      mexer neles pode quebrar a publicação. <a href="/dashboard/config/export/sites/{{ site.site_key }}.yaml">Exportar YAML deste blog</a></p>
+  </div>
+</div>
+{% endblock %}

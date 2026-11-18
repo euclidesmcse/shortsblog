@@ -1,0 +1,88 @@
+{% extends "_base.html" %}
+{% block title %}Aprovações — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:5px 11px; font-size:13px; cursor:pointer; text-decoration:none}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px}
+  .notice.bad{border-left-color:var(--bad)}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <header style="display:flex; flex-wrap:wrap; gap:12px; align-items:baseline; justify-content:space-between; margin-bottom:18px">
+    <h1>Aprovações</h1>
+  </header>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+
+  <div class="card">
+    <h2>À espera de decisão ({{ waiting|length }})</h2>
+    {% if waiting %}
+    <form method="post" action="/dashboard/review/batch" id="batch-waiting">
+    <div class="scroll"><table>
+      <tr><th><input type="checkbox" aria-label="Selecionar todos" onclick="for (const c of document.querySelectorAll('#batch-waiting .pick')) c.checked = this.checked"></th><th>Job</th><th>Blog</th><th>Título</th><th>Nota</th><th>Fontes</th><th></th></tr>
+      {% for w in waiting %}
+      <tr>
+        <td><input class="pick" type="checkbox" name="ids" value="{{ w.id }}" aria-label="Selecionar #{{ w.id }}"></td>
+        <td>#{{ w.id }}</td><td>{{ w.site_key }}</td><td>{{ w.title or '—' }}</td>
+        <td>{{ (w.review_report or {}).get('score', '—') }}</td>
+        <td>{{ (w.review_report or {}).get('sources', '—') }}</td>
+        <td><a class="mini-btn" href="/dashboard/review/{{ w.id }}">Ler e decidir</a></td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    <p style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px">
+      <button class="mini-btn" name="action" value="approve" onclick="return confirm('Aprovar os artigos selecionados (4 idiomas cada)?')">Aprovar selecionados</button>
+      <button class="mini-btn" name="action" value="reject" onclick="return confirm('Rejeitar os artigos selecionados?')">Rejeitar selecionados</button>
+    </p>
+    </form>
+    {% else %}<p class="muted">Nada à espera.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Aprovados, sem publicar ({{ approved|length }})</h2>
+    {% if approved %}
+    <form method="post" action="/dashboard/review/batch" id="batch-approved">
+    <div class="scroll"><table>
+      <tr><th><input type="checkbox" aria-label="Selecionar todos" onclick="for (const c of document.querySelectorAll('#batch-approved .pick')) c.checked = this.checked"></th><th>Job</th><th>Blog</th><th>Título</th><th>Publica em</th><th>Rascunhos</th></tr>
+      {% for a in approved %}
+      <tr>
+        <td><input class="pick" type="checkbox" name="ids" value="{{ a.id }}" aria-label="Selecionar #{{ a.id }}"></td>
+        <td><a href="/dashboard/review/{{ a.id }}">#{{ a.id }}</a></td><td>{{ a.site_key }}</td>
+        <td>{{ a.title or '—' }}</td>
+        <td>{{ a.due_at_utc|when }}{% if publish_mode == 'live' and a.due_at_utc > now %} <span class="muted">(automático)</span>{% endif %}</td>
+        <td>{{ 'criados' if a.drafts else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    <p style="margin-top:12px">
+      <button class="mini-btn" name="action" value="publish" onclick="return confirm('{{ 'Publicar' if publish_mode == 'live' else 'Criar rascunhos de' }} os artigos selecionados no WordPress?{{ ' Os que ainda não chegaram ao horário são saltados (publicam sozinhos).' if publish_mode == 'live' else '' }}')">{{ 'Publicar selecionados' if publish_mode == 'live' else 'Criar rascunhos dos selecionados' }}</button>
+    </p>
+    </form>
+    {% else %}<p class="muted">Nenhum aprovado à espera.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Últimas decisões</h2>
+    {% if decided %}
+    <div class="scroll"><table>
+      <tr><th>Job</th><th>Blog</th><th>Título</th><th>Decisão</th><th>Quem</th><th>Quando</th></tr>
+      {% for d in decided %}
+      <tr>
+        <td><a href="/dashboard/review/{{ d.job_id }}">#{{ d.job_id }}</a></td><td>{{ d.site_key }}</td>
+        <td>{{ d.title or '—' }}</td>
+        <td><span class="pill {{ 'ok' if d.decision == 'approved' else 'bad' }}">{{ 'aprovado' if d.decision == 'approved' else 'rejeitado' }}</span></td>
+        <td>{{ d.decided_by }}</td><td>{{ d.decided_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    {% else %}<p class="muted">Ainda sem decisões.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

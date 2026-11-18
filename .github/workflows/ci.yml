@@ -1,0 +1,76 @@
+# CI do ShortsBlog (E16.3): lint, tipos e testes do motor e do gateway, segredos (gitleaks) e o Helm chart.
+# Só corre o que o `make check` já corre localmente. Sem segredos e sem acesso à produção:
+# os testes usam chaves fictícias e redes sem saída (ver compose.test.yml).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    name: Motor (ruff, mypy, pytest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -C apps/engine check
+
+  ai-gateway:
+    name: AI Gateway (ruff, mypy, pytest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -C apps/ai-gateway check
+
+  gitleaks:
+    name: Segredos (histórico completo)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks 8.18.4
+        run: |
+          curl -sSfL -o gitleaks.tgz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz
+          tar -xzf gitleaks.tgz gitleaks
+          ./gitleaks detect --source . --no-banner --redact
+
+  helm:
+    name: Helm chart (lint e schemas)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: helm lint, valores obrigatórios e kubeconform
+        run: |
+          set -euo pipefail
+          c=deploy/helm/shortsblog
+          args="--set panel.host=p.exemplo.test --set site.host=b.exemplo.test --set admin.email=a@exemplo.test"
+          helm lint "$c" $args
+          # Sem os obrigatórios ou com identificador inválido o render tem de falhar.
+          ! helm template sb "$c" >/dev/null 2>&1
+          ! helm template sb "$c" $args --set site.key=Meu_Blog >/dev/null 2>&1
+          # R71: hífen no identificador vira `_` no nome da credencial que o motor lê.
+          helm template sb "$c" $args --set site.key=meu-blog | grep -q "name: SB_WP_MEU_BLOG_APP_PASSWORD"
+          curl -sSfL -o kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz
+          tar -xzf kc.tgz kubeconform
+          helm template sb "$c" -n sb $args | ./kubeconform -strict -summary -kubernetes-version 1.31.0 -
+          helm template sb "$c" -n sb $args --set networkPolicy.enabled=false --set ingress.enabled=false \
+            --set persistence.mediaAccessMode=ReadWriteMany --set existingSecret=meu-secret \
+            | ./kubeconform -strict -summary -kubernetes-version 1.31.0 -

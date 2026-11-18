@@ -1,0 +1,8 @@
+{
+  "categories": [
+    {"slug": "noticias",  "pt": "Notícias",                 "en": "News",                    "es": "Noticias",                 "zh": "新闻"},
+    {"slug": "ia",        "pt": "Inteligência Artificial",  "en": "Artificial Intelligence", "es": "Inteligencia Artificial",  "zh": "人工智能"},
+    {"slug": "seguranca", "pt": "Segurança",                "en": "Security",                "es": "Seguridad",                "zh": "安全"},
+    {"slug": "guias",     "pt": "Guias",                    "en": "Guides",                  "es": "Guías",                    "zh": "指南"}
+  ]
+}

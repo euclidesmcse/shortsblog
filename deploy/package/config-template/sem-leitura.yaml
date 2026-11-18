@@ -1,0 +1,190 @@
+# ShortsBlog — sítios que o motor NÃO lê para a IA (D-070, E14.5j).
+#
+# Os termos de uso destes sítios proíbem robôs, raspagem, uso do conteúdo por IA ou o uso
+# comercial. O feed deles pode continuar ativo, mas só como PAUTA: o motor descobre o assunto
+# (título e ligação), não baixa a página nem a entrega ao modelo, e os factos e as citações
+# vêm de outras fontes. Vale para o domínio e todos os subdomínios.
+#
+# Além desta lista, o motor não lê a página de nenhum sítio cujo robots.txt bloqueie os robôs
+# de IA a quem o texto é entregue (ClaudeBot, Claude-User, anthropic-ai, GPTBot, ChatGPT-User).
+#
+# Origem: docs/reviews/E14-termos-feeds-2026-10-20.md (leitura dos termos; não é parecer
+# jurídico). Para tirar um sítio daqui é preciso uma licença ou uma leitura nova dos termos.
+#
+# `rss: false` (opção 2 da D-OPEN-14, D-071): os termos limitam o próprio RSS, ou todo o conteúdo,
+# a uso pessoal ou não comercial, ou pedem permissão para qualquer uso comercial. Nem como pauta:
+# o feed sai de content-config/feeds/ e scripts/validate_feeds.py recusa-o como candidato.
+# Quem só proíbe robôs, raspagem ou IA continua como pauta (sem a marca).
+sites:
+# --- Oficiais com licença não comercial
+- {domain: cert.br, rss: false, reason: "uso comercial proibido (CC BY-NC-ND)", terms: "https://www2.cert.br/privacy/"}
+- {domain: agencia.fiocruz.br, rss: false, reason: "licença não comercial (CC BY-NC-ND)", terms: "https://agencia.fiocruz.br/"}
+# --- Fornecedores: robôs e raspagem proibidos
+- {domain: aws.amazon.com, reason: "proíbe «data mining, robots» e uso comercial", terms: "https://aws.amazon.com/terms/"}
+- {domain: nvidia.com, rss: false, reason: "proíbe robôs e raspagem; uso pessoal", terms: "https://www.nvidia.com/en-us/about-nvidia/terms-of-service/"}
+- {domain: apple.com, reason: "proíbe «page-scrape, robot, spider»", terms: "https://www.apple.com/legal/internet-services/terms/site.html"}
+- {domain: docker.com, reason: "proíbe acesso por meios automatizados", terms: "https://www.docker.com/legal/docker-terms-use/"}
+- {domain: elastic.co, reason: "proíbe raspagem, robôs e obras derivadas", terms: "https://www.elastic.co/legal/terms-of-use"}
+- {domain: grafana.com, reason: "proíbe «scrape, index, data mine, or crawl»", terms: "https://grafana.com/legal/terms/"}
+- {domain: redhat.com, reason: "proíbe robôs e aplicações de recuperação", terms: "https://www.redhat.com/en/about/terms-use"}
+- {domain: kingarthurbaking.com, reason: "proíbe «scrape or crawl»", terms: "https://www.kingarthurbaking.com/policies/terms-of-use"}
+- {domain: substack.com, reason: "proíbe «crawls, scrapes, or spiders» (Import AI)", terms: "https://substack.com/tos"}
+# --- Veículos internacionais
+- {domain: bbc.com, rss: false, reason: "uso comercial do RSS e uso por IA exigem permissão", terms: "https://www.bbc.co.uk/usingthebbc/terms/can-i-use-bbc-content-for-my-business/"}
+- {domain: bbc.co.uk, rss: false, reason: "uso comercial do RSS e uso por IA exigem permissão", terms: "https://www.bbc.co.uk/usingthebbc/terms/can-i-use-bbc-content-for-my-business/"}
+- {domain: bbci.co.uk, rss: false, reason: "servidor dos feeds da BBC: uso comercial do RSS exige permissão", terms: "https://www.bbc.co.uk/usingthebbc/terms/can-i-use-bbc-content-for-my-business/"}
+- {domain: theguardian.com, rss: false, reason: "RSS só pessoal e não comercial; proíbe uso por IA", terms: "https://www.theguardian.com/help/terms-of-service"}
+- {domain: npr.org, rss: false, reason: "só uso pessoal e não comercial", terms: "https://www.npr.org/about-npr/179876898/terms-of-use"}
+- {domain: ft.com, rss: false, reason: "RSS sem uso comercial; proíbe IA e raspagem", terms: "https://help.ft.com/legal-privacy/terms-and-conditions/"}
+- {domain: economist.com, rss: false, reason: "uso pessoal; proíbe robôs e ML", terms: "https://www.economistgroup.com/terms-of-use"}
+- {domain: nytimes.com, rss: false, reason: "RSS só pessoal ou não comercial (D-065)", terms: "https://help.nytimes.com/hc/en-us/articles/115014893428-Terms-of-Service"}
+- {domain: arstechnica.com, rss: false, reason: "Condé Nast: proíbe «grounding (RAG)» e raspagem", terms: "https://www.condenast.com/user-agreement"}
+- {domain: wired.com, rss: false, reason: "Condé Nast: proíbe «grounding (RAG)» e raspagem", terms: "https://www.condenast.com/user-agreement"}
+- {domain: bonappetit.com, rss: false, reason: "Condé Nast: proíbe «grounding (RAG)»; uso pessoal", terms: "https://www.condenast.com/user-agreement"}
+- {domain: epicurious.com, rss: false, reason: "Condé Nast: proíbe «grounding (RAG)»; uso pessoal", terms: "https://www.condenast.com/user-agreement"}
+- {domain: theverge.com, rss: false, reason: "Vox Media: proíbe robôs e uso comercial", terms: "https://www.voxmedia.com/terms-of-use/"}
+- {domain: vox.com, rss: false, reason: "Vox Media: proíbe robôs e uso comercial", terms: "https://www.voxmedia.com/terms-of-use/"}
+- {domain: eater.com, rss: false, reason: "Vox Media: proíbe robôs e uso comercial", terms: "https://www.voxmedia.com/terms-of-use/"}
+- {domain: techcrunch.com, rss: false, reason: "uso pessoal; proíbe raspagem", terms: "https://techcrunch.com/terms-of-service/"}
+- {domain: technologyreview.com, rss: false, reason: "proíbe raspagem, uso comercial e uso por IA", terms: "https://www.technologyreview.com/terms-of-service/"}
+- {domain: bleepingcomputer.com, rss: false, reason: "não pode ser guardado em computador para uso comercial", terms: "https://www.bleepingcomputer.com/terms-of-use/"}
+- {domain: statnews.com, rss: false, reason: "uso pessoal; proíbe raspagem", terms: "https://www.statnews.com/terms-conditions/"}
+- {domain: medicalxpress.com, reason: "Science X: uso pessoal; «No AI Training»", terms: "https://sciencex.com/help/terms/"}
+- {domain: nature.com, rss: false, reason: "reserva de TDM e de uso por IA; uso pessoal", terms: "https://www.nature.com/info/terms-and-conditions"}
+- {domain: jamanetwork.com, reason: "reserva de TDM e de treino de IA", terms: "https://www.ama-assn.org/about/terms-use"}
+# --- Culinária
+- {domain: saveur.com, reason: "proíbe robôs e uso por IA", terms: "https://www.saveur.com/terms/"}
+- {domain: thekitchn.com, reason: "proíbe «copy or scrape» sem permissão", terms: "https://www.apartmenttherapy.com/about/terms"}
+- {domain: bbcgoodfood.com, rss: false, reason: "RSS proibido em atividade comercial", terms: "https://www.immediate.co.uk/terms-and-conditions/"}
+- {domain: recipetineats.com, rss: false, reason: "uso comercial proibido sem permissão", terms: "https://www.recipetineats.com/policy-use-of-recipes-images/"}
+# --- Veículos brasileiros
+- {domain: valorinveste.globo.com, reason: "Editora Globo: proíbe mineração e geração de conteúdo por IA", terms: "https://valorinveste.globo.com/termos-de-uso/"}
+- {domain: casavogue.globo.com, reason: "Editora Globo: proíbe mineração e geração de conteúdo por IA", terms: "https://casavogue.globo.com/termos-de-uso/"}
+- {domain: agencialupa.org, rss: false, reason: "proíbe «scraping»; uso pessoal", terms: "https://www.agencialupa.org/termos-de-uso/"}
+- {domain: lupa.uol.com.br, rss: false, reason: "proíbe «scraping»; uso pessoal", terms: "https://www.agencialupa.org/termos-de-uso/"}
+- {domain: drauziovarella.uol.com.br, rss: false, reason: "licença não comercial", terms: "https://drauziovarella.uol.com.br/termos-de-uso/"}
+- {domain: estadao.com.br, reason: "raspagem e treino de IA vedados", terms: "https://www.estadao.com.br/termo-de-uso"}
+- {domain: exame.com, reason: "proíbe «scrapping» e coleta automatizada", terms: "https://exame.com/institucional/termos-de-uso/"}
+- {domain: investnews.com.br, reason: "proíbe mineração de textos e uso por IA", terms: "https://investnews.com.br/termos-de-uso/"}
+- {domain: metropoles.com, reason: "proíbe robôs e raspadores", terms: "https://www.metropoles.com/termos-de-uso"}
+- {domain: gazetadopovo.com.br, reason: "proíbe robôs, spiders e mineração", terms: "https://www.gazetadopovo.com.br/termos-de-uso/"}
+- {domain: jota.info, rss: false, reason: "CC BY-NC-ND e uso por IA proibido", terms: "https://portal.jota.info/termos-de-uso"}
+- {domain: aosfatos.org, reason: "proíbe coleta automatizada e «scraping»", terms: "https://www.aosfatos.org/termos-de-uso/"}
+- {domain: guiadacozinha.com.br, reason: "proíbe guardar o conteúdo e serviço concorrente", terms: "https://guiadacozinha.com.br/termos-de-uso/"}
+# --- Lista de fontes avaliada em 2026-10-20 (docs/reviews/E14-lista-fontes-2026-10-20.md)
+- {domain: nbcnews.com, rss: false, reason: "RSS só para uso pessoal e não comercial", terms: "https://www.nbcnews.com/id/wbna11048058"}
+- {domain: zdnet.com, rss: false, reason: "Ziff Davis: proíbe robôs e uso do texto por IA; uso não comercial", terms: "https://www.ziffdavis.com/terms-of-use"}
+- {domain: cnet.com, rss: false, reason: "Ziff Davis: proíbe robôs e uso do texto por IA; uso não comercial", terms: "https://www.ziffdavis.com/terms-of-use"}
+- {domain: mashable.com, rss: false, reason: "Ziff Davis: proíbe robôs e uso do texto por IA; uso não comercial", terms: "https://www.ziffdavis.com/terms-of-use"}
+- {domain: france24.com, reason: "proíbe extração automática; reserva de TDM e de IA", terms: "https://www.francemm.com/en/legal-notice"}
+- {domain: aljazeera.com, rss: false, reason: "proíbe mineração e raspagem; uso pessoal", terms: "https://www.aljazeera.com/terms-and-conditions"}
+- {domain: euronews.com, rss: false, reason: "uso pessoal; exploração comercial só com permissão", terms: "https://www.euronews.com/terms-and-conditions"}
+- {domain: abcnews.go.com, reason: "Disney: proíbe robôs e uso por IA", terms: "https://disneytermsofuse.com/english/"}
+- {domain: cbsnews.com, rss: false, reason: "Paramount: proíbe raspagem; uso comercial com permissão", terms: "https://legal.paramount.com/us/en/cbsi/terms-of-use"}
+- {domain: pbs.org, rss: false, reason: "proíbe explorar a informação com fins comerciais", terms: "https://www.pbs.org/about/terms-use/"}
+- {domain: thehill.com, reason: "Nexstar: proíbe raspagem e uso por IA (termos do grupo)", terms: "https://www.nexstar.tv/terms-of-use/"}
+- {domain: foreignpolicy.com, rss: false, reason: "uso pessoal e não comercial", terms: "https://foreignpolicy.com/termsofuse/"}
+- {domain: seekingalpha.com, rss: false, reason: "uso pessoal; proíbe robôs", terms: "https://about.seekingalpha.com/terms"}
+- {domain: fortune.com, rss: false, reason: "proíbe raspagem e redistribuição comercial do RSS", terms: "https://fortune.com/terms-of-use/"}
+- {domain: forbes.com, rss: false, reason: "proíbe robôs e raspagem; uso pessoal", terms: "https://www.forbes.com/terms-and-conditions"}
+- {domain: engadget.com, rss: false, reason: "Static Media: uso pessoal e não comercial", terms: "https://www.static.com/terms"}
+- {domain: gizmodo.com, rss: false, reason: "uso pessoal; proíbe robôs e raspadores", terms: "https://gizmodo.com/terms-of-service"}
+- {domain: analyticsindiamag.com, rss: false, reason: "uso pessoal; proíbe raspagem", terms: "https://analyticsindiamag.com/terms"}
+- {domain: machinelearningmastery.com, rss: false, reason: "proíbe uso comercial e robôs", terms: "https://www.guidingtechmedia.com/terms-of-use/"}
+- {domain: news.ycombinator.com, rss: false, reason: "proíbe uso comercial e raspagem do site", terms: "https://www.ycombinator.com/legal/"}
+- {domain: stackoverflow.blog, rss: false, reason: "cópia além do uso pessoal proibida (termos da rede Stack Overflow)", terms: "https://stackoverflow.com/legal/terms-of-service/public"}
+- {domain: fossbytes.com, reason: "proíbe obras derivadas sem permissão escrita", terms: "https://fossbytes.com/terms-of-service/"}
+- {domain: linuxjournal.com, reason: "Slashdot Media: uso e modificação só com licença escrita", terms: "https://slashdotmedia.com/terms-of-use/"}
+- {domain: phys.org, reason: "Science X: uso pessoal; «No AI Training» (o RSS é livre com crédito)", terms: "https://sciencex.com/help/terms/"}
+- {domain: sciencenews.org, rss: false, reason: "uso pessoal; proíbe robôs", terms: "https://www.sciencenews.org/terms-of-service"}
+- {domain: esa.int, rss: false, reason: "conteúdo para uso pessoal e não comercial", terms: "https://www.esa.int/Services/Terms_and_conditions"}
+- {domain: who.int, rss: false, reason: "uso não comercial; o resto exige autorização escrita", terms: "https://www.who.int/about/policies/publishing/copyright"}
+- {domain: canada.ca, reason: "reprodução comercial exige permissão escrita (não comercial é livre); feed fica só como pauta (D-102, 10/11)", terms: "https://www.canada.ca/en/transparency/terms.html"}
+- {domain: africanews.com, rss: false, reason: "grupo Euronews: todo o conteúdo limitado a uso pessoal e não comercial; exploração comercial exige permissão escrita (lido em 10/11, D-102)", terms: "https://www.africanews.com/terms-and-conditions/"}
+- {domain: euronews.com, rss: false, reason: "mesmos termos da Africanews (grupo Euronews): uso pessoal e não comercial", terms: "https://www.euronews.com/terms-and-conditions"}
+- {domain: fao.org, reason: "uso permitido só em produtos/serviços não comerciais com crédito; feed fica só como pauta (reteste 11/11, D-102)", terms: "https://www.fao.org/contact-us/terms/en/"}
+- {domain: lanacion.com.ar, rss: false, reason: "todo o conteúdo limitado a uso estritamente pessoal; fins comerciais «terminantemente» proibidos (§9, lido em 11/11)", terms: "https://www.contacto.lanacion.com.ar/tyc"}
+- {domain: coindesk.com, rss: false, reason: "uso pessoal; proíbe robôs e raspadores", terms: "https://www.coindesk.com/terms"}
+- {domain: cointelegraph.com, reason: "proíbe raspagem e uso por IA", terms: "https://cointelegraph.com/terms-and-privacy"}
+- {domain: decrypt.co, reason: "proíbe coleta automatizada", terms: "https://decrypt.co/terms-of-service"}
+- {domain: cryptoslate.com, rss: false, reason: "uso pessoal; proíbe raspagem", terms: "https://cryptoslate.com/terms/"}
+- {domain: u.today, rss: false, reason: "uso pessoal; robots.txt com ai-input=no", terms: "https://u.today/terms-and-conditions"}
+- {domain: cryptonews.com, rss: false, reason: "uso comercial exige permissão escrita", terms: "https://cryptonews.com/terms-and-conditions/"}
+# --- awesome-rss-feeds, triagem dos termos em 2026-10-21 (docs/reviews/E14-awesome-rss-termos-2026-10-21.md)
+- {domain: jetbrains.com, rss: false, reason: "conteúdo só para uso não comercial; proíbe robôs e mineração", terms: "https://www.jetbrains.com/legal/docs/company/useterms/"}
+- {domain: thehindu.com, rss: false, reason: "uso pessoal, não comercial; proíbe raspagem e treino de IA", terms: "https://www.thehindu.com/termsofuse/"}
+- {domain: dailymaverick.co.za, rss: false, reason: "só uso pessoal", terms: "https://www.dailymaverick.co.za/terms-and-conditions/"}
+- {domain: eldiario.es, rss: false, reason: "CC BY-NC: exceção expressa aos usos comerciais", terms: "https://www.eldiario.es/aviso-legal-eldiario-es/"}
+- {domain: elconfidencial.com, rss: false, reason: "uso comercial só com autorização escrita", terms: "https://www.elconfidencial.com/politicas-de-privacidad/condiciones/"}
+- {domain: expansion.com, rss: false, reason: "uso comercial proibido; política de mineração proíbe bots", terms: "https://www.expansion.com/corporativo/terminos-condiciones-uso.html"}
+- {domain: e00-expansion.uecdn.es, rss: false, reason: "servidor do feed do Expansión (mesmos termos)", terms: "https://www.expansion.com/corporativo/terminos-condiciones-uso.html"}
+- {domain: thejournal.ie, rss: false, reason: "uso pessoal, não comercial; proíbe robôs", terms: "https://www.thejournal.ie/terms/"}
+- {domain: indiatimes.com, rss: false, reason: "Times Internet (ET, TOI): uso pessoal, não comercial; proíbe resumo e derivados por IA", terms: "https://www.indiatimes.com/termsandcondition"}
+- {domain: cnbc.com, rss: false, reason: "termos Versant: uso pessoal e não comercial", terms: "https://www.versantmedia.com/terms"}
+- {domain: gitlab.com, reason: "proíbe recuperar, indexar, minerar ou raspar o sítio", terms: "https://handbook.gitlab.com/handbook/legal/policies/website-terms-of-use/"}
+- {domain: moneyweb.co.za, reason: "proíbe robôs e aplicações de recuperação", terms: "https://www.moneyweb.co.za/moneyweb-company-pages/terms-of-use/"}
+# --- Culinária, leitura de 2026-10-24 (docs/reviews/E14-termos-culinaria-lista-2026-10-24.md)
+- {domain: tastingtable.com, rss: false, reason: "Static Media: uso pessoal e não comercial", terms: "https://www.static.com/terms"}
+- {domain: thepioneerwoman.com, rss: false, reason: "Hearst: uso pessoal e não comercial; proíbe robôs e «grounding (RAG)»", terms: "https://www.hearst.com/-/us-magazines-terms-of-use"}
+- {domain: 101cookbooks.com, rss: false, reason: "uso pessoal e não comercial", terms: "https://www.101cookbooks.com/useragreement.html"}
+- {domain: cafedelites.com, rss: false, reason: "uso comercial sem consentimento escrito proibido", terms: "https://cafedelites.com/copyright/"}
+- {domain: ambitiouskitchen.com, rss: false, reason: "uso pessoal e não comercial; proíbe conteúdo derivado", terms: "https://www.ambitiouskitchen.com/privacy-policy/"}
+- {domain: downshiftology.com, rss: false, reason: "uso pessoal e não comercial; proíbe IA e raspagem", terms: "https://downshiftology.com/terms-use/"}
+- {domain: saboresdacidade.com, rss: false, reason: "texto e imagens não podem ser usados por terceiros para fins comerciais", terms: "https://saboresdacidade.com/termos-de-uso/"}
+# --- Sítios de receitas, leitura de 2026-10-24 (docs/reviews/E14-receita-fase0-2026-10-24.md)
+- {domain: tudogostoso.com.br, rss: false, reason: "Webedia: uso comercial não autorizado e cópia de textos e imagens vedados", terms: "https://www.tudogostoso.com.br/termos-de-uso"}
+- {domain: receitasnestle.com.br, rss: false, reason: "Nestlé: uso comercial do conteúdo exige permissão", terms: "https://www.receitasnestle.com.br/termos-e-condicoes"}
+- {domain: tudoreceitas.com, rss: false, reason: "sem licença de uso; reprodução, transformação e exploração exigem autorização", terms: "https://www.tudoreceitas.com/index/terminosycondiciones"}
+- {domain: escoladedoce.com, rss: false, reason: "redistribuição comercial e reprodução proibidas", terms: "https://escoladedoce.com/termos-e-condicoes/"}
+# --- Sítios de receitas lidos nos ensaios do modo receita, leitura de 2026-10-24 (docs/reviews/E14-termos-receitas-fontes-2026-10-24.md)
+# Só robôs, raspagem ou IA proibidos: ficam como pauta (sem `rss: false`).
+- {domain: comidinhasdochef.com, reason: "proíbe acesso automático e «web scraping»", terms: "https://comidinhasdochef.com/termos-de-uso/"}
+- {domain: chefgostoso.com, reason: "proíbe scraping e coleta automatizada de dados", terms: "https://www.chefgostoso.com/termos.php"}
+# Uso pessoal e não comercial, ou uso comercial dependente de permissão: `rss: false`.
+- {domain: cozinhasimples.com.br, rss: false, reason: "licença só para visualização pessoal e não comercial", terms: "https://cozinhasimples.com.br/termos-de-uso"}
+- {domain: receitasprofissionais.com.br, rss: false, reason: "licença só para visualização pessoal e não comercial", terms: "https://receitasprofissionais.com.br/termos-de-uso/"}
+- {domain: chefnacozinha.com.br, rss: false, reason: "proíbe scraping e o uso comercial das receitas sem autorização", terms: "https://www.chefnacozinha.com.br/termos-e-privacidade"}
+- {domain: cozinha365.com.br, rss: false, reason: "acesso só para fins pessoais e não comerciais", terms: "https://cozinha365.com.br/termos-de-uso/"}
+- {domain: descomplicandoreceitas.com.br, rss: false, reason: "uso pessoal e não comercial; proíbe obras derivadas", terms: "https://descomplicandoreceitas.com.br/termos-de-uso/"}
+- {domain: gzrecipes.com, rss: false, reason: "Mondadori: só uso pessoal; proíbe extração para treino de IA", terms: "https://www.mondadorigroup.com/legal-notice"}
+- {domain: giallozafferano.com.br, rss: false, reason: "Mondadori: só uso pessoal; proíbe extração para treino de IA", terms: "https://www.mondadorigroup.com/legal-notice"}
+- {domain: minhasreceitinhas.com.br, rss: false, reason: "cópia proibida; só impressão para uso pessoal", terms: "https://minhasreceitinhas.com.br/termos-privacidade/"}
+- {domain: mundoreceitas.com, rss: false, reason: "proíbe robôs e scraping; uso comercial exige autorização", terms: "https://www.mundoreceitas.com/termos-de-uso/"}
+- {domain: receitacomfe.com.br, rss: false, reason: "uso comercial sem autorização proibido (limítrofe)", terms: "https://receitacomfe.com.br/termos-de-uso/"}
+- {domain: receitatodahora.com.br, rss: false, reason: "conteúdo só para uso pessoal e não comercial", terms: "https://receitatodahora.com.br/termos-e-condicoes-2/"}
+- {domain: receitinhasdemae.com.br, rss: false, reason: "visualização pessoal e não comercial; qualquer fim comercial proibido", terms: "https://receitinhasdemae.com.br/termos-de-uso/"}
+# --- Segunda leva dos ensaios do modo receita, leitura de 2026-10-24 (docs/reviews/E14-termos-receitas-fontes-2026-10-24.md)
+- {domain: cozinhadalbo.com.br, rss: false, reason: "visualização pessoal e não comercial; qualquer fim comercial proibido", terms: "https://cozinhadalbo.com.br/termos-de-uso/"}
+- {domain: foodandroad.com, rss: false, reason: "conteúdo só para uso pessoal e não comercial", terms: "https://foodandroad.com/site-policies/"}
+- {domain: kitchenaid.pt, rss: false, reason: "uso comercial do site exige licença", terms: "https://www.kitchenaid.pt/termos-da-loja-online/termos-e-condicoes"}
+# --- Terceira leva: domínios do 6.º ensaio, leitura de 2026-10-24 (docs/reviews/E14-termos-receitas-fontes-2026-10-24.md)
+- {domain: blognutricaointeligente.com.br, reason: "proíbe «bots ou scripts automatizados para acessar o site»", terms: "https://blognutricaointeligente.com.br/termos-de-uso/"}
+- {domain: petitchef.com, rss: false, reason: "proíbe extração e reutilização do conteúdo das bases de dados; uso comercial proibido", terms: "https://pt.petitchef.com/tac"}
+# Quarta leva de receitas (E14.5f, 2026-10-26): termos dos 5 feeds propostos para a Culinária.
+- {domain: pinchofyum.com, rss: false, reason: "uso pessoal; proíbe uso comercial, raspagem e, expressamente, uso por IA («No Artificial Intelligence»)", terms: "https://pinchofyum.com/terms-of-service"}
+- {domain: paulinacocina.net, rss: false, reason: "aviso legal proíbe reprodução/distribuição com fins comerciais sem autorização e o uso comercial dos conteúdos", terms: "https://www.paulinacocina.net/aviso-legal"}
+- {domain: thewoksoflife.com, reason: "sem termos no site; robots.txt exclui robôs de IA (GPTBot, CCBot, Google-Extended, anthropic-ai, Claude-Web) e o servidor dá 403: segue só como pauta"}
+# Releitura de 2026-10-26 (pendências da D-081): Superkoch decidido pelo Euclides.
+- {domain: superkoch.com.br, rss: false, reason: "termos vedam «utilização do serviço para finalidades comerciais, publicitárias» com sanção pela Lei 9.610/1998 (limítrofe: decisão do Euclides em 26/10)", terms: "https://superkoch.com.br/termos-de-uso"}
+# Relatório semanal de 2026-10-27 (D-082): domínios novos da receita do job 105 (26/10).
+- {domain: lovefoodfeed.com, rss: false, reason: "termos limitam a «personal, informational, and noncommercial purposes only», exigem «express written consent» para uso comercial e proíbem «data mining, robots, or similar data gathering and extraction tools»", terms: "https://lovefoodfeed.com/terms-and-conditions"}
+# Relatório semanal de 2026-11-03 (D-082): 12 vermelhos dos 14 domínios novos
+# (docs/reviews/E14-dominios-receitas-2026-11-03.md). Todos pela cláusula pessoal/não
+# comercial ou exigência de autorização — nenhum robots.txt bloqueia robôs de IA.
+- {domain: airfryerfaztudo.com, rss: false, reason: "«visualização transitória pessoal e não comercial»; proíbe finalidade comercial", terms: "https://airfryerfaztudo.com/termos-e-condicoes/"}
+- {domain: amoreninha.com.br, rss: false, reason: "«visualização transitória pessoal e não comercial»; proíbe finalidade comercial", terms: "https://amoreninha.com.br/termos-de-uso/"}
+- {domain: anamariabrogui.com.br, rss: false, reason: "reprodução «expressamente proibida» salvo autorização por escrito (§5 da privacidade)", terms: "https://anamariabrogui.com.br/privacidade"}
+- {domain: canalcozinha.com.br, rss: false, reason: "«uso pessoal e não comercial»; extração em massa exige autorização (robots liberal a IA; candidato a pedido de licença)", terms: "https://canalcozinha.com.br/termos-de-uso"}
+- {domain: chefinhanatural.com.br, rss: false, reason: "«visualização pessoal, transitória e não comercial»; veda fins comerciais", terms: "https://chefinhanatural.com.br/termos-de-uso/"}
+- {domain: cucachef.com.br, rss: false, reason: "uso pessoal/não comercial; proíbe mineração de dados e coleta automatizada", terms: "https://cucachef.com.br/termos/"}
+- {domain: euvoucomerisso.com.br, rss: false, reason: "uso comercial e reprodução exigem permissão (contato fácil; candidato a pedido de licença)", terms: "https://euvoucomerisso.com.br/termos-uso.php"}
+- {domain: malasepanelas.com, rss: false, reason: "proibida reprodução «com ou sem fins lucrativos» sem autorização prévia", terms: "https://malasepanelas.com/direitos-autoraiscopyright/"}
+- {domain: nutrium.com, rss: false, reason: "elementos do site de propriedade exclusiva; uso comercial «expressly prohibited» (cl. 4.2)", terms: "https://nutrium.com/en/terms_and_conditions/professionals"}
+- {domain: recetasmexas.com, rss: false, reason: "proíbe explorar comercialmente sem autorização escrita e scraping (§6; robots convida IA, termos prevalecem)", terms: "https://recetasmexas.com/terminos"}
+- {domain: tudodelicious.com, rss: false, reason: "licença «apenas para visualização pessoal e não comercial»", terms: "https://tudodelicious.com/termos-de-uso/"}
+- {domain: xreceitas.com.br, rss: false, reason: "uso pessoal; «proibida a reprodução total ou parcial» sem autorização (cita receitas; tem DMCA)", terms: "https://www.xreceitas.com.br/termos-e-condicoes-de-uso/"}
+# --- Preparação da virada da Política (E14.3): leitura de termos de 2026-11-02
+# (docs/reviews/E14-termos-feeds-2026-11-02.md). Registrado ANTES da virada de propósito:
+# a RFI passa na validação técnica do validate_feeds e, sem esta marca, ficaria no final
+# (docs/reviews/E14-feeds-politica-ensaio-2026-11-02.md).
+- {domain: rfi.fr, rss: false, reason: "CGU da France Médias Monde (cobrem rfi.fr): proíbem coleta automática e uso por IA; reserva de TDM; uso só pessoal", terms: "https://www.francemm.com/fr/legal-notice"}

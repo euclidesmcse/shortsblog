@@ -1,0 +1,102 @@
+{% extends "_base.html" %}
+{% block title %}Pauta — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)} .pill.warn{color:var(--warn); border-color:var(--warn)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:5px 11px; font-size:13px; cursor:pointer; text-decoration:none}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  label{display:block; font-size:12px; color:var(--muted); margin:12px 0 3px}
+  input[type=text], select, textarea{font:inherit; font-size:15px; padding:9px 10px; width:100%; max-width:100%;
+        border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text)}
+  textarea{min-height:90px; resize:vertical}
+  .row{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .hint{font-size:13px; color:var(--muted); margin-top:4px}
+  .hint.warn{color:var(--warn)}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <header style="display:flex; flex-wrap:wrap; gap:12px; align-items:baseline; justify-content:space-between; margin-bottom:18px">
+    <h1>Pauta</h1>
+  </header>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+
+  <div class="card">
+    <h2>Dar um tema ao blog</h2>
+    <p class="muted">A pauta passa à frente das que vêm do RSS, mas faz o mesmo percurso: o motor lê as fontes,
+    corrobora, redige, revê e traduz, e o artigo chega à fila de aprovação.{% if search_enabled %} Sem fontes, ele
+    busca na pesquisa as que sustentem o tema (como no resgate do slot); com fontes, parte delas.{% else %} O buscador
+    está desligado: o motor só lê as fontes que você indicar.{% endif %}</p>
+    <form method="post" action="/dashboard/ideas">
+      <div class="row">
+        <div>
+          <label for="site_key">Blog</label>
+          <select id="site_key" name="site_key" required>
+            {% for b in blogs %}<option value="{{ b.key }}" data-min="{{ b.min_sources }}">{{ b.name }} ({{ b.key }}) · {{ queue.get(b.key, 0) }} na fila</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="priority">Prioridade</label>
+          <select id="priority" name="priority">
+            {% for k, v in priorities.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="ttl_days">Validade</label>
+          <select id="ttl_days" name="ttl_days">
+            {% for d in ttl_choices %}<option value="{{ d }}" {{ 'selected' if d == default_ttl }}>{{ d }} dia{{ 's' if d > 1 }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <label for="topic">Tema (o que o artigo deve contar)</label>
+      <input type="text" id="topic" name="topic" minlength="8" maxlength="500" required
+             placeholder="Ex.: O que muda com a nova diretriz da OMS sobre o uso de antibióticos">
+      <label for="angle">Ângulo (opcional: o que destacar, o que evitar)</label>
+      <textarea id="angle" name="angle" maxlength="2000" placeholder="Ex.: informação de serviço para o leitor, só com o que as fontes oficiais afirmam; sem assumir um país"></textarea>
+      <label for="sources">Fontes (uma ligação https por linha, até {{ max_sources }}){% if search_enabled %} — opcional{% endif %}</label>
+      <textarea id="sources" name="sources" {% if not search_enabled %}required{% endif %} placeholder="https://www.who.int/news/…&#10;https://www.reuters.com/…"></textarea>
+      {% if search_enabled %}
+      <label style="display:flex; gap:8px; align-items:flex-start; font-size:14px; color:var(--text); margin-top:14px">
+        <input type="checkbox" name="timeless" value="true" style="margin-top:4px">
+        <span><strong>Tema intemporal</strong> (guia, explicação, referência): a busca aceita páginas de qualquer data.
+          Deixe desmarcado para notícia — aí só valem páginas dos últimos dias.</span></label>
+      {% endif %}
+      <div class="hint warn" id="min-hint">Cada blog exige um mínimo de fontes que sustentem os fatos{% if search_enabled %} (as que faltarem, o motor busca){% endif %}; sem chegar a ele, a pauta é descartada.</div>
+      <div class="hint">Prefira fontes oficiais ou agências, de qualquer país. O motor recusa sites que bloqueiam robôs.</div>
+      <p style="margin-top:16px"><button class="btn" type="submit">Acrescentar pauta</button></p>
+    </form>
+    <script>
+      (function(){var s=document.getElementById('site_key'),h=document.getElementById('min-hint');
+        function u(){var m=s.options[s.selectedIndex].getAttribute('data-min');
+          h.textContent='Este blog exige pelo menos '+m+' fontes que sustentem os fatos'+({{ 'true' if search_enabled else 'false' }}?' (as que faltarem, o motor busca)':'')+'; sem chegar a esse número, a pauta é descartada.';}
+        s.addEventListener('change',u);u();})();
+    </script>
+  </div>
+
+  <div class="card">
+    <h2>Últimas pautas manuais</h2>
+    {% if recent %}
+    <div class="scroll"><table>
+      <tr><th>#</th><th>Blog</th><th>Tema</th><th>Fontes</th><th>Estado</th><th>Expira</th><th>Por</th><th></th></tr>
+      {% for i in recent %}
+      <tr>
+        <td>{{ i.id }}</td><td>{{ i.site_key }}</td><td>{{ i.topic }}{% if i.timeless %} <span class="pill">intemporal</span>{% endif %}</td><td>{{ (1 if i.canonical_url else 0) + i.extra_sources or 'busca' }}</td>
+        <td><span class="pill {{ 'ok' if i.status in ('used',) else ('warn' if i.status in ('new','taken') else 'bad') }}">{{ status_labels.get(i.status, i.status) }}</span>
+            {% if i.job_id %}<a href="/dashboard/review/{{ i.job_id }}">job {{ i.job_id }}</a>{% endif %}</td>
+        <td>{{ i.expires_at.strftime('%Y-%m-%d') if i.expires_at else '—' }}</td><td>{{ i.created_by or '—' }}</td>
+        <td>{% if i.status == 'new' %}<form method="post" action="/dashboard/ideas/{{ i.id }}/discard" style="margin:0"
+              onsubmit="return confirm('Descartar a pauta #{{ i.id }}? Ela sai da fila e não entra em produção.')">
+              <button class="mini-btn" type="submit">Descartar</button></form>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    {% else %}<p class="muted">Ainda sem pautas manuais.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

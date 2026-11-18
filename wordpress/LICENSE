@@ -1,0 +1,13 @@
+ShortsBlog — tema e mu-plugins do WordPress
+Copyright (C) 2026 Euclides Silva
+
+Os arquivos desta pasta (wordpress/: themes/shortsblog, mu-plugins, setup, pages) são software
+livre: você pode redistribuí-los e/ou modificá-los sob os termos da GNU General Public License,
+versão 2 ou (a seu critério) qualquer versão posterior, publicada pela Free Software Foundation
+(SPDX: GPL-2.0-or-later). Texto completo em licenses/GPL-2.0.txt.
+
+O restante do ShortsBlog (motor e AI Gateway) é licenciado sob a GNU Affero General Public
+License v3.0 (arquivo LICENSE na raiz do projeto). Decisão D-112.
+
+A fonte Fraunces (themes/shortsblog/fonts) é de The Fraunces Project Authors, sob a SIL Open Font
+License 1.1 (themes/shortsblog/fonts/OFL.txt).

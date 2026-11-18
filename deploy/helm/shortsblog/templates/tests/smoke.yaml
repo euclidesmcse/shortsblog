@@ -1,0 +1,67 @@
+{{- $fn := include "sb.fullname" . -}}
+# `helm test <release>`: o motor responde e vê o banco e o Redis, o gateway responde, o blog está
+# instalado com o tema e a credencial do motor confere no WordPress (Basic auth na REST API).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ $fn }}-smoke
+  labels:
+    {{- include "sb.selector" (list . "smoke") | nindent 4 }}
+    {{- include "sb.engineClient" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext: {runAsUser: 10001, runAsGroup: 10001}
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  containers:
+    - name: smoke
+      image: {{ include "sb.image.engine" . }}
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      env:
+        - name: SB_API_TOKEN
+          valueFrom: {secretKeyRef: {name: {{ include "sb.secretName" . }}, key: apiToken}}
+        - name: WP_APP_PASSWORD
+          valueFrom: {secretKeyRef: {name: {{ include "sb.secretName" . }}, key: wpAppPassword}}
+      command:
+        - python
+        - -c
+        - |
+          import base64, json, os, sys, urllib.request
+          def get(url, headers=None):
+              req = urllib.request.Request(url, headers=headers or {})
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  return r.status, r.read().decode()
+          ok = True
+          def check(name, cond, detail=""):
+              global ok
+              print(("OK   " if cond else "FALHA"), name, detail)
+              ok = ok and cond
+          api = "http://{{ $fn }}-api:8000"
+          s, body = get(api + "/health/ready")
+          ready = json.loads(body)
+          check("motor /health/ready", ready["checks"].get("postgres") == "ok"
+                and ready["checks"].get("redis") == "ok", json.dumps(ready["checks"], ensure_ascii=False))
+          check("motor vê a credencial do blog", ready["checks"].get("wordpress", "").startswith("1/1"),
+                ready["checks"].get("wordpress", ""))
+          s, _ = get("http://{{ $fn }}-ai-gateway:8080/health/live")
+          check("gateway /health/live", s == 200)
+          wp = "http://{{ $fn }}-wordpress"
+          h = {"Host": {{ .Values.site.host | quote }}, "X-Forwarded-Proto": "https"}
+          s, body = get(wp + "/wp-json/", h)
+          check("WordPress REST", s == 200 and '"name"' in body)
+          auth = base64.b64encode(("sb-publisher:" + os.environ["WP_APP_PASSWORD"]).encode()).decode()
+          try:
+              s, body = get(wp + "/wp-json/wp/v2/users/me?context=edit", {**h, "Authorization": "Basic " + auth})
+              me = json.loads(body)
+              check("credencial do motor no WordPress", s == 200 and me.get("slug") == "sb-publisher",
+                    f"usuário={me.get('slug')} papéis={me.get('roles')}")
+          except Exception as e:
+              check("credencial do motor no WordPress", False, str(e)[:160])
+          sys.exit(0 if ok else 1)
+      securityContext: {{- include "sb.restricted" . | nindent 8 }}
+      resources: {requests: {cpu: 10m, memory: 64Mi}, limits: {memory: 256Mi}}

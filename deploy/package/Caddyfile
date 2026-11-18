@@ -1,0 +1,26 @@
+# ShortsBlog — proxy do pacote (E19.2). Com SB_SCHEME=https (o padrão) o Caddy pede e renova os
+# certificados sozinho (Let's Encrypt, HTTP-01): os dois nomes têm de apontar para esta máquina e as
+# portas 80/443 têm de estar abertas. SB_SCHEME=http serve só para testar numa máquina local.
+{
+	email {$SB_ADMIN_EMAIL}
+}
+
+# Portal de operação (painel do motor)
+{$SB_SCHEME}://{$SB_PANEL_HOST} {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+	reverse_proxy sb-engine-api:8000
+}
+
+# Blog
+{$SB_SCHEME}://{$SB_SITE_HOST} {
+	encode zstd gzip
+	header -Server
+	reverse_proxy sb-wp:80
+}

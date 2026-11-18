@@ -1,0 +1,102 @@
+{% extends "_base.html" %}
+{% block title %}Feeds de {{ site.name }} — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)} .pill.warn{color:var(--warn); border-color:var(--warn)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  .notice.warn{border-left-color:var(--warn)}
+  input[type=text], input[type=url], select{font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--border);
+        border-radius:8px; background:var(--bg); color:var(--text); width:100%}
+  label.f{display:block; font-size:12px; color:var(--muted); margin:10px 0 3px}
+  .row{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:5px 11px; font-size:13px; cursor:pointer}
+  .url{font-size:12px; color:var(--muted); word-break:break-all}
+  details.feed{border:1px solid var(--border); border-radius:10px; padding:8px 12px; margin:0 0 8px}
+  details.feed summary{cursor:pointer; display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  details.feed.off{opacity:.65}
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin:0 0 14px}
+  .tabs a{padding:5px 11px; border:1px solid var(--border); border-radius:99px; font-size:13px; text-decoration:none; color:var(--text)}
+  .tabs a.on{background:var(--primary); border-color:var(--primary); color:#fff}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:1000px">
+  <p style="margin:0 0 6px"><a href="/dashboard/config">← Configuração</a></p>
+  <header style="margin-bottom:10px"><h1 style="margin:0">Feeds</h1></header>
+  <nav class="tabs">{% for key, name in blogs.items() %}<a href="/dashboard/config/feeds/{{ key }}" {% if key == site.site_key %}class="on"{% endif %}>{{ name }}</a>{% endfor %}</nav>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+  {% if active < min_feeds %}<div class="card notice warn">{{ site.name }} tem {{ active }} feeds ativos — abaixo do piso de {{ min_feeds }} por blog.</div>{% endif %}
+
+  <div class="card">
+    <h2 style="font-size:17px">Acrescentar feed a {{ site.name }}</h2>
+    <p class="muted" style="margin-top:0; font-size:14px">O feed é lido agora pelo motor e só entra se passar nas mesmas regras do
+      validador (HTTPS, robots.txt, RSS/Atom com itens, item mais recente com menos de 30 dias, termos sem <code>rss: false</code>).
+      Prefira fontes de qualquer país (D-102).</p>
+    {% if check %}
+      <div class="notice {{ 'ok' if check.result.ok else 'bad' }}" style="margin-bottom:10px">
+        <strong>{{ 'Passa na validação' if check.result.ok else 'Não passa: ' ~ check.result.reason }}</strong>
+        {% if check.result.items %} · {{ check.result.items }} itens · mais recente {{ check.result.newest }}{% endif %}
+        {% if check.result.pauta %} · <span class="pill warn">só pauta: {{ 'site no sem-leitura' if check.result.pauta == 'termos' else 'robots.txt bloqueia a IA' }}</span>{% endif %}
+        {% if check.result.titles %}<ul style="margin:6px 0 0; font-size:13px">{% for t in check.result.titles %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    {% endif %}
+    <form method="post" action="/dashboard/config/feeds/{{ site.site_key }}/add">
+      <label class="f" for="url">Endereço (https)</label>
+      <input type="url" id="url" name="url" required value="{{ check.url if check else '' }}" placeholder="https://www.exemplo.org/rss.xml">
+      <div class="row">
+        <div><label class="f" for="name">Nome</label><input type="text" id="name" name="name" required maxlength="120"></div>
+        <div><label class="f" for="tier">Tipo de fonte</label><select id="tier" name="tier">{% for t in tiers %}<option>{{ t }}</option>{% endfor %}</select></div>
+        <div><label class="f" for="lang">Idioma</label><select id="lang" name="lang">{% for l in langs %}<option>{{ l }}</option>{% endfor %}</select></div>
+        <div><label class="f" for="kind">Formato</label><select id="kind" name="kind">{% for k in kinds %}<option value="{{ k }}" {% if check and check.kind == k %}selected{% endif %}>{{ 'RSS/Atom' if k == 'rss' else 'página de notícias (html)' }}</option>{% endfor %}</select></div>
+      </div>
+      <label class="f" for="notes">Notas (opcional)</label>
+      <input type="text" id="notes" name="notes" maxlength="300" placeholder="ex.: feed generalista; termos revisados em …">
+      <label style="display:flex; gap:8px; align-items:center; margin-top:12px; font-size:14px">
+        <input type="checkbox" name="terms_reviewed" value="true"> Os termos de uso do site foram revisados (D-065, E14.5j)</label>
+      <p style="margin:14px 0 0; display:flex; gap:10px; flex-wrap:wrap">
+        <button class="btn" type="submit" style="padding:9px 18px; font-size:15px">Validar e acrescentar</button>
+        <button class="mini-btn" type="submit" formaction="/dashboard/config/feeds/{{ site.site_key }}/check" formnovalidate>Só validar</button></p>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px">{{ active }} ativo(s) de {{ feeds|length }}
+      <a style="font-size:13px; font-weight:400; margin-left:8px" href="/dashboard/config/export/feeds/{{ site.site_key }}.yaml">Exportar YAML</a></h2>
+    {% for f in feeds %}
+    <details class="feed {{ '' if f.enabled else 'off' }}">
+      <summary>
+        <strong>{{ f.name }}</strong>
+        <span class="pill">{{ f.tier }}</span><span class="pill">{{ f.lang }}</span>
+        {% if f.source_type != 'rss' %}<span class="pill">{{ f.source_type }}</span>{% endif %}
+        {% if not f.enabled %}<span class="pill bad">desligado</span>{% endif %}
+        {% if f.pauta_only %}<span class="pill warn" title="site no sem-leitura">só pauta</span>{% endif %}
+        {% if f.enabled and f.last_status and f.last_status != 'ok' %}<span class="pill bad" title="{{ f.fail_count }} falha(s) seguidas">{{ f.last_status }}</span>{% endif %}
+        <span class="url">{{ f.feed_url }}</span>
+      </summary>
+      <form method="post" action="/dashboard/config/feeds/{{ site.site_key }}/edit" style="margin-top:8px">
+        <input type="hidden" name="url" value="{{ f.feed_url }}">
+        <input type="hidden" name="version" value="{{ f.version }}">
+        <div class="row">
+          <div><label class="f">Nome</label><input type="text" name="name" value="{{ f.name }}" required maxlength="120"></div>
+          <div><label class="f">Tipo de fonte</label><select name="tier">{% for t in tiers %}<option {% if t == f.tier %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+          <div><label class="f">Idioma</label><select name="lang">{% for l in langs %}<option {% if l == f.lang %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+        </div>
+        <label class="f">Notas</label><input type="text" name="notes" value="{{ f.usage_notes or '' }}" maxlength="300">
+        <p class="muted" style="font-size:12px; margin:6px 0 0">Última leitura: {{ f.last_checked_at.strftime('%d/%m %H:%M') if f.last_checked_at else '—' }}
+          · {{ f.last_items if f.last_items is not none else '—' }} itens</p>
+        <div style="display:flex; gap:12px; align-items:center; margin-top:8px; flex-wrap:wrap">
+          <label style="display:flex; gap:6px; align-items:center; font-size:14px"><input type="checkbox" name="enabled" value="true" {% if f.enabled %}checked{% endif %}> ativo</label>
+          <button class="mini-btn" type="submit">Gravar</button>
+        </div>
+      </form>
+    </details>
+    {% else %}<p class="muted">Nenhum feed.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

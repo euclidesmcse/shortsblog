@@ -1,0 +1,35 @@
+{{- if .Values.ingress.enabled }}
+{{- $fn := include "sb.fullname" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fn }}
+  labels: {{- include "sb.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . | quote }}
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts: [{{ .Values.panel.host | quote }}]
+      secretName: {{ .Values.ingress.tls.panelSecretName | default (printf "%s-panel-tls" $fn) }}
+    - hosts: [{{ .Values.site.host | quote }}]
+      secretName: {{ .Values.ingress.tls.siteSecretName | default (printf "%s-site-tls" $fn) }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.panel.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: {{ $fn }}-api, port: {number: 8000}}}
+    - host: {{ .Values.site.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: {{ $fn }}-wordpress, port: {number: 80}}}
+{{- end }}

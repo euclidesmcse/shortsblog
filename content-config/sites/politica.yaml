@@ -1,0 +1,44 @@
+# ShortsBlog — site "politica" (E4.2). Sem segredos: credenciais ficam no Infisical.
+# A base de dados é sincronizada a partir deste ficheiro (python -m app.core.migrate).
+site_key: politica
+name: "Política"
+description: "Política mundial: eleições, governos, parlamentos e organismos internacionais de qualquer país, com fatos verificáveis e fontes citadas."
+base_url: https://politica.shortsblog.com
+wordpress_api_url: https://politica.shortsblog.com/wp-json
+hosting_group: oracle-arm-1
+timezone: Europe/Lisbon  # D-066: slots às 07:00 de Lisboa
+language: pt-BR
+languages: [pt-BR, en, es, zh-CN]
+# Piloto E14.3 (D-091): ligado em 2026-11-08 («vamos fazer a virada da Política»);
+# 1 slot/dia às 07:28 de Lisboa enquanto durar o piloto — último blog da expansão.
+enabled: true
+daily_target: 1
+# Desfasamento dos slots em minutos (spec §5.2): 0, 7, 14, 21, 28, 35.
+slot_offset_minutes: 28
+seo_plugin: ""
+taxonomy_version: "1"
+editorial_policy_version: "1"
+# Categorias aceites (taxonomia v1); as do WordPress são criadas na E8.6.
+categories:
+  - "Congresso"
+  - "Governo"
+  - "Justiça"
+  - "Eleições"
+  - "Internacional"
+  - "Explicadores"
+# Fontes mínimas por artigo (gate da E6.7).
+min_sources: 2
+# Reforço de pesquisa por busca (D-063): só domínios oficiais (governos, parlamentos, tribunais,
+# universidades, organismos e revistas científicas) e os veículos listados aqui.
+# Fora da lista os veículos cujos termos proíbem a leitura pela IA ou o RSS (D-070, D-071).
+search_policy:
+  official_only: true
+  # Depurada na virada (2026-11-08, decisão do Euclides sobre a tabela de 2/11): saem
+  # Folha, O Globo, CartaCapital, ConJur e Nexo — robots.txt deles bloqueia robôs de IA,
+  # então nunca seriam lidos (peso morto pela D-070). TSE fechado ao motor (robots 403, R64).
+  allow_domains:
+    - g1.globo.com
+    - cnnbrasil.com.br
+    - poder360.com.br
+    - congressoemfoco.com.br
+    - apublica.org

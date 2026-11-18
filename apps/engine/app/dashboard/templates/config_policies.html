@@ -1,0 +1,55 @@
+{% extends "_base.html" %}
+{% block title %}Políticas editoriais — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  .notice.warn{border-left-color:var(--warn)}
+  textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; line-height:1.5;
+           padding:10px; width:100%; min-height:220px; resize:vertical; border:1px solid var(--border);
+           border-radius:8px; background:var(--bg); color:var(--text)}
+  .bar{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:8px; font-size:13px}
+  details{margin:0 0 12px} summary{cursor:pointer; font-weight:600}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:960px">
+  <p style="margin:0 0 6px"><a href="/dashboard/config">← Configuração</a></p>
+  <header style="margin-bottom:12px"><h1 style="margin:0">Políticas editoriais</h1></header>
+  <div class="card notice warn" style="font-size:14px"><strong>Premissa (D-102):</strong> os blogs cobrem o MUNDO, não o
+    Brasil. A língua é pt-BR; o assunto é o mundo todo, sem prioridade para nenhum país. Cada política entra nos
+    prompts do pesquisador, do redator e do revisor.</div>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+
+  <div class="card">
+    <h2 style="font-size:17px">Regras comuns <span class="muted" style="font-size:13px; font-weight:400">— valem para os {{ owns|length }} blogs</span></h2>
+    <form method="post" action="/dashboard/config/policies/common"
+          onsubmit="return confirm('Gravar as regras comuns? A política de todos os blogs será remontada.')">
+      <input type="hidden" name="version" value="{{ common_version }}">
+      <textarea name="text" maxlength="{{ max_len }}" required>{{ common }}</textarea>
+      <div class="bar"><button class="btn" type="submit" style="padding:9px 18px; font-size:15px">Gravar regras comuns</button>
+        <a href="/dashboard/config/export/policies/_comum.md">Exportar _comum.md</a></div>
+    </form>
+  </div>
+
+  {% for key, own in owns.items() %}
+  <div class="card">
+    <details {% if loop.first %}open{% endif %}>
+      <summary>{{ names.get(key, key) }} <span class="muted" style="font-weight:400">{{ key }}</span></summary>
+      {% if own is none %}
+        <p class="notice bad" style="margin-top:10px">A política montada deste blog não começa pelas regras comuns atuais:
+          reimporte do YAML na tela Configuração antes de editar.</p>
+      {% else %}
+      <form method="post" action="/dashboard/config/policies/{{ key }}" style="margin-top:10px">
+        <input type="hidden" name="version" value="{{ own_versions[key] }}">
+        <textarea name="text" maxlength="{{ max_len }}" required>{{ own }}</textarea>
+        <div class="bar"><button class="btn" type="submit" style="padding:9px 18px; font-size:15px">Gravar regras de {{ key }}</button>
+          <a href="/dashboard/config/export/policies/{{ key }}.md">Exportar {{ key }}.md</a></div>
+      </form>
+      {% endif %}
+    </details>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

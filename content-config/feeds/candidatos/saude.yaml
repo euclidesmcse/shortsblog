@@ -1,0 +1,251 @@
+# Candidatos a feeds do site "saude" (E5.1). Só entram em ../saude.yaml os que
+# passarem scripts/validate_feeds.py. tier: oficial | agencia | veiculo | fornecedor | academico.
+site_key: saude
+feeds:
+- name: Ministério da Saúde — Notícias
+  url: https://www.gov.br/saude/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Anvisa — Notícias
+  url: https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/RSS
+  tier: oficial
+  lang: pt
+- name: ANS — Notícias
+  url: https://www.gov.br/ans/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Fiocruz — Notícias
+  url: https://portal.fiocruz.br/rss.xml
+  tier: oficial
+  lang: pt
+- name: INCA — Notícias
+  url: https://www.gov.br/inca/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Instituto Butantan — Notícias
+  url: https://butantan.gov.br/rss
+  tier: oficial
+  lang: pt
+- name: OPAS — Notícias (português)
+  url: https://www.paho.org/pt/rss.xml
+  tier: oficial
+  lang: pt
+- name: PAHO — News
+  url: https://www.paho.org/en/rss.xml
+  tier: oficial
+  lang: en
+- name: NIH News Releases
+  url: https://www.nih.gov/news-releases/feed.xml
+  tier: oficial
+  lang: en
+- name: FDA Press Announcements
+  url: https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+- name: ECDC — News
+  url: https://www.ecdc.europa.eu/en/taxonomy/term/1244/feed
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+- name: EMA — News
+  url: https://www.ema.europa.eu/en/news.xml
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+- name: Senado — Notícias
+  url: https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS
+  tier: oficial
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Câmara — Saúde
+  url: https://www.camara.leg.br/noticias/rss/dinamico/SAUDE
+  tier: oficial
+  lang: pt
+- name: Agência Brasil — Saúde
+  url: https://agenciabrasil.ebc.com.br/rss/saude/feed.xml
+  tier: agencia
+  lang: pt
+  notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
+- name: Agência FAPESP
+  url: https://agencia.fapesp.br/rss/
+  tier: academico
+  lang: pt
+- name: Jornal da USP
+  url: https://jornal.usp.br/feed/
+  tier: academico
+  lang: pt
+- name: Revista Pesquisa FAPESP
+  url: https://revistapesquisa.fapesp.br/feed/
+  tier: academico
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: The BMJ — Latest
+  url: https://www.bmj.com/rss/recent.xml
+  tier: academico
+  lang: en
+- name: The Lancet — Online first
+  url: https://www.thelancet.com/rssfeed/lancet_online.xml
+  tier: academico
+  lang: en
+- name: NEJM — Current
+  url: https://www.nejm.org/action/showFeed?jc=nejm&type=etoc&feed=rss
+  tier: academico
+  lang: en
+- name: JAMA — Current
+  url: https://jamanetwork.com/rss/site_3/67.xml
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: PLOS Medicine
+  url: https://journals.plos.org/plosmedicine/feed/atom
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: Cochrane — News
+  url: https://www.cochrane.org/news/feed
+  tier: academico
+  lang: en
+- name: Harvard Health Blog
+  url: https://www.health.harvard.edu/blog/feed
+  tier: academico
+  lang: en
+- name: G1 Saúde
+  url: https://g1.globo.com/rss/g1/saude/
+  tier: veiculo
+  lang: pt
+- name: Folha — Equilíbrio e Saúde
+  url: https://feeds.folha.uol.com.br/equilibrioesaude/rss091.xml
+  tier: veiculo
+  lang: pt
+- name: CNN Brasil — Saúde
+  url: https://www.cnnbrasil.com.br/saude/feed/
+  tier: veiculo
+  lang: pt
+- name: KFF Health News
+  url: https://kffhealthnews.org/feed/
+  tier: veiculo
+  lang: en
+- name: Ministério da Saúde — Notícias (2)
+  url: https://www.gov.br/saude/pt-br/assuntos/noticias/2026/RSS
+  tier: oficial
+  lang: pt
+- name: Conselho Nacional de Saúde
+  url: https://www.gov.br/conselho-nacional-de-saude/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: EBSERH — Notícias
+  url: https://www.gov.br/ebserh/pt-br/comunicacao/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: MedlinePlus — What's New
+  url: https://medlineplus.gov/feeds/whatsnew.xml
+  tier: oficial
+  lang: en
+- name: NCI — Cancer Currents
+  url: https://www.cancer.gov/news-events/cancer-currents-blog/rss
+  tier: oficial
+  lang: en
+- name: UN News — Health
+  url: https://news.un.org/feed/subscribe/en/news/topic/health/feed/rss.xml
+  tier: oficial
+  lang: en
+- name: ONU News — Saúde
+  url: https://news.un.org/feed/subscribe/pt/news/topic/health/feed/rss.xml
+  tier: oficial
+  lang: pt
+- name: eLife — Latest
+  url: https://elifesciences.org/rss/recent.xml
+  tier: academico
+  lang: en
+  notes: 'generalista (toda a biologia) e com trabalhos preliminares: citar o estudo e o seu estado de revisão'
+- name: BMJ Global Health
+  url: https://gh.bmj.com/rss/current.xml
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: SciELO em Perspectiva
+  url: https://blog.scielo.org/feed/
+  tier: academico
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: The Conversation Brasil
+  url: https://theconversation.com/br/articles.atom
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Veja Saúde
+  url: https://saude.abril.com.br/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'bem-estar e aconselhamento: não transformar em conselho clínico; confirmar em fonte oficial ou estudo'
+- name: Estadão — Saúde
+  url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/saude/
+  tier: veiculo
+  lang: pt
+- name: Metrópoles — Saúde
+  url: https://www.metropoles.com/saude/feed
+  tier: veiculo
+  lang: pt
+  notes: 'bem-estar e aconselhamento: não transformar em conselho clínico; confirmar em fonte oficial ou estudo'
+- name: UOL VivaBem
+  url: https://rss.uol.com.br/feed/vivabem.xml
+  tier: veiculo
+  lang: pt
+  notes: 'bem-estar e aconselhamento: não transformar em conselho clínico; confirmar em fonte oficial ou estudo'
+- name: ScienceDaily — Health & Medicine
+  url: https://www.sciencedaily.com/rss/health_medicine.xml
+  tier: veiculo
+  lang: en
+  notes: 'agregador de comunicados de imprensa: localizar e citar o estudo original; não é fonte de corroboração'
+- name: Medical Xpress
+  url: https://medicalxpress.com/rss-feed/
+  tier: veiculo
+  lang: en
+  notes: 'agregador de comunicados de imprensa: localizar e citar o estudo original; não é fonte de corroboração'
+# E14.5f (D-064, aprovados pelo Euclides em 2026-10-26): cobertura internacional.
+# A OMS ficou fora como feed (rss: false, D-071), mas segue aceita como fonte oficial no reforço.
+- name: NHS England — News
+  url: https://www.england.nhs.uk/feed/
+  tier: oficial
+  lang: en
+  notes: 'sistema público do Reino Unido'
+- name: Noticias ONU — Salud
+  url: https://news.un.org/feed/subscribe/es/news/topic/health/feed/rss.xml
+  tier: oficial
+  lang: es
+- name: Infobae — Salud
+  url: https://www.infobae.com/arc/outboundfeeds/rss/category/salud/
+  tier: veiculo
+  lang: es
+  notes: 'América Latina; volume alto (feed_max_items limita)'
+- name: MedlinePlus — Novidades
+  url: https://medlineplus.gov/groupfeeds/new.xml
+  tier: oficial
+  lang: en
+  notes: 'NIH/NLM, domínio público com exceções pontuais; dizer sempre a jurisdição (EUA)'
+- name: UKHSA — News (gov.uk)
+  url: https://www.gov.uk/government/organisations/uk-health-security-agency.atom
+  tier: oficial
+  lang: en
+  notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'
+- name: Our World in Data
+  url: https://ourworldindata.org/atom.xml
+  tier: academico
+  lang: en
+  notes: 'CC BY; dados de saúde de alcance mundial (D-102)'
+- name: Health Canada — News
+  url: https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentofhealth&type=newsreleases&format=atom
+  tier: oficial
+  lang: en
+  notes: 'só pauta (sem-leitura canada.ca): reprodução comercial exige permissão; dizer a jurisdição (Canadá)'
+- name: CDC — MMWR
+  url: https://tools.cdc.gov/api/v2/resources/media/132599.rss
+  tier: oficial
+  lang: en
+  notes: 'domínio público (gov EUA); feed vivo achado via API tools.cdc.gov (reteste 11/11); links dos itens via redirecionador download.asp'
+- name: Global Voices — Health
+  url: https://globalvoices.org/-/topics/health/feed/
+  tier: veiculo
+  lang: en
+  notes: 'CC BY 3.0; saúde pelo mundo (D-110)'

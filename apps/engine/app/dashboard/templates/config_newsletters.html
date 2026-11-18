@@ -1,0 +1,45 @@
+{% extends "_base.html" %}
+{% block title %}Newsletters de pauta — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  input[type=text], select{font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--border);
+        border-radius:8px; background:var(--bg); color:var(--text); width:100%}
+  td{vertical-align:middle}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:960px">
+  <p style="margin:0 0 6px"><a href="/dashboard/config">← Configuração</a></p>
+  <header style="margin-bottom:12px"><h1 style="margin:0">Newsletters de pauta</h1></header>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+  <div class="card">
+    <p class="muted" style="margin-top:0; font-size:14px">Remetentes autorizados (D-094): o e-mail que chega ao webhook só vira
+      pauta se o domínio do <code>From</code> for este (ou um subdomínio) e passar em SPF e DKIM. A newsletter nunca é fonte:
+      de cada item só se guarda título e ligação.</p>
+    <form method="post" action="/dashboard/config/newsletters">
+      <input type="hidden" name="version" value="{{ version }}">
+      <div class="scroll"><table>
+        <tr><th>Nome</th><th>Domínio do remetente</th><th>Blog</th><th>Idioma</th><th>Tirar</th></tr>
+        {% for e in entries %}
+        <tr><td><input type="text" name="name" value="{{ e.name }}" maxlength="120"></td>
+            <td><input type="text" name="sender_domain" value="{{ e.sender_domain }}" maxlength="120"></td>
+            <td><select name="site_key">{% for k, n in blogs.items() %}<option value="{{ k }}" {% if k == e.site_key %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></td>
+            <td><select name="lang">{% for l in langs %}<option {% if l == e.lang %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></td>
+            <td style="text-align:center"><input type="checkbox" name="drop" value="{{ loop.index0 }}"></td></tr>
+        {% endfor %}
+        <tr><td><input type="text" name="name" placeholder="nova: nome" maxlength="120"></td>
+            <td><input type="text" name="sender_domain" placeholder="exemplo.com" maxlength="120"></td>
+            <td><select name="site_key">{% for k, n in blogs.items() %}<option value="{{ k }}">{{ n }}</option>{% endfor %}</select></td>
+            <td><select name="lang">{% for l in langs %}<option {% if l == 'en' %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></td>
+            <td></td></tr>
+      </table></div>
+      <p style="margin:14px 0 0; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+        <button class="btn" type="submit" style="padding:9px 18px; font-size:15px">Gravar lista</button>
+        <a href="/dashboard/config/export/newsletters.yaml">Exportar newsletters.yaml</a></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

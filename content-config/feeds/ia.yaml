@@ -1,0 +1,137 @@
+# ShortsBlog — feeds do site "ia" (E5.3). Gerado por scripts/validate_feeds.py.
+# Só contém feeds que passaram a validação (HTTPS, 200, XML válido, item recente
+# com link e data). Para acrescentar um feed: pô-lo em candidatos/ e correr o script.
+#
+# USO (D-013): o RSS serve para DESCOBRIR notícias e CITAR a fonte. Nunca se copia
+# o texto nem as imagens do feed; o artigo é escrito de raiz, com atribuição e link.
+site_key: ia
+feeds:
+- name: NIST News
+  url: https://www.nist.gov/news-events/news/rss.xml
+  domain: www.nist.gov
+  tier: oficial
+  lang: en
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: IEEE Spectrum AI
+  url: https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss
+  domain: spectrum.ieee.org
+  tier: veiculo
+  lang: en
+- name: Import AI
+  url: https://importai.substack.com/feed
+  domain: importai.substack.com
+  tier: veiculo
+  lang: en
+- name: Olhar Digital
+  url: https://olhardigital.com.br/feed/
+  domain: olhardigital.com.br
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Simon Willison's Weblog
+  url: https://simonwillison.net/atom/everything/
+  domain: simonwillison.net
+  tier: veiculo
+  lang: en
+- name: Tecnoblog
+  url: https://tecnoblog.net/feed/
+  domain: tecnoblog.net
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Anthropic News
+  url: https://www.anthropic.com/news
+  domain: www.anthropic.com
+  tier: fornecedor
+  lang: en
+  kind: html
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Apple Machine Learning Research
+  url: https://machinelearning.apple.com/rss.xml
+  domain: machinelearning.apple.com
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: AWS Machine Learning Blog
+  url: https://aws.amazon.com/blogs/machine-learning/feed/
+  domain: aws.amazon.com
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Google AI Blog
+  url: https://blog.google/technology/ai/rss/
+  domain: blog.google
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Google DeepMind Blog
+  url: https://deepmind.google/blog/rss.xml
+  domain: deepmind.google
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Google Research Blog
+  url: https://research.google/blog/rss/
+  domain: research.google
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Hugging Face Blog
+  url: https://huggingface.co/blog/feed.xml
+  domain: huggingface.co
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Meta Engineering
+  url: https://engineering.fb.com/feed/
+  domain: engineering.fb.com
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Microsoft Research Blog
+  url: https://www.microsoft.com/en-us/research/feed/
+  domain: www.microsoft.com
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Mistral AI News
+  url: https://mistral.ai/rss.xml
+  domain: mistral.ai
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: OpenAI News
+  url: https://openai.com/news/rss.xml
+  domain: openai.com
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Together AI Blog
+  url: https://www.together.ai/blog/rss.xml
+  domain: www.together.ai
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: arXiv cs.AI
+  url: https://rss.arxiv.org/rss/cs.AI
+  domain: rss.arxiv.org
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: arXiv cs.CL
+  url: https://rss.arxiv.org/rss/cs.CL
+  domain: rss.arxiv.org
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: arXiv cs.LG
+  url: https://rss.arxiv.org/rss/cs.LG
+  domain: rss.arxiv.org
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: MIT News — Artificial Intelligence
+  url: https://news.mit.edu/rss/topic/artificial-intelligence2
+  domain: news.mit.edu
+  tier: academico
+  lang: en

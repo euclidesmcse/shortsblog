@@ -1,0 +1,385 @@
+# Candidatos a feeds do site "financas" (E5.1). Só entram em ../financas.yaml os que
+# passarem scripts/validate_feeds.py. tier: oficial | agencia | veiculo | fornecedor | academico.
+site_key: financas
+feeds:
+- name: Banco Central — Notícias
+  url: https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/noticias
+  tier: oficial
+  lang: pt
+- name: Banco Central — Notas à imprensa
+  url: https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/notasImprensa
+  tier: oficial
+  lang: pt
+- name: Banco Central — Comunicados
+  url: https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/comunicados
+  tier: oficial
+  lang: pt
+- name: CVM — Notícias
+  url: https://www.gov.br/cvm/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Ministério da Fazenda — Notícias
+  url: https://www.gov.br/fazenda/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Receita Federal — Notícias
+  url: https://www.gov.br/receitafederal/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Tesouro Nacional — Notícias
+  url: https://www.gov.br/tesouronacional/pt-br/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: IBGE — Agência de Notícias
+  url: https://agenciadenoticias.ibge.gov.br/agencia-rss.html
+  tier: oficial
+  lang: pt
+- name: IPEA — Notícias
+  url: https://www.ipea.gov.br/portal/categorias/45-todas-as-noticias?format=feed&type=rss
+  tier: oficial
+  lang: pt
+- name: Senado Notícias
+  url: https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS
+  tier: oficial
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Câmara — Economia
+  url: https://www.camara.leg.br/noticias/rss/dinamico/ECONOMIA
+  tier: oficial
+  lang: pt
+- name: Federal Reserve — Press Releases
+  url: https://www.federalreserve.gov/feeds/press_all.xml
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+- name: IMF News
+  url: https://www.imf.org/en/News/RSS
+  tier: oficial
+  lang: en
+- name: BIS — Press releases
+  url: https://www.bis.org/doclist/all_pressrels.rss
+  tier: oficial
+  lang: en
+- name: ECB — Press releases
+  url: https://www.ecb.europa.eu/rss/press.html
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+- name: SEC — Press Releases
+  url: https://www.sec.gov/news/pressreleases.rss
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+- name: World Bank — News
+  url: https://www.worldbank.org/en/news/rss.xml
+  tier: oficial
+  lang: en
+- name: Agência Brasil — Economia
+  url: https://agenciabrasil.ebc.com.br/rss/economia/feed.xml
+  tier: agencia
+  lang: pt
+  notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
+- name: InfoMoney
+  url: https://www.infomoney.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Valor Investe
+  url: https://valorinveste.globo.com/rss/valorinveste
+  tier: veiculo
+  lang: pt
+- name: G1 Economia
+  url: https://g1.globo.com/rss/g1/economia/
+  tier: veiculo
+  lang: pt
+- name: Folha — Mercado
+  url: https://feeds.folha.uol.com.br/mercado/rss091.xml
+  tier: veiculo
+  lang: pt
+- name: Exame
+  url: https://exame.com/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Money Times
+  url: https://www.moneytimes.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: CNN Brasil — Economia
+  url: https://www.cnnbrasil.com.br/economia/feed/
+  tier: veiculo
+  lang: pt
+- name: Seu Dinheiro
+  url: https://www.seudinheiro.com/feed/
+  tier: veiculo
+  lang: pt
+- name: InvestNews
+  url: https://investnews.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Poder360 — Economia
+  url: https://www.poder360.com.br/economia/feed/
+  tier: veiculo
+  lang: pt
+- name: Câmara — Trabalho e Previdência
+  url: https://www.camara.leg.br/noticias/rss/dinamico/TRABALHO-PREVIDENCIA-E-ASSISTENCIA
+  tier: oficial
+  lang: pt
+- name: BNDES — Notícias
+  url: https://agenciadenoticias.bndes.gov.br/rss.xml
+  tier: oficial
+  lang: pt
+- name: OECD — Newsroom
+  url: https://www.oecd.org/newsroom/index.xml
+  tier: oficial
+  lang: en
+- name: Agência Brasil — Geral
+  url: https://agenciabrasil.ebc.com.br/rss/geral/feed.xml
+  tier: agencia
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Estadão — Economia
+  url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/economia/
+  tier: veiculo
+  lang: pt
+- name: Metrópoles — Negócios
+  url: https://www.metropoles.com/negocios/feed
+  tier: veiculo
+  lang: pt
+# E14.5f (D-064, aprovados pelo Euclides em 2026-10-26): cobertura internacional.
+# BBC, Guardian, NPR, Fortune, Al Jazeera e Expansión ficaram fora (rss: false, D-071).
+- name: Bank of England — News
+  url: https://www.bankofengland.co.uk/rss/news
+  tier: oficial
+  lang: en
+- name: Eurostat — News
+  url: https://ec.europa.eu/eurostat/en/search?p_p_id=estatsearchportlet_WAR_estatsearchportlet&p_p_lifecycle=2&p_p_state=maximized&p_p_mode=view&p_p_resource_id=atom&_estatsearchportlet_WAR_estatsearchportlet_collection=CAT_EURNEW
+  tier: oficial
+  lang: en
+  notes: 'inflação, PIB e emprego da UE; o endereço longo é o Atom oficial da busca'
+- name: DW — Business
+  url: https://rss.dw.com/rdf/rss-en-bus
+  tier: veiculo
+  lang: en
+  notes: 'Europa'
+- name: Infobae — Economía
+  url: https://www.infobae.com/arc/outboundfeeds/rss/category/economia/
+  tier: veiculo
+  lang: es
+  notes: 'América Latina; volume alto (feed_max_items limita)'
+# Bloco A da triagem de 29/10 (lista do Euclides, docs/reviews/E14-triagem-rss-financas-2026-10-29.md),
+# aprovado pelo Euclides em 29/10. The Conversation e CEPR são «só pauta» na prática: o robots.txt
+# deles bloqueia os robôs de IA, e o fetcher não lê a página nesses casos (ver sem-leitura.yaml, cabeçalho).
+- name: FRED Blog (St. Louis Fed)
+  url: https://fredblog.stlouisfed.org/feed/
+  tier: oficial
+  lang: en
+  notes: 'análises de dados macro do Fed de St. Louis'
+- name: Liberty Street Economics (NY Fed)
+  url: https://libertystreeteconomics.newyorkfed.org/feed/
+  tier: oficial
+  lang: en
+- name: U.S. BLS — Latest
+  url: https://www.bls.gov/feed/bls_latest.rss
+  tier: oficial
+  lang: en
+  notes: 'CPI, payroll e produtividade dos EUA; feed curto (1–5 itens)'
+- name: CFPB — Newsroom
+  url: https://www.consumerfinance.gov/about-us/newsroom/feed/
+  tier: oficial
+  lang: en
+  notes: 'proteção ao consumidor financeiro dos EUA; bom fit com Finanças Pessoais'
+- name: ECB — Blog
+  url: https://www.ecb.europa.eu/rss/blog.html
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: dizer sempre a jurisdição'
+- name: Eurostat — Estatísticas (pre-releases)
+  url: https://ec.europa.eu/eurostat/en/search?p_p_id=estatsearchportlet_WAR_estatsearchportlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=atom&_estatsearchportlet_WAR_estatsearchportlet_collection=CAT_PREREL
+  tier: oficial
+  lang: en
+  notes: 'coleção CAT_PREREL; complementa a CAT_EURNEW já ativa'
+- name: Bank of Canada — Press
+  url: https://www.bankofcanada.ca/content_type/press-releases/feed/
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: dizer sempre a jurisdição'
+- name: BIS — Discursos de banqueiros centrais
+  url: https://www.bis.org/doclist/cbspeeches.rss
+  tier: oficial
+  lang: en
+  notes: 'até ~50 discursos/dia de BCs do mundo todo; volume alto (feed_max_items limita)'
+- name: OMC — Latest news
+  url: https://www.wto.org/library/rss/latest_news_e.xml
+  tier: oficial
+  lang: en
+- name: EBA — News
+  url: https://www.eba.europa.eu/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'supervisão bancária europeia'
+- name: SNB — News
+  url: https://www.snb.ch/public/rss/en/news
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: dizer sempre a jurisdição; URL corrigida na triagem de 29/10'
+- name: The Conversation — Brasil
+  url: https://theconversation.com/br/articles.atom
+  tier: academico
+  lang: pt
+  notes: 'CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)'
+- name: Knowledge at Wharton
+  url: https://knowledge.wharton.upenn.edu/feed/
+  tier: academico
+  lang: en
+  notes: 'termos não localizados (amarelo na régua de 29/10); robots sem bloqueio de IA'
+- name: CEPR — VoxEU columns
+  url: https://cepr.org/rss/vox-content
+  tier: academico
+  lang: en
+  notes: 'só pauta na prática (robots bloqueia robôs de IA; ai-train=no); URL corrigida na triagem de 29/10'
+# Bloco B da triagem de 29/10 (docs/reviews/E14-triagem-rss-financas-2026-10-29.md),
+# aprovado pelo Euclides em 29/10 («pode aplicar o bloco B também»). Robots dos domínios
+# novos conferidos em 29/10: só theconversation.com bloqueia robôs de IA (vira só-pauta
+# automático no fetcher, D-070/D-013).
+- name: Federal Reserve — Política Monetária
+  url: https://www.federalreserve.gov/feeds/press_monetary.xml
+  tier: oficial
+  lang: en
+  notes: 'subconjunto do press_all (já ativo); recorte dedicado a juros/FOMC'
+- name: Federal Reserve — Discursos
+  url: https://www.federalreserve.gov/feeds/speeches.xml
+  tier: oficial
+  lang: en
+  notes: 'discursos; valor de pauta pontual'
+- name: RBA — Media releases
+  url: https://www.rba.gov.au/rss/rss-cb-media-releases.xml
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: dizer sempre a jurisdição; feed curto (1 item em 29/10)'
+- name: BIS — Estatísticas
+  url: https://www.bis.org/doclist/all_statistics.rss
+  tier: oficial
+  lang: en
+- name: The Conversation — Business (global)
+  url: https://theconversation.com/global/business/articles.atom
+  tier: academico
+  lang: en
+  notes: 'CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)'
+- name: The Conversation — US Economy
+  url: https://theconversation.com/us/business/articles.atom
+  tier: academico
+  lang: en
+  notes: 'CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)'
+- name: The Conversation — UK Business
+  url: https://theconversation.com/uk/business/articles.atom
+  tier: academico
+  lang: en
+  notes: 'CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)'
+- name: Global Voices — Economics
+  url: https://globalvoices.org/-/topics/economics-business/feed/
+  tier: veiculo
+  lang: en
+  notes: 'CC BY; jornalismo cidadão global'
+- name: Global Voices em Português
+  url: https://pt.globalvoices.org/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'CC BY; feed generalista: filtrar por tema antes de virar ideia'
+- name: Tax Foundation
+  url: https://taxfoundation.org/feed/
+  tier: academico
+  lang: en
+  notes: 'think tank de política tributária dos EUA; dizer sempre a jurisdição'
+- name: Marginal Revolution
+  url: https://marginalrevolution.com/feed
+  tier: academico
+  lang: en
+  notes: 'blog de economistas (GMU); curadoria — melhor como pauta'
+- name: Conversable Economist
+  url: https://conversableeconomist.com/feed/
+  tier: academico
+  lang: en
+  notes: 'blog do editor do Journal of Economic Perspectives'
+- name: ProMarket — Stigler Center
+  url: https://www.promarket.org/feed/
+  tier: academico
+  lang: en
+  notes: 'Stigler Center (U. Chicago); concorrência e regulação'
+- name: Ethereum Foundation — Blog
+  url: https://blog.ethereum.org/en/feed.xml
+  tier: fornecedor
+  lang: en
+  notes: 'anúncios do próprio protocolo; cabe na editoria «Investimentos»'
+- name: Bitcoin Optech
+  url: https://bitcoinops.org/feed.xml
+  tier: fornecedor
+  lang: en
+  notes: 'licença MIT; relatórios técnicos semanais'
+- name: A Wealth of Common Sense
+  url: https://awealthofcommonsense.com/feed/
+  tier: veiculo
+  lang: en
+  notes: 'blog pessoal de finanças; fit com «Finanças Pessoais»'
+- name: Of Dollars And Data
+  url: https://ofdollarsanddata.com/feed/
+  tier: veiculo
+  lang: en
+  notes: 'blog pessoal de finanças (dados/comportamento); fit com «Finanças Pessoais»'
+# Ressalvas da triagem de 29/10, aprovadas pelo Euclides em 29/10 («pode aplicar as duas
+# ressalvas também»). Régua de 29/10: Outras Palavras bloqueia robôs de IA no robots.txt
+# (só pauta automático no fetcher); CFA sem bloqueio, copyright rígido coberto pelo uso
+# pauta + citação (D-070/D-013).
+- name: Outras Palavras
+  url: https://outraspalavras.net/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'CC; viés editorial forte (aceito pelo Euclides em 29/10); só pauta na prática (robots bloqueia robôs de IA)'
+- name: CFA — Market Integrity
+  url: https://blogs.cfainstitute.org/marketintegrity/feed/
+  tier: academico
+  lang: en
+  notes: 'copyright rígido do CFA (uso: pauta + citação, D-070); feed gigante (500 itens; feed_max_items limita)'
+# Reteste dos transientes da triagem (30/10, «pode retestar os transientes também»):
+# arXiv q-fin/econ ok (anunciam por dia útil; o «sem itens» de 29/10 era transiente).
+# Vitalik ficou fora (post mais novo com 34 dias — reavaliar quando voltar a publicar);
+# IPEA segue em HTTP 500 (28, 29 e 30/10 — lado deles).
+- name: arXiv — q-fin
+  url: https://rss.arxiv.org/rss/q-fin
+  tier: academico
+  lang: en
+  notes: 'papers novos por dia útil; feed pode vir vazio fora de dia de anúncio'
+- name: arXiv — econ
+  url: https://rss.arxiv.org/rss/econ
+  tier: academico
+  lang: en
+  notes: 'papers novos por dia útil; feed pode vir vazio fora de dia de anúncio'
+- name: Banco do Japão — Novidades (EN)
+  url: https://www.boj.or.jp/en/rss/whatsnew.xml
+  tier: oficial
+  lang: en
+  notes: 'dizer sempre a jurisdição (Japão)'
+- name: Our World in Data
+  url: https://ourworldindata.org/atom.xml
+  tier: academico
+  lang: en
+  notes: 'CC BY; dados e gráficos de alcance mundial (D-102)'
+- name: ESMA — News
+  url: https://www.esma.europa.eu/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'dizer sempre a jurisdição (UE)'
+- name: ONU News — Desenvolvimento econômico
+  url: https://news.un.org/feed/subscribe/pt/news/topic/economic-development/feed/rss.xml
+  tier: oficial
+  lang: pt
+  notes: 'economia mundial (D-110); crédito à ONU'
+- name: UN News — Economic Development
+  url: https://news.un.org/feed/subscribe/en/news/topic/economic-development/feed/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'economia mundial (D-110); crédito à ONU'
+- name: Agência Brasil — Internacional
+  url: https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml
+  tier: agencia
+  lang: pt
+  notes: 'notícias do mundo em português (D-110); agência pública'

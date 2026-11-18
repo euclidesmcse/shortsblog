@@ -1,0 +1,162 @@
+/*
+ * Variação da Culinária (D-086, 2.ª versão): revista de cozinha impressa.
+ * Masthead centralizado com filetes duplos, display Fraunces (servida pelo próprio blog,
+ * sem pedidos a terceiros), papel linho com tinta verde-oliva, grade mista com o 1.º
+ * cartão em destaque, capitular e ornamentos ✦ no artigo. Carregada só quando
+ * SB_SITE_KEY = culinaria (functions.php); os outros blogs seguem o «Grade» padrão.
+ * Sem JavaScript. Chinês cai para Songti/Noto Serif SC do sistema.
+ */
+@font-face {
+  font-family: "Fraunces"; font-style: normal; font-weight: 300 700; font-display: swap;
+  src: url("fonts/fraunces-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces"; font-style: italic; font-weight: 300 700; font-display: swap;
+  src: url("fonts/fraunces-latin-italic.woff2") format("woff2");
+}
+
+/* Papel linho, tinta verde-oliva, terracota fundo; o verde é o segundo tom da casa. */
+:root {
+  --bg: #f5efe2; --panel: #fdf9ef; --fg: #2e2a1a; --muted: #6e6449; --line: #dcd2b8;
+  --c: #a84714;
+  --leaf: #4c5a2c;
+  --tint: color-mix(in srgb, var(--c) 6%, var(--bg));
+  --shadow: 0 1px 2px rgb(82 62 30 / .05), 0 8px 24px rgb(82 62 30 / .07);
+  --shadow-up: 0 3px 6px rgb(82 62 30 / .08), 0 16px 36px rgb(82 62 30 / .13);
+  --display: "Fraunces", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --serif: "Iowan Old Style", Georgia, "Palatino Linotype", "Songti SC", "Noto Serif SC", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #1a1710; --panel: #241f15; --fg: #eee6d1; --muted: #b1a788; --line: #3a3420;
+          --c: #e89a62; --leaf: #9aab6c;
+          --tint: color-mix(in srgb, var(--c) 9%, var(--bg));
+          --shadow-up: 0 4px 8px rgb(0 0 0 / .3), 0 18px 40px rgb(0 0 0 / .5); }
+}
+
+/* ───── Masthead: nome centrado como capa de revista, categorias entre filetes duplos ───── */
+.sb-top { position: static; background: var(--bg); border-top: 0; box-shadow: none; }
+.sb-top > .in { flex-direction: column; gap: 10px; padding-block: 30px 18px; }
+.sb-name { margin-right: 0; flex-direction: column; gap: 10px; text-align: center;
+           font: 600 clamp(34px, 6vw, 50px)/1.05 var(--display); letter-spacing: -.01em; }
+.sb-name::before { content: "✦"; width: auto; height: auto; border-radius: 0; background: none;
+                   box-shadow: none; color: var(--c); font-size: 17px; line-height: 1; }
+.sb-search { order: 3; }
+.sb-search input, .sb-search input:focus { width: 230px; background: transparent;
+  border: 0; border-bottom: 1px solid var(--line); border-radius: 0; text-align: center;
+  box-shadow: none; font-family: var(--serif); font-style: italic; font-size: 15px; }
+.sb-search input:focus { border-bottom-color: var(--c); }
+.sb-langs { order: 2; font: 600 11px/1 var(--font); letter-spacing: .14em; }
+.sb-langs .current-lang a { background: none; color: var(--c); box-shadow: inset 0 -2px 0 var(--c); border-radius: 0; }
+.sb-nav { border-block: 3px double var(--line); background: var(--bg); }
+.sb-nav ul { justify-content: safe center; gap: 8px; }
+.sb-nav a { font-size: 12.5px; letter-spacing: .17em; text-transform: uppercase; color: var(--fg);
+            padding: 13px 12px; border-bottom: 0; }
+.sb-nav a:hover, .sb-nav .current-cat a, .sb-nav .current-cat-parent a { color: var(--c); border-bottom: 0; }
+
+/* ───── Seções: título em itálico entre dois filetes, centrado ───── */
+.sb-title { font: 600 32px/1.2 var(--display); }
+.sb-section { justify-content: center; text-transform: none; letter-spacing: 0;
+              font: italic 500 19px/1.3 var(--display); color: var(--fg); }
+.sb-section::before { content: ""; flex: 1; height: 1px;
+                      background: linear-gradient(270deg, var(--c), transparent); opacity: .55; }
+.sb-section::after { height: 1px; opacity: .55; }
+
+/* ───── Destaque: prato do dia num cartão de menu (borda fina, canto discreto) ───── */
+.sb-hero { border-radius: 8px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+.sb-badge { background: none; color: var(--c); padding: 0; border-radius: 0;
+            font: italic 600 16px/1.2 var(--display); letter-spacing: .01em; text-transform: none; }
+.sb-badge::before { content: "✦ "; font-style: normal; font-size: 12px; }
+.sb-hero h2 { font: 600 clamp(28px, 3.4vw, 42px)/1.12 var(--display); letter-spacing: -.015em; }
+.sb-hero p { font: italic 18px/1.6 var(--serif); }
+.sb-btn { background: none; color: var(--c); border: 1.5px solid var(--c); border-radius: 4px;
+          font: 700 12.5px/1 var(--font); letter-spacing: .14em; text-transform: uppercase;
+          padding: 13px 22px; }
+.sb-btn:hover { background: var(--c); color: var(--on-c); transform: none; box-shadow: none; }
+
+/* ───── Grade mista: o primeiro cartão abre a página, deitado e maior ───── */
+.sb-grid { gap: 28px; }
+.sb-card { border-radius: 8px; border: 1px solid var(--line); box-shadow: none;
+           transition: box-shadow .2s, border-color .2s; }
+.sb-card:hover { transform: none; box-shadow: var(--shadow-up); border-color: color-mix(in srgb, var(--c) 35%, var(--line)); }
+.sb-card h2 { font: 600 22px/1.25 var(--display); letter-spacing: 0; }
+.sb-card p { font: 15px/1.65 var(--serif); }
+.sb-card-body { padding: 20px 22px 22px; gap: 10px; }
+.sb-cat { letter-spacing: .16em; color: var(--leaf); } /* categoria em verde-oliva: 2.ª tinta da casa */
+.sb-meta { font: 500 11px/1.4 var(--font); letter-spacing: .13em; text-transform: uppercase; }
+@media (min-width: 900px) {
+  .sb-grid > .sb-card:first-child { grid-column: span 2; display: grid;
+    grid-template-columns: 1.15fr 1fr; align-items: stretch; }
+  .sb-grid > .sb-card:first-child .sb-card-media { aspect-ratio: auto; height: 100%; min-height: 280px; }
+  .sb-grid > .sb-card:first-child .sb-card-body { justify-content: center; padding: 30px 32px; }
+  .sb-grid > .sb-card:first-child h2 { font-size: 29px; }
+  .sb-grid > .sb-card:first-child p { font-size: 16.5px; -webkit-line-clamp: 4; }
+}
+.sb-ph b { font-family: var(--display); font-weight: 600; }
+
+/* ───── Artigo: capa rica, texto em serifa com capitular e ornamentos ───── */
+.sb-cover h1 { font: 600 clamp(30px, 5vw, 54px)/1.08 var(--display); letter-spacing: -.02em; }
+.sb-excerpt { font: italic 21px/1.5 var(--serif); }
+.sb-cover .sb-cat { letter-spacing: .16em; }
+.sb-content { font: 19px/1.85 var(--serif); border-radius: 10px; border: 1px solid var(--line); }
+.sb-content > p:first-of-type::first-letter { font: 600 58px/.85 var(--display); color: var(--c);
+  float: left; padding: 5px 10px 0 0; }
+.sb-content h2 { font: 600 28px/1.2 var(--display); letter-spacing: -.01em; }
+.sb-content h2::before { content: "✦"; width: auto; height: auto; background: none;
+  color: var(--c); font-size: 15px; line-height: 1; margin-bottom: 10px; }
+.sb-content h3 { font: 600 22px/1.3 var(--display); }
+.sb-content blockquote { font-style: italic; border-left: 3px double var(--c); border-radius: 0; }
+.sb-content h2:last-of-type + ul { font-family: var(--font); } /* «Fontes e créditos» em letra de UI */
+
+/* ───── Receita como página de revista (D-092; o HTML vem do sb-recipe.php) ───── */
+/* Cartão de informações: um menu — rótulos pequenos em versalete verde-oliva, valores em serifa. */
+.sb-r-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0;
+  margin: 20px 0 8px; border-block: 3px double var(--line); background: var(--tint); }
+.sb-r-item { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; min-width: 0; }
+.sb-r-item + .sb-r-item { border-left: 1px solid var(--line); }
+.sb-r-label { font: 600 10.5px/1.3 var(--font); letter-spacing: .16em; text-transform: uppercase;
+  color: var(--leaf); }
+.sb-r-value { font: italic 500 15.5px/1.45 var(--serif); color: var(--fg); }
+@media (max-width: 640px) {
+  .sb-r-info { grid-template-columns: 1fr; }
+  .sb-r-item + .sb-r-item { border-left: 0; border-top: 1px solid var(--line); }
+}
+
+/* Ingredientes: lista de despensa com checkbox nativo (sem JS); marcado fica riscado. */
+.sb-r-ings { list-style: none; padding-left: 0; }
+.sb-r-ing { padding: 2px 0; }
+.sb-r-ing label { display: flex; gap: 12px; align-items: baseline; cursor: pointer; }
+.sb-r-ing input[type=checkbox] { accent-color: var(--c); width: 17px; height: 17px; flex: none;
+  transform: translateY(2px); cursor: pointer; }
+.sb-r-ing:has(input:checked) span { text-decoration: line-through; color: var(--muted); }
+
+/* Modo de preparo: blocos com o número num selo terracota, em Fraunces. */
+.sb-r-steps { list-style: none; counter-reset: sb-passo; padding-left: 0; }
+.sb-r-steps > li { counter-increment: sb-passo; position: relative; padding: 4px 0 18px 58px;
+  min-height: 44px; }
+.sb-r-steps > li::before { content: counter(sb-passo); position: absolute; left: 0; top: 2px;
+  width: 40px; height: 40px; display: grid; place-items: center; border: 1.5px solid var(--c);
+  border-radius: 50%; color: var(--c); font: 600 19px/1 var(--display); }
+.sb-r-steps > li + li { border-top: 1px solid var(--line); padding-top: 18px; }
+.sb-r-steps > li + li::before { top: 16px; }
+
+/* Impressa, a receita vira ficha: checkboxes quadradinhos e números a traço já servem. */
+@media print {
+  .sb-r-info { background: none; }
+}
+
+/* ───── Newsletter como convite; rodapé verde-oliva escuro ───── */
+.sb-nl { background: var(--bg); border-block: 3px double var(--line); margin-top: 64px; }
+.sb-nl .in { text-align: center; }
+.sb-nl h2 { font: 600 26px/1.2 var(--display); }
+.sb-nl p { font: italic 16px/1.5 var(--serif); }
+.sb-nl form { justify-content: center; }
+.sb-nl input[type=email] { background: var(--panel); border-radius: 4px; flex: 0 1 300px; }
+.sb-nl button { background: var(--c); border-radius: 4px; letter-spacing: .1em; text-transform: uppercase; font-size: 13.5px; }
+.sb-foot { background: #232112; color: #beb594; border-top: 0; font-family: var(--serif); }
+.sb-foot .in { justify-content: center; text-align: center; flex-direction: column; align-items: center; gap: 12px; }
+.sb-foot ul { justify-content: center; }
+.sb-brand { color: #f2ecd8; font: 600 18px/1.2 var(--display); }
+.sb-foot a { color: #beb594; } .sb-foot a:hover { color: #fff; }
+.sb-foot .sb-credit { color: #a89d7c; font-size: 12.5px; }
+.sb-foot .sb-credit a { color: #f2ecd8; }
+@media (prefers-color-scheme: dark) { .sb-foot { background: #15130a; } }

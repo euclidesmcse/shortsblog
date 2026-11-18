@@ -1,0 +1,164 @@
+{{- $fn := include "sb.fullname" . -}}
+{{- $sec := include "sb.secretName" . -}}
+{{- define "sb.wpEnv" -}}
+{{- $fn := include "sb.fullname" . -}}
+- {name: WORDPRESS_DB_HOST, value: "{{ $fn }}-mariadb:3306"}
+- {name: WORDPRESS_DB_NAME, value: wordpress}
+- {name: WORDPRESS_DB_USER, value: wordpress}
+- name: WORDPRESS_DB_PASSWORD
+  valueFrom: {secretKeyRef: {name: {{ include "sb.secretName" . }}, key: wpDbPassword}}
+- {name: WORDPRESS_TABLE_PREFIX, value: wp_}
+- name: WORDPRESS_CONFIG_EXTRA
+  value: |
+    define('WP_HOME', '{{ include "sb.siteUrl" . }}');
+    define('WP_SITEURL', '{{ include "sb.siteUrl" . }}');
+    define('DISALLOW_FILE_EDIT', true);
+    define('WP_AUTO_UPDATE_CORE', 'minor');
+    define('DISABLE_WP_CRON', true);
+    define('WP_POST_REVISIONS', 5);
+    define('WP_ENVIRONMENT_TYPE', 'production');
+    define('SB_SITE_KEY', '{{ .Values.site.key }}');
+    define('SB_NEWSLETTER_API', 'http://{{ $fn }}-api:8000');
+    define('SB_NEWSLETTER_TOKEN', '');
+{{- end -}}
+# --- Blog WordPress ---------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fn }}-wordpress
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "sb.selector" (list . "wordpress") | nindent 4 }}
+  ports: [{name: http, port: 80, targetPort: 80}]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fn }}-wp-html
+  labels: {{- include "sb.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- include "sb.storageClass" . | nindent 2 }}
+  resources: {requests: {storage: {{ .Values.persistence.wordpress }}}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fn }}-wordpress
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {{- include "sb.selector" (list . "wordpress") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sb.selector" (list . "wordpress") | nindent 8 }}
+        {{- include "sb.wpClient" . | nindent 8 }}
+    spec:
+      {{- include "sb.scheduling" . | nindent 6 }}
+      automountServiceAccountToken: false
+      initContainers:
+        # mu-plugins, tema e setup vêm da imagem shortsblog-wp-assets (no compose: bind mounts).
+        - name: assets
+          image: {{ include "sb.image.wpAssets" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [sh, -c, "cp -R /assets/mu-plugins/. /mnt/mu/ && cp -R /assets/themes/shortsblog/. /mnt/theme/ && cp -R /assets/setup/. /mnt/setup/"]
+          securityContext: {{- include "sb.restricted" . | nindent 12 }}
+          volumeMounts:
+            - {name: mu-plugins, mountPath: /mnt/mu}
+            - {name: theme, mountPath: /mnt/theme}
+            - {name: setup, mountPath: /mnt/setup}
+          resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {memory: 64Mi}}
+      containers:
+        - name: wordpress
+          image: {{ .Values.thirdParty.wordpress }}
+          env: {{- include "sb.wpEnv" . | nindent 12 }}
+          ports: [{name: http, containerPort: 80}]
+          securityContext: {allowPrivilegeEscalation: false}
+          volumeMounts:
+            - {name: html, mountPath: /var/www/html}
+            - {name: mu-plugins, mountPath: /var/www/html/wp-content/mu-plugins, readOnly: true}
+            - {name: theme, mountPath: /var/www/html/wp-content/themes/shortsblog, readOnly: true}
+          readinessProbe:
+            httpGet:
+              path: /wp-login.php
+              port: 80
+              httpHeaders:
+                - {name: Host, value: {{ .Values.site.host | quote }}}
+                - {name: X-Forwarded-Proto, value: https}
+            periodSeconds: 15
+            timeoutSeconds: 10
+          livenessProbe:
+            tcpSocket: {port: 80}
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources: {{- toYaml .Values.resources.wordpress | nindent 12 }}
+        # Instalação (idempotente: install.sh, categorias, credencial do motor) e WP-Cron de 5 em 5
+        # minutos. No mesmo pod que o Apache porque dividem o volume ReadWriteOnce. Fica «pronto»
+        # só depois da 1.ª instalação completa — e o pod do blog com ele.
+        - name: setup-cron
+          image: {{ .Values.thirdParty.wpcli }}
+          securityContext: {runAsUser: 33, runAsGroup: 33, allowPrivilegeEscalation: false}
+          command:
+            - sh
+            - -c
+            - |
+              cd /var/www/html
+              until [ -f wp-config.php ] && wp db check --quiet >/dev/null 2>&1; do
+                echo "esperando o WordPress e o banco"; sleep 5
+              done
+              setup() {
+                sh /setup/install.sh &&
+                wp eval-file /setup/categories.php &&
+                wp eval-file /setup/app-password.php &&
+                touch /tmp/setup-ok
+              }
+              until setup; do echo "instalação falhou: nova tentativa em 60 s"; sleep 60; done
+              echo "instalação ok: WP-Cron de 5 em 5 minutos"
+              while true; do wp cron event run --due-now --quiet || true; sleep 300; done
+          env:
+            {{- include "sb.wpEnv" . | nindent 12 }}
+            - {name: SB_SITE_KEY, value: {{ .Values.site.key | quote }}}
+            - {name: SB_SITE_NAME, value: {{ .Values.site.name | quote }}}
+            - {name: SB_SITE_TAGLINE, value: {{ .Values.site.tagline | quote }}}
+            - {name: SB_SITE_HOST, value: {{ .Values.site.host | quote }}}
+            - {name: SB_SCHEME, value: {{ .Values.scheme | quote }}}
+            - {name: SB_TZ, value: {{ .Values.timezone | quote }}}
+            - {name: SB_WP_ADMIN_USER, value: {{ .Values.admin.wpUser | quote }}}
+            - {name: SB_WP_ADMIN_EMAIL, value: {{ .Values.admin.email | quote }}}
+            - name: SB_WP_ADMIN_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $sec }}, key: wpAdminPassword}}
+            - {name: SB_WP_APP_USER, value: sb-publisher}
+            - name: SB_WP_APP_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $sec }}, key: wpAppPassword}}
+          readinessProbe:
+            exec: {command: [test, -f, /tmp/setup-ok]}
+            periodSeconds: 10
+          volumeMounts:
+            - {name: html, mountPath: /var/www/html}
+            - {name: mu-plugins, mountPath: /var/www/html/wp-content/mu-plugins, readOnly: true}
+            - {name: theme, mountPath: /var/www/html/wp-content/themes/shortsblog, readOnly: true}
+            - {name: setup, mountPath: /setup, readOnly: true}
+            - {name: sites, mountPath: /sites, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+          resources: {{- toYaml .Values.resources.wpSidecar | nindent 12 }}
+      volumes:
+        - name: html
+          persistentVolumeClaim: {claimName: {{ $fn }}-wp-html}
+        - name: mu-plugins
+          emptyDir: {sizeLimit: 16Mi}
+        - name: theme
+          emptyDir: {sizeLimit: 32Mi}
+        - name: setup
+          emptyDir: {sizeLimit: 8Mi}
+        - name: tmp
+          emptyDir: {sizeLimit: 64Mi}
+        - name: sites
+          configMap:
+            name: {{ $fn }}-config
+            items:
+              - {key: wordpress-site.json, path: "{{ .Values.site.key }}.json"}

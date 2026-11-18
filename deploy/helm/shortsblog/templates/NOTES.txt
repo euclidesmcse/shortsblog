@@ -1,0 +1,23 @@
+ShortsBlog instalado ({{ .Release.Name }}, namespace {{ .Release.Namespace }}).
+
+Portal: {{ include "sb.panelUrl" . }}
+Blog:   {{ include "sb.siteUrl" . }}
+
+1. Aponte os dois nomes no seu DNS para o Ingress. O blog só fica «pronto» depois da 1.ª
+   instalação do WordPress (o sidecar setup-cron baixa o Polylang e os idiomas: precisa de internet).
+     kubectl -n {{ .Release.Namespace }} get pods
+     helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+2. Senha inicial do portal (o usuário é {{ .Values.admin.email }}; o portal pede uma nova):
+     kubectl -n {{ .Release.Namespace }} get secret {{ include "sb.secretName" . }} -o jsonpath='{.data.panelPassword}' | base64 -d; echo
+
+3. GUARDE UMA CÓPIA DO SECRET FORA DO CLUSTER — o secretKey abre o cofre do portal:
+     kubectl -n {{ .Release.Namespace }} get secret {{ include "sb.secretName" . }} -o yaml > shortsblog-secrets.yaml
+
+4. Depois da senha nova, o portal abre os Primeiros passos: IA (redator e revisor de famílias
+   diferentes), e-mail (opcional) e ligar o blog. Os posts chegam como
+   {{ if eq .Values.wpPublishMode "draft" }}rascunho para aprovação{{ else }}publicação direta{{ end }}.
+{{- if eq .Values.scheme "http" }}
+
+AVISO: scheme=http serve para conhecer o portal; o motor só publica num blog em https.
+{{- end }}

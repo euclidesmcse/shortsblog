@@ -1,0 +1,29 @@
+# ShortsBlog — site "cloud" (E4.2). Sem segredos: credenciais ficam no Infisical.
+# A base de dados é sincronizada a partir deste ficheiro (python -m app.core.migrate).
+site_key: cloud
+name: "Cloud e Infraestrutura"
+description: "Computação em nuvem, infraestrutura, DevOps e segurança para quem opera sistemas."
+base_url: https://cloud.shortsblog.com
+wordpress_api_url: https://cloud.shortsblog.com/wp-json
+hosting_group: oracle-arm-1
+timezone: Europe/Lisbon  # D-066: slots às 07:00 de Lisboa
+language: pt-BR
+languages: [pt-BR, en, es, zh-CN]
+# Piloto em produção desde 2026-10-07 (E14.1, D-057): 1 slot por dia.
+enabled: true
+daily_target: 1
+# Desfasamento dos slots em minutos (spec §5.2): 0, 7, 14, 21, 28, 35.
+slot_offset_minutes: 0
+seo_plugin: ""
+taxonomy_version: "1"
+editorial_policy_version: "1"
+# Categorias aceites (taxonomia v1); as do WordPress são criadas na E8.6.
+categories:
+  - "Notícias"
+  - "Kubernetes e Containers"
+  - "Segurança"
+  - "DevOps"
+  - "Custos e FinOps"
+  - "Guias"
+# Fontes mínimas por artigo (gate da E6.7).
+min_sources: 2

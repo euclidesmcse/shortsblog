@@ -1,0 +1,11 @@
+apiVersion: v2
+name: shortsblog
+description: >-
+  ShortsBlog — motor de conteúdo com aprovação humana, portal de operação, AI Gateway e um blog
+  WordPress, num único release (E19.4).
+type: application
+# Versão do chart (muda a cada mudança no chart) e da aplicação (a tag `v<appVersion>` das imagens).
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.27.0-0"
+keywords: [wordpress, blog, ai, content]

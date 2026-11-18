@@ -1,0 +1,210 @@
+{{- $fn := include "sb.fullname" . -}}
+{{- $sec := include "sb.secretName" . -}}
+# --- Postgres (motor) -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fn }}-postgres
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "sb.selector" (list . "postgres") | nindent 4 }}
+  ports: [{name: pg, port: 5432, targetPort: 5432}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fn }}-postgres
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ $fn }}-postgres
+  replicas: 1
+  selector:
+    matchLabels: {{- include "sb.selector" (list . "postgres") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "sb.selector" (list . "postgres") | nindent 8 }}
+    spec:
+      {{- include "sb.scheduling" . | nindent 6 }}
+      containers:
+        - name: postgres
+          image: {{ .Values.thirdParty.postgres }}
+          env:
+            - {name: POSTGRES_DB, value: sb}
+            - {name: POSTGRES_USER, value: sb_admin}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $sec }}, key: dbAdminPassword}}
+            # Subpasta: o volume pode trazer lost+found na raiz.
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          ports: [{name: pg, containerPort: 5432}]
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+            - {name: shm, mountPath: /dev/shm}
+          readinessProbe:
+            exec: {command: [sh, -c, 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"']}
+            periodSeconds: 10
+          livenessProbe:
+            exec: {command: [sh, -c, 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"']}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources: {{- toYaml .Values.resources.postgres | nindent 12 }}
+      volumes:
+        - name: shm
+          emptyDir: {medium: Memory, sizeLimit: 128Mi}
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- include "sb.storageClass" . | nindent 8 }}
+        resources: {requests: {storage: {{ .Values.persistence.postgres }}}}
+---
+# --- Redis (filas) --------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fn }}-redis
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "sb.selector" (list . "redis") | nindent 4 }}
+  ports: [{name: redis, port: 6379, targetPort: 6379}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fn }}-redis
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ $fn }}-redis
+  replicas: 1
+  selector:
+    matchLabels: {{- include "sb.selector" (list . "redis") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "sb.selector" (list . "redis") | nindent 8 }}
+    spec:
+      {{- include "sb.scheduling" . | nindent 6 }}
+      containers:
+        - name: redis
+          image: {{ .Values.thirdParty.redis }}
+          args: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec",
+                 "--maxmemory", "200mb", "--maxmemory-policy", "noeviction"]
+          ports: [{name: redis, containerPort: 6379}]
+          volumeMounts: [{name: data, mountPath: /data}]
+          readinessProbe:
+            exec: {command: [redis-cli, ping]}
+            periodSeconds: 10
+          livenessProbe:
+            exec: {command: [redis-cli, ping]}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources: {{- toYaml .Values.resources.redis | nindent 12 }}
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- include "sb.storageClass" . | nindent 8 }}
+        resources: {requests: {storage: {{ .Values.persistence.redis }}}}
+---
+# --- MariaDB (WordPress) ----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fn }}-mariadb
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "sb.selector" (list . "mariadb") | nindent 4 }}
+  ports: [{name: mysql, port: 3306, targetPort: 3306}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fn }}-mariadb
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ $fn }}-mariadb
+  replicas: 1
+  selector:
+    matchLabels: {{- include "sb.selector" (list . "mariadb") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "sb.selector" (list . "mariadb") | nindent 8 }}
+    spec:
+      {{- include "sb.scheduling" . | nindent 6 }}
+      containers:
+        - name: mariadb
+          image: {{ .Values.thirdParty.mariadb }}
+          args: ["--innodb-buffer-pool-size=128M", "--max-connections=40",
+                 "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+          env:
+            - {name: MARIADB_DATABASE, value: wordpress}
+            - {name: MARIADB_USER, value: wordpress}
+            - name: MARIADB_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $sec }}, key: wpDbPassword}}
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $sec }}, key: wpDbRootPassword}}
+            - {name: MARIADB_AUTO_UPGRADE, value: "1"}
+          ports: [{name: mysql, containerPort: 3306}]
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/mysql, subPath: mysql}
+          readinessProbe:
+            exec: {command: [healthcheck.sh, --connect, --innodb_initialized]}
+            periodSeconds: 15
+          livenessProbe:
+            exec: {command: [healthcheck.sh, --connect]}
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources: {{- toYaml .Values.resources.mariadb | nindent 12 }}
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- include "sb.storageClass" . | nindent 8 }}
+        resources: {requests: {storage: {{ .Values.persistence.mariadb }}}}
+---
+# --- SearXNG (busca de reforço) ---------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fn }}-searxng
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "sb.selector" (list . "searxng") | nindent 4 }}
+  ports: [{name: http, port: 8080, targetPort: 8080}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fn }}-searxng
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "sb.selector" (list . "searxng") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "sb.selector" (list . "searxng") | nindent 8 }}
+      annotations:
+        checksum/settings: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum | trunc 16 }}
+    spec:
+      {{- include "sb.scheduling" . | nindent 6 }}
+      containers:
+        - name: searxng
+          image: {{ .Values.thirdParty.searxng }}
+          env:
+            - {name: SEARXNG_SETTINGS_PATH, value: /etc/searxng/settings.yml}
+          ports: [{name: http, containerPort: 8080}]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL], add: [CHOWN, SETGID, SETUID]}
+          volumeMounts:
+            - {name: settings, mountPath: /etc/searxng/settings.yml, subPath: settings.yml, readOnly: true}
+          readinessProbe:
+            httpGet: {path: /healthz, port: 8080}
+            periodSeconds: 15
+          livenessProbe:
+            httpGet: {path: /healthz, port: 8080}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources: {{- toYaml .Values.resources.searxng | nindent 12 }}
+      volumes:
+        - name: settings
+          secret: {secretName: {{ $fn }}-searxng}

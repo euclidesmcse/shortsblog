@@ -1,0 +1,39 @@
+# Domínios de receita já revisados (D-082, política de fontes (c)).
+#
+# O motor lê qualquer domínio fora de `sem-leitura.yaml`. Para que nenhum domínio novo passe despercebido,
+# `scripts/dominios_receitas_novos.py` compara os domínios usados nas receitas com esta lista, com
+# `sem-leitura.yaml` e com os feeds da Culinária, e mostra o que ainda não teve os termos lidos.
+# Revisão semanal: docs/runbooks/fontes-receitas.md. Aqui só entram domínios amarelos ou verdes; os vermelhos
+# vão para `sem-leitura.yaml`. Não é parecer jurídico.
+reviewed:
+- {domain: naminhapanela.com, class: amarelo, on: 2026-10-24, ref: "E14-termos-culinaria-2026-10-24"}
+- {domain: oetker.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-culinaria-2026-10-24"}
+- {domain: piracanjuba.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-culinaria-2026-10-24"}
+- {domain: receitinhadavovo.com.br, class: amarelo-no-limite, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: comidaereceitas.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: decolherpracolher.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: essareceitafunciona.com.br, class: amarelo-fragil, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: friato.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: leiliane.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: mariareceita.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: querocomidadeverdade.com, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: receitamaneira.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: receitapreferida.com, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: receitasde.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: receitaskidelicia.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: sabordivino.com.br, class: amarelo, on: 2026-10-26, ref: "E14-termos-receitas-fontes-2026-10-24; relido em 26/10 após a mudança de 24/10: a cláusula operativa é a mesma («não pode reproduzir ou distribuir nosso conteúdo sem permissão»), sem nada de robôs/raspagem/IA e robots.txt livre — segue amarelo"}
+- {domain: santolegume.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24"}
+- {domain: canaldareceita.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24 (segunda leva)"}
+- {domain: cozinhalegal.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24 (segunda leva)"}
+- {domain: receitacapixaba.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24 (segunda leva); site novo, rever na semana"}
+- {domain: ajinomotofoodservice.com.br, class: amarelo, on: 2026-10-24, ref: "E14-termos-receitas-fontes-2026-10-24 (terceira leva); sem termos no site, só copyright no rodapé"}
+- {domain: loveandoliveoil.com, class: amarelo, on: 2026-10-26, ref: "E14-termos-culinaria-feeds-2026-10-26; sem termos, FAQ só proíbe republicação integral"}
+# D-089 (26/10): o Euclides reverteu os 3 limítrofes da D-083 — saem do sem-leitura.yaml e voltam como amarelos-no-limite.
+- {domain: capixabadagema.com.br, class: amarelo-no-limite, on: 2026-10-26, ref: "E14-termos-receitas-fontes-2026-10-24; vermelho limítrofe na D-083, revertido pelo Euclides em 26/10 (D-089)"}
+- {domain: blogreceitasdacasa.com.br, class: amarelo-no-limite, on: 2026-10-26, ref: "E14-termos-receitas-fontes-2026-10-24; vermelho limítrofe na D-083, revertido pelo Euclides em 26/10 (D-089)"}
+- {domain: sabornamesa.com.br, class: amarelo-no-limite, on: 2026-10-26, ref: "E14-termos-receitas-fontes-2026-10-24; vermelho limítrofe na D-083, revertido pelo Euclides em 26/10 (D-089)"}
+- {domain: culinariabr.com, class: amarelo-no-limite, on: 2026-10-26, ref: "E14-termos-receitas-fontes-2026-10-24 (terceira leva); vermelho limítrofe na D-084, revertido pelo Euclides em 26/10 (D-089)"}
+- {domain: omnivorescookbook.com, class: amarelo, on: 2026-10-26, ref: "E14-termos-culinaria-feeds-2026-10-26; sem termos no site, só copyright no rodapé"}
+- {domain: ketokarma.com, class: amarelo, on: 2026-10-27, ref: "relatório semanal D-082 de 27/10 (domínio novo do job 105); sem página de termos (404), só política de privacidade e © no rodapé"}
+- {domain: jc.uol.com.br, class: amarelo, on: 2026-11-03, ref: "E14-dominios-receitas-2026-11-03; termos não acháveis (só LGPD; SPA sem texto estático); jornal comercial do grupo SJCC — prudência editorial, rever na próxima D-082"}
+- {domain: receitasnorobot.com, class: amarelo, on: 2026-11-03, ref: "E14-dominios-receitas-2026-11-03; página de termos quebrada desde ≥2024 (shortcode cru, 3 snapshots do Wayback); robots.txt libera robôs de IA e publica /llms.txt; conteúdo sobre a marca Bimby sem afiliação — cuidado ao reaproveitar"}

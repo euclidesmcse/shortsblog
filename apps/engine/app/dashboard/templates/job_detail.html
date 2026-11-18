@@ -1,0 +1,80 @@
+{% extends "_base.html" %}
+{% block title %}Job {{ job.id }} — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)} .pill.warn{color:var(--warn); border-color:var(--warn)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  dl{display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:0; font-size:14px}
+  dt{color:var(--muted)} dd{margin:0; word-break:break-word}
+  td{vertical-align:top; font-size:13px}
+  .det{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11px; color:var(--muted);
+       max-width:520px; word-break:break-word}
+  .rq{display:flex; gap:8px; flex-wrap:wrap} .rq input{flex:1 1 260px; font:inherit; font-size:14px; padding:8px 10px;
+       border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text)}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:1100px">
+  <p style="margin:0 0 6px"><a href="/dashboard/jobs?blog={{ job.site_key }}">← Jobs</a></p>
+  <header style="margin-bottom:12px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap">
+    <h1 style="margin:0">Job {{ job.id }}</h1>
+    <span class="pill {{ status_class.get(job.status, '') }}">{{ job.status }}</span>
+    <a href="/dashboard/review/{{ job.id }}">Ler o artigo</a>
+  </header>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+
+  <div class="card">
+    <dl>
+      <dt>Blog</dt><dd>{{ job.site_key }} · {{ job.local_date.strftime('%d/%m/%Y') }} · slot {{ job.slot_number }}</dd>
+      <dt>Horário</dt><dd>{{ job.due_at_utc|when }}</dd>
+      <dt>Produção a partir de</dt><dd>{{ job.produce_after_utc|when }}</dd>
+      {% if job.published_at_utc %}<dt>Publicado</dt><dd>{{ job.published_at_utc|when }}
+        {% if job.wordpress_url %} · <a href="{{ job.wordpress_url }}" target="_blank" rel="noopener">abrir</a>{% endif %}</dd>{% endif %}
+      {% if job.title %}<dt>Título</dt><dd>{{ job.title }}</dd>{% endif %}
+      {% if job.idea_topic %}<dt>Pauta</dt><dd>{{ job.idea_topic }} <span class="muted">({{ job.idea_origin }})</span></dd>{% endif %}
+      <dt>Tentativas</dt><dd>{{ job.attempt_count }}{% if job.writer_family %} · redator {{ job.writer_family }}{% endif %}</dd>
+      {% if job.retry_after_utc %}<dt>Nova tentativa</dt><dd>{{ job.retry_after_utc|when }}</dd>{% endif %}
+      {% if job.blocked_reason and job.status != 'PUBLISHED_CONFIRMED' %}<dt>Motivo</dt><dd>{{ job.blocked_reason }}</dd>{% endif %}
+    </dl>
+  </div>
+
+  {% if job.status == 'BLOCKED' %}
+  <div class="card">
+    <h2 style="font-size:17px">Reenfileirar</h2>
+    <form method="post" action="/dashboard/jobs/{{ job.id }}/requeue" class="rq"
+          onsubmit="return confirm('Devolver o job {{ job.id }} à fila? A produção recomeça do zero e o artigo volta para aprovação.')">
+      <input type="text" name="motivo" required minlength="3" maxlength="500" placeholder="motivo (vai para o evento e para a auditoria)">
+      <button class="btn" type="submit" style="padding:9px 18px; font-size:15px">Reenfileirar</button></form>
+    <p class="muted" style="font-size:13px">Volta a QUEUED: pesquisa, gates, revisão e aprovação acontecem de novo; nenhum atalho.</p>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2 style="font-size:17px">Chamadas de IA</h2>
+    {% if usage %}<div class="scroll"><table>
+      <tr><th>Provedor</th><th>Papel</th><th>Propósito</th><th>Chamadas</th><th>Falhas</th><th>Tokens (entrada/saída)</th></tr>
+      {% for u in usage %}<tr><td>{{ u.provider }}</td><td>{{ u.role }}</td><td>{{ u.purpose }}</td><td>{{ u.calls }}</td>
+        <td>{{ u.failures }}</td><td class="muted">{{ u.tin }} / {{ u.tout }}</td></tr>{% endfor %}
+      <tr><td colspan="3"><strong>Total</strong></td><td><strong>{{ usage|sum(attribute='calls') }}</strong></td><td>{{ usage|sum(attribute='failures') }}</td><td></td></tr>
+    </table></div>{% else %}<p class="muted">Nenhuma chamada registrada.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px">Eventos ({{ events|length }})</h2>
+    <div class="scroll"><table>
+      <tr><th>Quando (UTC)</th><th>Evento</th><th>Estado</th><th>Quem</th><th>Detalhes</th></tr>
+      {% for e in events %}<tr>
+        <td class="muted" style="white-space:nowrap">{{ e.timestamp_utc.strftime('%d/%m %H:%M:%S') }}</td>
+        <td>{{ e.event_type }}</td>
+        <td style="white-space:nowrap">{% if e.to_status %}{{ e.from_status or '—' }} → <strong>{{ e.to_status }}</strong>{% endif %}</td>
+        <td>{{ e.actor }}</td>
+        <td class="det">{% if e.details %}{{ e.details|tojson|truncate(300) }}{% endif %}</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}

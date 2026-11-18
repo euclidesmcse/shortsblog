@@ -1,0 +1,120 @@
+{% extends "_base.html" %}
+{% block title %}Usuários — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px;
+        font-weight:600; border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .pill.warn{color:var(--warn); border-color:var(--warn)}
+  .inline-form{display:inline}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:5px 11px; font-size:13px; cursor:pointer}
+  .mini-btn.no{border-color:var(--bad); color:var(--bad)}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px}
+  .notice.bad{border-left-color:var(--bad)}
+  .notice.warn{border-left-color:var(--warn)}
+  input[type=text], input[type=email], select{
+    font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--border);
+    border-radius:8px; background:var(--bg); color:var(--text); max-width:100%}
+  label{display:block; font-size:12px; color:var(--muted); margin-bottom:3px}
+  .fields{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); align-items:end}
+  .fields input{width:100%}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px}
+  .secret{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:20px;
+          font-weight:700; letter-spacing:.04em; background:var(--bg); border:1px solid var(--border);
+          border-radius:8px; padding:8px 12px; display:inline-block; user-select:all}
+  td form{margin:0}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <header style="margin-bottom:18px">
+    <h1 style="margin:0">Usuários</h1>
+  </header>
+
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+
+  {% if revealed %}
+  <div class="card notice warn">
+    <h2 style="font-size:17px">Senha provisória de {{ revealed.email }}</h2>
+    <p><span class="secret">{{ revealed.password }}</span></p>
+    <p class="muted" style="margin:0">Aparece só agora: copie e entregue por um canal seguro. No 1.º acesso
+      a pessoa é obrigada a escolher a própria senha.</p>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2 style="font-size:17px">Contas</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Email</th><th>Nome</th><th>Papel</th><th>Estado</th><th>Último login</th><th></th></tr></thead>
+      <tbody>
+      {% for u in users %}
+        <tr>
+          <td>{{ u.email }}{% if u.id == me %} <span class="muted">(você)</span>{% endif %}
+            {% if access_list and u.email not in access_list %}<br><span class="pill warn" title="O Cloudflare Access barra emails fora da lista PANEL_ALLOWED_EMAILS">fora da lista do Access</span>{% endif %}</td>
+          <td>{{ u.name }}</td>
+          <td>
+            {% if u.id == me %}{{ roles[u.role] }}{% else %}
+            <form class="inline-form" method="post" action="/dashboard/users/{{ u.id }}/role">
+              <select name="role" onchange="this.form.submit()">
+                {% for key, label in roles.items() %}<option value="{{ key }}" {% if key == u.role %}selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select></form>{% endif %}
+          </td>
+          <td>
+            {% if not u.active %}<span class="pill bad">desativado</span>
+            {% elif u.must_change_password %}<span class="pill warn">senha provisória</span>
+            {% else %}<span class="pill ok">ativo</span>{% endif %}
+          </td>
+          <td class="muted">{{ u.last_login_at.strftime('%d/%m %H:%M') if u.last_login_at else '—' }}</td>
+          <td style="white-space:nowrap">
+            {% if u.id != me %}
+            <form class="inline-form" method="post" action="/dashboard/users/{{ u.id }}/reset"
+                  onsubmit="return confirm('Gerar uma senha provisória nova para {{ u.email }}? As sessões abertas caem.')">
+              <button class="mini-btn" type="submit">Redefinir senha</button></form>
+            <form class="inline-form" method="post" action="/dashboard/users/{{ u.id }}/active">
+              <input type="hidden" name="active" value="{{ 'false' if u.active else 'true' }}">
+              <button class="mini-btn {{ 'no' if u.active }}" type="submit">{{ 'Desativar' if u.active else 'Ativar' }}</button></form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px">Novo usuário</h2>
+    <form method="post" action="/dashboard/users">
+      <div class="fields">
+        <div><label for="email">Email</label><input id="email" name="email" type="email" required></div>
+        <div><label for="name">Nome</label><input id="name" name="name" type="text"></div>
+        <div><label for="role">Papel</label>
+          <select id="role" name="role">
+            <option value="operador" selected>Operador — aprova, pauta, reenfileira, consulta</option>
+            <option value="admin">Admin — tudo, mais configuração, usuários e IA</option>
+          </select></div>
+        <div><button class="btn" type="submit" style="padding:9px 18px; font-size:15px">Criar com senha provisória</button></div>
+      </div>
+    </form>
+    {% if access_list %}<p class="muted" style="font-size:13px; margin:12px 0 0">Nesta instalação o
+      Cloudflare Access está na frente: o email também precisa estar em <code>PANEL_ALLOWED_EMAILS</code>
+      e na política do Access, senão a pessoa não chega ao login.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px">Auditoria recente</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Quando (UTC)</th><th>Quem</th><th>Ação</th><th>Alvo</th></tr></thead>
+      <tbody>
+      {% for a in audit %}
+        <tr><td class="muted">{{ a.at.strftime('%d/%m %H:%M') }}</td><td>{{ a.actor }}</td>
+            <td><code>{{ a.action }}</code></td><td>{{ a.target }}</td></tr>
+      {% else %}<tr><td colspan="4" class="muted">Sem registros.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "_base.html" %}
+{% block title %}Jobs — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)} .pill.warn{color:var(--warn); border-color:var(--warn)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  .filters{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
+  .filters label{display:block; font-size:12px; color:var(--muted); margin-bottom:3px}
+  .filters input, .filters select, .rq input{font:inherit; font-size:14px; padding:6px 8px; border:1px solid var(--border);
+        border-radius:8px; background:var(--bg); color:var(--text)}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:5px 11px; font-size:13px; cursor:pointer}
+  td{vertical-align:top; font-size:13px}
+  .why{color:var(--muted); font-size:12px; max-width:380px}
+  .rq{display:flex; gap:6px; margin-top:6px} .rq input{width:180px; font-size:12px}
+  .counts{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 0}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <header style="margin-bottom:12px"><h1 style="margin:0">Jobs</h1></header>
+  {% if msg %}<div class="card notice">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad">{{ err }}</div>{% endif %}
+  <div class="card">
+    <form method="get" class="filters">
+      <div><label for="de">De (data local)</label><input type="date" id="de" name="de" value="{{ de }}"></div>
+      <div><label for="ate">Até</label><input type="date" id="ate" name="ate" value="{{ ate }}"></div>
+      <div><label for="blog">Blog</label><select id="blog" name="blog"><option value="">todos</option>
+        {% for b in blogs %}<option {% if b == blog %}selected{% endif %}>{{ b }}</option>{% endfor %}</select></div>
+      <div><label for="grupo">Estado</label><select id="grupo" name="grupo">
+        {% for k, v in groups.items() %}<option value="{{ k }}" {% if k == group %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+      <div><button class="mini-btn" type="submit">Filtrar</button></div>
+    </form>
+    <div class="counts">{% for st, n in counts|dictsort %}<span class="pill {{ status_class.get(st, '') }}">{{ st }} {{ n }}</span>{% endfor %}</div>
+  </div>
+
+  <div class="card">
+    {% if rows %}
+    <div class="scroll"><table>
+      <tr><th>#</th><th>Blog</th><th>Dia · slot</th><th>Estado</th><th>Horário</th><th>IA</th><th>Título / motivo</th></tr>
+      {% for j in rows %}
+      <tr>
+        <td><a href="/dashboard/jobs/{{ j.id }}">{{ j.id }}</a></td>
+        <td>{{ j.site_key }}</td>
+        <td style="white-space:nowrap">{{ j.local_date.strftime('%d/%m') }} · {{ j.slot_number }}</td>
+        <td><span class="pill {{ status_class.get(j.status, '') }}">{{ j.status }}</span>
+            {% if j.attempt_count > 1 %}<div class="why">{{ j.attempt_count }} tentativas</div>{% endif %}</td>
+        <td style="white-space:nowrap">{{ j.due_at_utc|when }}
+            {% if j.published_at_utc %}<div class="why">publicado {{ j.published_at_utc|when }}</div>{% endif %}</td>
+        <td style="white-space:nowrap">{{ j.calls }}{% if j.by_provider %}<div class="why">{{ j.by_provider }}</div>{% endif %}</td>
+        <td>{% if j.title %}{% if j.wordpress_url %}<a href="{{ j.wordpress_url }}" target="_blank" rel="noopener">{{ j.title }}</a>{% else %}{{ j.title }}{% endif %}{% endif %}
+            {% if j.blocked_reason and j.status != 'PUBLISHED_CONFIRMED' %}<div class="why">{{ j.blocked_reason[:220] }}{{ '…' if j.blocked_reason|length > 220 }}</div>{% endif %}
+            {% if j.status == 'BLOCKED' %}
+            <form method="post" action="/dashboard/jobs/{{ j.id }}/requeue" class="rq"
+                  onsubmit="return confirm('Devolver o job {{ j.id }} à fila? A produção recomeça do zero.')">
+              <input type="hidden" name="back" value="/dashboard/jobs?de={{ de }}&ate={{ ate }}&blog={{ blog }}&grupo={{ group }}">
+              <input type="text" name="motivo" required minlength="3" maxlength="500" placeholder="motivo">
+              <button class="mini-btn" type="submit">Reenfileirar</button></form>
+            {% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    {% if rows|length >= limit %}<p class="muted" style="font-size:13px">Mostrando os {{ limit }} mais recentes; estreite o filtro.</p>{% endif %}
+    {% else %}<p class="muted">Nenhum job neste filtro.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

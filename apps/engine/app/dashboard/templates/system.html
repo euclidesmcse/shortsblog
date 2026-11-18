@@ -1,0 +1,97 @@
+{% extends "_base.html" %}
+{% from "_system_cards.html" import cards_css, source, field, clear_forms, email_form, wp_form %}
+{% block title %}Sistema — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+{{ cards_css() }}
+{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:980px">
+  <header style="margin-bottom:12px"><h1 style="margin:0">Sistema</h1>
+    <p class="muted" style="margin:4px 0 0; font-size:14px">Segredos e integrações do motor. O que está no <strong>cofre</strong>
+      (cifrado no banco) vale sobre o <strong>ambiente</strong>; os segredos só aparecem mascarados e o campo em branco mantém o
+      valor atual. Gravar testa a conexão antes. Os workers veem a mudança em até 1 min. Chaves e limites de cada
+      provedor de IA ficam em <a href="/dashboard/ai">Provedores de IA</a>.</p></header>
+  {% if msg %}<div class="card notice" role="status">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="card notice bad" role="alert">{{ err }}</div>{% endif %}
+  {% if revealed %}
+  <div class="card notice" role="alert" id="revealed" style="border-left-color:var(--accent)">
+    <h2>{{ revealed.label }} — token novo</h2>
+    <p style="margin:0 0 6px; font-size:14px"><strong>Copie agora: ele não aparece de novo.</strong> O anterior continua aceito por
+      {{ grace_hours }} h; atualize o outro lado antes disso:</p>
+    <p><input type="text" readonly value="{{ revealed.token }}" onclick="this.select()" aria-label="token novo"
+              style="font-family:ui-monospace,monospace"></p>
+    <ul style="margin:6px 0 0; font-size:14px">{% for w in revealed.where %}<li>{{ w }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  <div class="card" id="email">
+    <h2>E-mail (Brevo/SMTP e remetente)</h2>
+    {{ email_form(email, email_version) }}
+  </div>
+
+
+  <div class="card" id="tokens">
+    <h2>Tokens de webhook e da API de máquina</h2>
+    <p class="muted" style="margin:0 0 12px; font-size:13px">Compartilhados com outros sistemas. «Gerar token novo» mostra o novo
+      uma única vez; o anterior continua valendo por {{ grace_hours }} h para dar tempo de atualizar o outro lado (lista em cada item).</p>
+    <div class="scroll"><table>
+      <tr><th>Token</th><th>Vale</th><th>Valor</th><th>Carência</th><th></th></tr>
+      {% for t in tokens %}
+      <tr><td><strong>{{ t.label }}</strong><div class="muted" style="font-size:12px">{{ t.help }}</div>
+              <details style="font-size:12px"><summary>onde atualizar ao trocar</summary>
+                <ul style="margin:4px 0">{% for w in t.where %}<li>{{ w }}</li>{% endfor %}</ul></details></td>
+          <td>{{ source(t) }}</td><td><code>{{ t.shown or '—' }}</code></td>
+          <td style="font-size:13px">{% if t.grace_until %}anterior vale até {{ t.grace_until.strftime('%d/%m %H:%M UTC') }}
+              <form method="post" action="/dashboard/system/token/{{ t.key }}/end-grace" style="margin:4px 0 0">
+                <input type="hidden" name="version" value="{{ token_version }}">
+                <button class="linkbtn" type="submit">encerrar agora</button></form>{% else %}—{% endif %}</td>
+          <td><form method="post" action="/dashboard/system/token/{{ t.key }}/rotate" style="margin:0">
+                <input type="hidden" name="version" value="{{ token_version }}">
+                <label style="font-size:12px; display:block"><input type="checkbox" name="confirm" value="1" required> entendi</label>
+                <button class="btn" type="submit">Gerar token novo</button></form>
+              {% if t.source == 'banco' %}<button class="linkbtn" type="submit" form="clear-{{ t.key }}">voltar ao ambiente</button>
+              <form method="post" action="/dashboard/system/clear" id="clear-{{ t.key }}" hidden>
+                <input type="hidden" name="key" value="{{ t.key }}"><input type="hidden" name="version" value="{{ token_version }}"></form>{% endif %}</td></tr>
+      {% endfor %}
+    </table></div>
+  </div>
+
+  <div class="card" id="limits">
+    <h2>Limites e horários</h2>
+    <p class="muted" style="margin:0 0 12px; font-size:13px">Tetos de proteção da cota e horários-base da publicação. Os workers
+      veem a mudança em até 1 min. Os horários valem só para os dias ainda não planejados{% if planned_until %}
+      (já há slots criados até <strong>{{ planned_until.strftime('%d/%m') }}</strong>){% endif %}; o lote de aprovação das 20:00 SP
+      e a newsletter não mudam de hora — o 1.º slot precisa continuar depois do lote. Posts por dia e deslocamento de
+      cada blog ficam em <a href="/dashboard/config">Configuração</a>.</p>
+    <form method="post" action="/dashboard/system/limits">
+      <input type="hidden" name="version" value="{{ limits_version }}">
+      <div class="grid">{% for d in limits %}{{ field(d, d.key, limits_version) }}{% endfor %}</div>
+      <p class="actions"><button class="btn" type="submit">Gravar no cofre</button></p>
+    </form>
+    {{ clear_forms(limits, limits_version) }}
+  </div>
+
+  <div class="card" id="ia">
+    <h2>Chaves e cota diária de IA</h2>
+    <p class="muted" style="margin:0 0 12px; font-size:13px">Chaves cifradas no banco (mesma chave mestra). Editar chave, limite
+      diário de chamadas, orçamento, ligar e ordenar em <a href="/dashboard/ai">Provedores de IA</a>.</p>
+    <div class="scroll"><table>
+      <tr><th>Provedor</th><th>Família</th><th>Modelo</th><th>Chave</th><th>Ligado</th><th>Chamadas hoje / limite</th></tr>
+      {% for a in ai_keys %}
+      <tr><td>{{ a.name }}</td><td>{{ a.family }}</td><td><code>{{ a.model }}</code></td><td>{{ a.key }}</td>
+          <td>{{ 'sim' if a.enabled else 'não' }}</td>
+          <td>{{ a.calls_today }} / {{ a.daily_call_limit if a.daily_call_limit is not none else 'sem limite' }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </div>
+
+  <h2 style="margin:22px 0 8px">WordPress — credencial de publicação por blog</h2>
+  {% for b in blogs %}
+  <div class="card" id="wp-{{ b.site_key }}">
+    <h2>{{ b.name }} <span class="muted" style="font-size:13px; font-weight:400">{{ b.base_url }}{% if not b.enabled %} · desligado{% endif %}</span></h2>
+    {{ wp_form(b) }}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

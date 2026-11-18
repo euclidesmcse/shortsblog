@@ -1,0 +1,386 @@
+# =========================================================================
+#  ShortsBlog — pacote de instalação (E19.2)
+#
+#  Um único `docker compose` sobe tudo: motor (API/portal, 2 workers, agendador), Postgres, Redis,
+#  SearXNG, o AI Gateway, um blog WordPress de exemplo e o proxy com HTTPS automático (Caddy).
+#  Não depende de n8n, Infisical, Traefik, Cloudflare nem Brevo.
+#
+#  Primeira vez: ./install.sh  (gera o .env com as senhas, a configuração do blog e instala o
+#  WordPress). Depois: `docker compose up -d` a partir DESTA pasta.
+#
+#  Imagens: por padrão o motor e o gateway são construídos a partir deste repositório
+#  (`build.context` relativo); com SB_IMAGE_TAG no install.sh, vêm do GHCR (E19.3, multi-arch).
+#  O tema/mu-plugins do WordPress vêm de `../../wordpress`.
+#
+#  Redes:
+#    internal (internal: true) — bancos, Redis, SearXNG, motor e gateway. Sem saída.
+#    egress                     — quem precisa da internet: workers, agendador, SearXNG, gateway,
+#                                 WP-CLI. O Caddy também está aqui, com os nomes do painel e do blog
+#                                 como alias: o motor chega ao WordPress por HTTPS sem sair da máquina.
+#    web                        — Caddy ↔ API e WordPress.
+#    wp                         — WordPress ↔ MariaDB.
+# =========================================================================
+name: ${COMPOSE_PROJECT_NAME:-shortsblog}
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "10m", max-file: "3"}
+
+x-app-env: &app-env
+  ENVIRONMENT: production
+  TZ: ${SB_TZ:-America/Sao_Paulo}
+  DATABASE_URL: postgresql+psycopg://sb_app:${SB_DB_APP_PASSWORD:?rode ./install.sh}@sb-engine-postgres:5432/sb
+  RUN_MIGRATIONS_ON_STARTUP: "false"
+  REDIS_URL: redis://sb-engine-redis:6379/0
+  SB_API_TOKEN: ${SB_API_TOKEN:?rode ./install.sh}
+  SB_SECRET_KEY: ${SB_SECRET_KEY:?rode ./install.sh}
+  MEDIA_DIR: /data/media
+  # O próprio motor dispara os horários (planejar, entregar, publicar…): sem n8n.
+  INTERNAL_SCHEDULER_ENABLED: "true"
+  N8N_URL: ""
+  WP_PUBLISH_MODE: ${SB_WP_PUBLISH_MODE:-draft}
+  SEARXNG_URL: http://sb-engine-searxng:8080
+  SB_HOST: ${SB_PANEL_HOST:?rode ./install.sh}
+  PUBLIC_BASE_URL: ${SB_SCHEME:-https}://${SB_PANEL_HOST}
+  # Sem Cloudflare Access: o login próprio do portal (E18.1) é a porta.
+  PANEL_REQUIRE_ACCESS: "false"
+  PANEL_PASSWORD: ${SB_PANEL_PASSWORD:?rode ./install.sh}
+  APPROVAL_NOTIFY_EMAIL: ${SB_ADMIN_EMAIL:-}
+
+x-app-common: &app-common
+  image: ${SB_ENGINE_IMAGE:-shortsblog/engine:local}
+  pull_policy: never
+  restart: unless-stopped
+  # Credencial do motor no blog (SB_WP_<SITE>_APP_USER/_APP_PASSWORD), que o install.sh grava
+  # depois de instalar o WordPress. Também pode ir para o cofre pela tela Sistema do portal.
+  env_file:
+    - path: ./wp-credentials.env
+      required: false
+  logging: *logging
+  depends_on:
+    sb-engine-postgres: {condition: service_healthy}
+    sb-engine-redis: {condition: service_healthy}
+    sb-engine-migrate: {condition: service_completed_successfully}
+
+x-wp-env: &wp-env
+  WORDPRESS_DB_HOST: sb-wp-db:3306
+  WORDPRESS_DB_NAME: wordpress
+  WORDPRESS_DB_USER: wordpress
+  WORDPRESS_DB_PASSWORD: ${SB_WP_DB_PASSWORD:?rode ./install.sh}
+  WORDPRESS_TABLE_PREFIX: wp_
+  WORDPRESS_CONFIG_EXTRA: |
+    define('WP_HOME', '${SB_SCHEME:-https}://${SB_SITE_HOST}');
+    define('WP_SITEURL', '${SB_SCHEME:-https}://${SB_SITE_HOST}');
+    define('DISALLOW_FILE_EDIT', true);
+    define('WP_AUTO_UPDATE_CORE', 'minor');
+    define('DISABLE_WP_CRON', true);
+    define('WP_POST_REVISIONS', 5);
+    define('WP_ENVIRONMENT_TYPE', 'production');
+    define('SB_SITE_KEY', '${SB_SITE_KEY}');
+    define('SB_NEWSLETTER_API', 'http://sb-engine-api:8000');
+    define('SB_NEWSLETTER_TOKEN', '');
+
+services:
+  # --- Proxy com HTTPS automático (Let's Encrypt por HTTP-01) -----------------------
+  caddy:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    environment:
+      SB_SCHEME: ${SB_SCHEME:-https}
+      SB_PANEL_HOST: ${SB_PANEL_HOST}
+      SB_SITE_HOST: ${SB_SITE_HOST:?rode ./install.sh}
+      SB_ADMIN_EMAIL: ${SB_ADMIN_EMAIL:-}
+    ports:
+      - "${SB_HTTP_PORT:-80}:80"
+      - "${SB_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      web: {}
+      egress:
+        aliases: ["${SB_PANEL_HOST}", "${SB_SITE_HOST}"]
+    mem_limit: 128m
+    logging: *logging
+
+  # --- Estado ------------------------------------------------------------------------
+  sb-engine-postgres:
+    image: postgres:16.15-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sb
+      POSTGRES_USER: sb_admin
+      POSTGRES_PASSWORD: ${SB_DB_ADMIN_PASSWORD:?rode ./install.sh}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [internal]
+    mem_limit: 512m
+    shm_size: 128m
+    logging: *logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sb-engine-redis:
+    image: redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec",
+              "--maxmemory", "200mb", "--maxmemory-policy", "noeviction"]
+    volumes: [redisdata:/data]
+    networks: [internal]
+    mem_limit: 256m
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sb-engine-searxng:
+    image: searxng/searxng@sha256:5903efa50bc6b99293fa059f7a0ff37eddd910210196af77d02e5536ccdfb387
+    restart: unless-stopped
+    mem_limit: 512m
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID]
+    environment:
+      SEARXNG_SETTINGS_PATH: /etc/searxng/settings.yml
+    volumes: [./searxng/settings.yml:/etc/searxng/settings.yml:ro]
+    networks: [internal, egress]
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # --- Motor -------------------------------------------------------------------------
+  # Migrações, papel sb_app (só DML) e semente da configuração do blog (./config).
+  sb-engine-migrate:
+    image: ${SB_ENGINE_IMAGE:-shortsblog/engine:local}
+    pull_policy: never
+    command: ["python", "-m", "app.core.migrate"]
+    restart: "no"
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg://sb_admin:${SB_DB_ADMIN_PASSWORD}@sb-engine-postgres:5432/sb
+      SB_DB_APP_USER: sb_app
+      SB_DB_APP_PASSWORD: ${SB_DB_APP_PASSWORD}
+    volumes: [./config:/config:ro]
+    networks: [internal]
+    mem_limit: 256m
+    logging: *logging
+    depends_on:
+      sb-engine-postgres: {condition: service_healthy}
+
+  # Só este serviço declara `build`; os outros reutilizam a imagem.
+  sb-engine-api:
+    <<: *app-common
+    build:
+      context: ../../apps/engine
+      target: runtime
+    pull_policy: ${SB_PULL_POLICY:-build}
+    environment: *app-env
+    volumes:
+      - media:/data/media
+      - ./config:/config:ro
+    networks: [internal, web]
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  sb-engine-worker:
+    <<: *app-common
+    command: ["python", "-m", "app.jobs.worker"]
+    environment:
+      <<: *app-env
+      WORKER_QUEUES: content,low,default
+    volumes:
+      - media:/data/media
+      - ./config/sem-leitura.yaml:/config/sem-leitura.yaml:ro
+    networks: [internal, egress]
+    mem_limit: 768m
+    healthcheck: &worker-health
+      test: ["CMD", "python", "-c",
+             "import socket,sys; from rq import Worker; from app.core.cache import rq_redis; sys.exit(0 if any(w.hostname == socket.gethostname() for w in Worker.all(connection=rq_redis)) else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  sb-engine-worker-fast:
+    <<: *app-common
+    command: ["python", "-m", "app.jobs.worker"]
+    environment:
+      <<: *app-env
+      WORKER_QUEUES: fast,high
+    volumes:
+      - media:/data/media
+      - ./config/sem-leitura.yaml:/config/sem-leitura.yaml:ro
+    networks: [internal, egress]
+    mem_limit: 384m
+    healthcheck: *worker-health
+
+  sb-engine-scheduler:
+    <<: *app-common
+    command: ["python", "-m", "app.jobs.scheduler"]
+    environment: *app-env
+    networks: [internal, egress]
+    mem_limit: 192m
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.jobs.scheduler", "--healthcheck"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # --- AI Gateway --------------------------------------------------------------------
+  # As chaves de API entram pela tela de IA do portal (cifradas no banco). Assinaturas por CLI
+  # (Claude, Codex, Gemini) exigem login dentro do container — ver README.
+  sb-ai-gateway:
+    image: ${SB_GATEWAY_IMAGE:-shortsblog/ai-gateway:local}
+    build:
+      context: ../../apps/ai-gateway
+      target: runtime
+    pull_policy: ${SB_PULL_POLICY:-build}
+    restart: unless-stopped
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      TZ: ${SB_TZ:-America/Sao_Paulo}
+      DISABLE_AUTOUPDATER: "1"
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+    volumes:
+      - ai_claude:/state/claude
+      - ai_codex:/state/codex
+      - ai_agy:/home/sb/.gemini
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+      - /work:size=64m,uid=10001,gid=10001,mode=0700
+      - /home/sb/.cache:size=64m,uid=10001,gid=10001,mode=0700
+    networks: [internal, egress]
+    mem_limit: 1g
+    pids_limit: 256
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # --- Blog WordPress ----------------------------------------------------------------
+  sb-wp:
+    image: wordpress:6.9.4-php8.3-apache@sha256:5d2c212561c4b5442ebc4d98933a9cbadcf3dee8888ed3fd9ed44667c27cc905
+    restart: unless-stopped
+    depends_on:
+      sb-wp-db: {condition: service_healthy}
+    environment: *wp-env
+    volumes:
+      - wp_html:/var/www/html
+      - ../../wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+      - ../../wordpress/themes/shortsblog:/var/www/html/wp-content/themes/shortsblog:ro
+    networks: [wp, web]
+    mem_limit: 512m
+    security_opt: [no-new-privileges:true]
+    logging: *logging
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null -H 'Host: ${SB_SITE_HOST}' -H 'X-Forwarded-Proto: https' http://127.0.0.1/wp-login.php || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  sb-wp-db:
+    image: mariadb:11.8.9@sha256:6422478cb8e159f080fb1d8ccf65101e26fe51385787fde7d16c3b165a331f15
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: ${SB_WP_DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${SB_WP_DB_ROOT_PASSWORD:?rode ./install.sh}
+      MARIADB_AUTO_UPGRADE: "1"
+    command: ["--innodb-buffer-pool-size=128M", "--max-connections=40",
+              "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes: [wp_db:/var/lib/mysql]
+    networks: [wp]
+    mem_limit: 384m
+    security_opt: [no-new-privileges:true]
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # WP-Cron por relógio, de 5 em 5 minutos.
+  sb-wp-cron:
+    image: wordpress:cli-2.12.0-php8.3@sha256:36243da432a0f0a3b56dc3240ecee9b159108d71305e7c064d987a20a465bfde
+    restart: unless-stopped
+    depends_on:
+      sb-wp: {condition: service_healthy}
+    user: "33:33"
+    environment: *wp-env
+    entrypoint: ["/bin/sh", "-c", "while true; do wp cron event run --due-now --quiet || true; sleep 300; done"]
+    volumes:
+      - wp_html:/var/www/html
+      - ../../wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+      - ../../wordpress/themes/shortsblog:/var/www/html/wp-content/themes/shortsblog:ro
+    networks: [wp]
+    mem_limit: 192m
+    logging: *logging
+
+  # WP-CLI a pedido (o install.sh usa): docker compose run --rm sb-wp-cli <comando wp>
+  sb-wp-cli:
+    image: wordpress:cli-2.12.0-php8.3@sha256:36243da432a0f0a3b56dc3240ecee9b159108d71305e7c064d987a20a465bfde
+    profiles: [tools]
+    depends_on:
+      sb-wp-db: {condition: service_healthy}
+    user: "33:33"
+    environment:
+      <<: *wp-env
+      SB_SITE_NAME: ${SB_SITE_NAME:-}
+      SB_SITE_TAGLINE: ${SB_SITE_TAGLINE:-}
+      SB_SITE_HOST: ${SB_SITE_HOST}
+      SB_SCHEME: ${SB_SCHEME:-https}
+      SB_WP_ADMIN_USER: ${SB_WP_ADMIN_USER:-admin}
+      SB_WP_ADMIN_EMAIL: ${SB_ADMIN_EMAIL:?rode ./install.sh}
+      SB_TZ: ${SB_TZ:-America/Sao_Paulo}
+      SB_WP_ADMIN_PASSWORD: ${SB_WP_ADMIN_PASSWORD:-}
+    volumes:
+      - wp_html:/var/www/html
+      - ../../wordpress/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+      - ../../wordpress/themes/shortsblog:/var/www/html/wp-content/themes/shortsblog:ro
+      - ../../wordpress/setup:/setup:ro
+      - ./config/wordpress-sites:/sites:ro
+    networks: [wp, egress]
+    mem_limit: 256m
+
+networks:
+  internal:
+    internal: true
+  egress: {}
+  web: {}
+  wp:
+    internal: true
+
+volumes:
+  pgdata: {}
+  redisdata: {}
+  media: {}
+  ai_claude: {}
+  ai_codex: {}
+  ai_agy: {}
+  wp_html: {}
+  wp_db: {}
+  caddy_data: {}
+  caddy_config: {}

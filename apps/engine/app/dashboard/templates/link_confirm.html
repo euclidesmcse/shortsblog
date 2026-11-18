@@ -1,0 +1,41 @@
+{% extends "_base.html" %}
+{% block title %}Decisão — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<style>
+  .box{max-width:560px; margin:8vh auto; padding:0 16px}
+  .btn.go{background:var(--ok)} .btn.no{background:var(--bad)}
+  .muted a{color:inherit}
+  input[type=text]{font:inherit; padding:9px; width:100%; border:1px solid var(--border); border-radius:8px;
+                   background:var(--bg); color:var(--text); margin:10px 0}
+</style>
+{% endblock %}
+{% block body %}
+<div class="box"><div class="card">
+{% if state == 'ready' %}
+  <h2>{{ 'Aprovar' if action == 'approve' else 'Rejeitar' }} este artigo?</h2>
+  <p><strong>{{ job.title or '(sem título)' }}</strong><br>
+     <span class="muted">Blog {{ job.site_key }} · job #{{ job.id }}{% if job.review_report %} · nota {{ job.review_report.get('score', '—') }}{% endif %}</span></p>
+  {% if job.review_report and job.review_report.get('notes') %}
+  <p class="muted">Notas do revisor:</p><ul>{% for n in job.review_report['notes'] %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+  <form method="post" action="/a/{{ token }}">
+    <input type="text" name="note" maxlength="500" placeholder="Nota (opcional)">
+    <button class="btn {{ 'go' if action == 'approve' else 'no' }}" type="submit">{{ 'Aprovar para publicação' if action == 'approve' else 'Rejeitar' }}</button>
+  </form>
+  <p class="muted" style="margin-top:14px">Um clique vale para os 4 idiomas. <a href="/dashboard/review/{{ job.id }}">Ler o artigo no painel</a> antes de decidir.</p>
+{% elif state == 'done' %}
+  <h2>{{ 'Aprovado' if action == 'approve' else 'Rejeitado' }}</h2>
+  <p><strong>{{ job.title }}</strong><br><span class="muted">Blog {{ job.site_key }} · job #{{ job.id }}.</span></p>
+  <p class="muted">A decisão ficou registada e os outros links deste artigo deixaram de valer.</p>
+{% elif state == 'decided' %}
+  <h2>Este artigo já foi decidido</h2>
+  <p class="muted">Já não está à espera de aprovação{% if job %} (estado {{ job.status }}){% endif %}.</p>
+{% elif state == 'denied' %}
+  <h2>Acesso negado</h2><p class="muted">Abra o link pelo painel (com a sua conta do Cloudflare Access).</p>
+{% else %}
+  <h2>Link inválido</h2><p class="muted">Este link não existe, expirou ou já foi usado. Abra o painel para ver a fila de aprovação.</p>
+{% endif %}
+  <p class="muted" style="margin-top:18px"><a href="/dashboard/review">← Fila de aprovação</a></p>
+</div></div>
+{% endblock %}

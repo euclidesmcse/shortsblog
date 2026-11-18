@@ -1,0 +1,26 @@
+# Newsletters de fabricantes como fonte de pauta (D-094, opção A da D-OPEN-15).
+#
+# Cada entrada autoriza um remetente: o domínio do `From` do e-mail recebido no
+# webhook do Brevo tem de ser igual a `sender_domain` (ou um subdomínio dele) E o
+# e-mail tem de passar em SPF e DKIM. Tudo o mais é recusado e só fica no log.
+#
+# A newsletter NUNCA é fonte (D-070): de cada item só se guarda título + ligação
+# final (rastreio desembrulhado), como ideia `origin: newsletter` do blog.
+#
+# v1: só o `cloud`. Os `sender_domain` abaixo são os domínios de envio esperados
+# de cada fabricante — CONFERIR no primeiro e-mail real de cada um e ajustar
+# (commit + `up -d` ressincroniza; nada além deste arquivo precisa mudar).
+
+newsletters:
+  - name: Microsoft.Source
+    sender_domain: microsoft.com
+    site_key: cloud
+    lang: en
+  - name: GitHub
+    sender_domain: github.com
+    site_key: cloud
+    lang: en
+  - name: Azure
+    sender_domain: azure.com
+    site_key: cloud
+    lang: en

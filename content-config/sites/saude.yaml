@@ -1,0 +1,43 @@
+# ShortsBlog — site "saude" (E4.2). Sem segredos: credenciais ficam no Infisical.
+# A base de dados é sincronizada a partir deste ficheiro (python -m app.core.migrate).
+site_key: saude
+name: "Saúde"
+description: "Saúde, bem-estar e prevenção no mundo todo, com base em fontes médicas e científicas de qualquer país."
+base_url: https://saude.shortsblog.com
+wordpress_api_url: https://saude.shortsblog.com/wp-json
+hosting_group: oracle-arm-1
+timezone: Europe/Lisbon  # D-066: slots às 07:00 de Lisboa
+language: pt-BR
+languages: [pt-BR, en, es, zh-CN]
+# Piloto E14.3/D-091: ligado em 2026-11-01 («vamos» do Euclides; Finanças limpa 30/10–1/11).
+# daily_target sobe depois, com a expansão gradual.
+enabled: true
+daily_target: 1
+# Desfasamento dos slots em minutos (spec §5.2): 0, 7, 14, 21, 28, 35.
+slot_offset_minutes: 21
+seo_plugin: ""
+taxonomy_version: "1"
+editorial_policy_version: "1"
+# Categorias aceites (taxonomia v1); as do WordPress são criadas na E8.6.
+categories:
+  - "Notícias"
+  - "Prevenção"
+  - "Nutrição"
+  - "Saúde Mental"
+  - "Pesquisa"
+  - "Guias"
+# Fontes mínimas por artigo (gate da E6.7).
+min_sources: 2
+# Reforço de pesquisa por busca (D-063): só domínios oficiais (governos, parlamentos, tribunais,
+# universidades, organismos e revistas científicas) e os veículos listados aqui.
+# Fora da lista os veículos cujos termos proíbem a leitura pela IA ou o RSS (D-070, D-071).
+search_policy:
+  official_only: true
+  allow_domains:
+    - g1.globo.com
+    - agenciabrasil.ebc.com.br
+    - folha.uol.com.br
+    - kffhealthnews.org
+    - sciencedaily.com
+    - elifesciences.org
+    - theconversation.com

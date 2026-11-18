@@ -1,0 +1,49 @@
+{% extends "_base.html" %}
+{% block title %}Sites — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)} .pill.warn{color:var(--warn); border-color:var(--warn)}
+  .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .site h2{font-size:18px; margin:0 0 4px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  dl{display:grid; grid-template-columns:max-content 1fr; gap:3px 12px; margin:10px 0; font-size:13px}
+  dt{color:var(--muted)} dd{margin:0}
+  .days{display:flex; gap:4px; flex-wrap:wrap}
+  .links{font-size:13px; display:flex; gap:12px; flex-wrap:wrap; margin-top:8px}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <header style="margin-bottom:12px"><h1 style="margin:0">Sites</h1>
+    <p class="muted" style="margin:2px 0 0">Visão operacional dos blogs{% if admin %} · editar em <a href="/dashboard/config">Configuração</a>{% endif %}</p></header>
+  <div class="grid">
+  {% for s in sites %}
+    <div class="card site">
+      <h2>{{ s.name }} <span class="muted" style="font-size:13px; font-weight:400">{{ s.site_key }}</span>
+        {% if s.enabled %}<span class="pill ok">ligado</span>{% else %}<span class="pill">desligado</span>{% endif %}
+        {% if s.indexable is sameas true %}<span class="pill ok">indexável</span>
+        {% elif s.indexable is sameas false %}<span class="pill warn">noindex</span>
+        {% elif s.enabled %}<span class="pill" title="não deu para ler a home agora">indexável ?</span>{% endif %}</h2>
+      <a href="{{ s.base_url }}" target="_blank" rel="noopener" style="font-size:13px">{{ s.base_url }}</a>
+      <dl>
+        <dt>Posts por dia</dt><dd>{{ s.daily_target }} · deslocamento {{ s.slot_offset_minutes }} min</dd>
+        <dt>Idiomas</dt><dd>{{ s.languages|join(', ') }}</dd>
+        <dt>Próximo slot</dt><dd>{{ s.next_due|when }}</dd>
+        <dt>Último post</dt><dd>{% if s.last %}{{ s.last.published_at_utc|when }}{% if s.last.wordpress_url %} ·
+          <a href="{{ s.last.wordpress_url }}" target="_blank" rel="noopener">{{ (s.last.title or 'abrir')[:60] }}</a>{% endif %}{% else %}—{% endif %}</dd>
+        <dt>Feeds ativos</dt><dd>{{ s.feeds }}{% if s.feeds < 15 and s.enabled %} <span class="pill warn">abaixo de 15</span>{% endif %}</dd>
+        <dt>Pautas na fila</dt><dd>{{ s.queue }}</dd>
+        <dt>Bloqueios (7 dias)</dt><dd>{% if s.blocked_7d %}<span class="pill bad">{{ s.blocked_7d }}</span>{% else %}0{% endif %}</dd>
+      </dl>
+      <div class="days">{% for j in s.recent %}<a href="/dashboard/jobs/{{ j.id }}" class="pill {{ status_class.get(j.status, '') }}"
+          style="text-decoration:none" title="job {{ j.id }}">{{ j.local_date.strftime('%d/%m') }} {{ j.status }}</a>{% else %}<span class="muted" style="font-size:13px">sem jobs de ontem a amanhã</span>{% endfor %}</div>
+      <div class="links"><a href="/dashboard/jobs?blog={{ s.site_key }}">Jobs</a>
+        {% if admin %}<a href="/dashboard/config/sites/{{ s.site_key }}">Editar</a><a href="/dashboard/config/feeds/{{ s.site_key }}">Feeds</a>{% endif %}</div>
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}

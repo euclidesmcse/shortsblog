@@ -1,0 +1,29 @@
+# ShortsBlog — site "ia" (E4.2). Sem segredos: credenciais ficam no Infisical.
+# A base de dados é sincronizada a partir deste ficheiro (python -m app.core.migrate).
+site_key: ia
+name: "Inteligência Artificial"
+description: "Modelos, ferramentas e aplicações práticas de inteligência artificial."
+base_url: https://ia.shortsblog.com
+wordpress_api_url: https://ia.shortsblog.com/wp-json
+hosting_group: oracle-arm-1
+timezone: Europe/Lisbon  # D-066: slots às 07:00 de Lisboa
+language: pt-BR
+languages: [pt-BR, en, es, zh-CN]
+# Piloto (E14.3, D-067): 2.º blog ligado em 2026-10-22, com 1 artigo por dia (slot às 07:07 de Lisboa).
+enabled: true
+daily_target: 1
+# Desfasamento dos slots em minutos (spec §5.2): 0, 7, 14, 21, 28, 35.
+slot_offset_minutes: 7
+seo_plugin: ""
+taxonomy_version: "1"
+editorial_policy_version: "1"
+# Categorias aceites (taxonomia v1); as do WordPress são criadas na E8.6.
+categories:
+  - "Notícias"
+  - "Modelos"
+  - "Pesquisa"
+  - "Ferramentas"
+  - "Regulação"
+  - "Guias"
+# Fontes mínimas por artigo (gate da E6.7).
+min_sources: 2

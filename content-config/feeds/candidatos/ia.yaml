@@ -1,0 +1,148 @@
+# Candidatos a feeds do site "ia" (E5.1). Só entram em ../ia.yaml os que
+# passarem scripts/validate_feeds.py. tier: oficial | agencia | veiculo | fornecedor | academico.
+site_key: ia
+feeds:
+- name: OpenAI News
+  url: https://openai.com/news/rss.xml
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Google AI Blog
+  url: https://blog.google/technology/ai/rss/
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Google DeepMind Blog
+  url: https://deepmind.google/blog/rss.xml
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Google Research Blog
+  url: https://research.google/blog/rss/
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Microsoft AI Blog
+  url: https://blogs.microsoft.com/ai/feed/
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Microsoft Research Blog
+  url: https://www.microsoft.com/en-us/research/feed/
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: AWS Machine Learning Blog
+  url: https://aws.amazon.com/blogs/machine-learning/feed/
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Hugging Face Blog
+  url: https://huggingface.co/blog/feed.xml
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Meta Engineering
+  url: https://engineering.fb.com/feed/
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Apple Machine Learning Research
+  url: https://machinelearning.apple.com/rss.xml
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: LangChain Blog
+  url: https://blog.langchain.dev/rss/
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Together AI Blog
+  url: https://www.together.ai/blog/rss.xml
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Mistral AI News
+  url: https://mistral.ai/rss.xml
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: Anthropic News
+  # Sem RSS oficial (/rss.xml, /news/rss.xml e /feed.xml dão 404): lê-se a página de notícias,
+  # que o robots.txt permite (E14.5i). Só título, ligação e data, como num feed (D-013).
+  url: https://www.anthropic.com/news
+  kind: html
+  tier: fornecedor
+  lang: en
+  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+- name: arXiv cs.AI
+  url: https://rss.arxiv.org/rss/cs.AI
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: arXiv cs.CL
+  url: https://rss.arxiv.org/rss/cs.CL
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: arXiv cs.LG
+  url: https://rss.arxiv.org/rss/cs.LG
+  tier: academico
+  lang: en
+  notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: BAIR Blog (Berkeley)
+  url: https://bair.berkeley.edu/blog/feed.xml
+  tier: academico
+  lang: en
+- name: MIT News — Artificial Intelligence
+  url: https://news.mit.edu/rss/topic/artificial-intelligence2
+  tier: academico
+  lang: en
+- name: Stanford HAI
+  url: https://hai.stanford.edu/news/rss.xml
+  tier: academico
+  lang: en
+- name: The Gradient
+  url: https://thegradient.pub/rss/
+  tier: academico
+  lang: en
+- name: Agência FAPESP
+  url: https://agencia.fapesp.br/rss/
+  tier: academico
+  lang: pt
+- name: NIST News
+  url: https://www.nist.gov/news-events/news/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: VentureBeat AI
+  url: https://venturebeat.com/category/ai/feed/
+  tier: veiculo
+  lang: en
+- name: IEEE Spectrum AI
+  url: https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss
+  tier: veiculo
+  lang: en
+- name: Simon Willison's Weblog
+  url: https://simonwillison.net/atom/everything/
+  tier: veiculo
+  lang: en
+- name: Import AI
+  url: https://importai.substack.com/feed
+  tier: veiculo
+  lang: en
+- name: Canaltech
+  url: https://canaltech.com.br/rss/
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Olhar Digital
+  url: https://olhardigital.com.br/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Tecnoblog
+  url: https://tecnoblog.net/feed/
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'

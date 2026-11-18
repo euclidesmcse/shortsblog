@@ -1,0 +1,85 @@
+{{- $fn := include "sb.fullname" . -}}
+# --- AI Gateway -------------------------------------------------------------------------------------
+# As chaves de API entram pela tela de IA do portal (cifradas no banco). Assinaturas por CLI
+# (Claude, Codex, Gemini) exigem login dentro do container (kubectl exec) — ver o README do chart.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fn }}-ai-gateway
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "sb.selector" (list . "ai-gateway") | nindent 4 }}
+  ports: [{name: http, port: 8080, targetPort: 8080}]
+{{- range $v := list "claude" "codex" "agy" }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fn }}-ai-{{ $v }}
+  labels: {{- include "sb.labels" $ | nindent 4 }}
+  annotations:
+    # Apagar obriga a autenticar de novo esse provedor.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- include "sb.storageClass" $ | nindent 2 }}
+  resources: {requests: {storage: {{ $.Values.persistence.gateway }}}}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fn }}-ai-gateway
+  labels: {{- include "sb.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {{- include "sb.selector" (list . "ai-gateway") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "sb.selector" (list . "ai-gateway") | nindent 8 }}
+    spec:
+      {{- include "sb.scheduling" . | nindent 6 }}
+      securityContext: {runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001}
+      automountServiceAccountToken: false
+      containers:
+        - name: ai-gateway
+          image: {{ include "sb.image.gateway" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - {name: TZ, value: {{ .Values.timezone | quote }}}
+            - {name: DISABLE_AUTOUPDATER, value: "1"}
+            - {name: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, value: "1"}
+          ports: [{name: http, containerPort: 8080}]
+          securityContext:
+            {{- include "sb.restricted" . | nindent 12 }}
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: claude, mountPath: /state/claude}
+            - {name: codex, mountPath: /state/codex}
+            - {name: agy, mountPath: /home/sb/.gemini}
+            - {name: tmp, mountPath: /tmp}
+            - {name: work, mountPath: /work}
+            - {name: cache, mountPath: /home/sb/.cache}
+          readinessProbe:
+            httpGet: {path: /health/live, port: 8080}
+            periodSeconds: 15
+          livenessProbe:
+            httpGet: {path: /health/live, port: 8080}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources: {{- toYaml .Values.resources.gateway | nindent 12 }}
+      volumes:
+        - name: claude
+          persistentVolumeClaim: {claimName: {{ $fn }}-ai-claude}
+        - name: codex
+          persistentVolumeClaim: {claimName: {{ $fn }}-ai-codex}
+        - name: agy
+          persistentVolumeClaim: {claimName: {{ $fn }}-ai-agy}
+        - name: tmp
+          emptyDir: {medium: Memory, sizeLimit: 256Mi}
+        - name: work
+          emptyDir: {medium: Memory, sizeLimit: 64Mi}
+        - name: cache
+          emptyDir: {medium: Memory, sizeLimit: 64Mi}

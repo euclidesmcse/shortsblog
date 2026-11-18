@@ -1,0 +1,30 @@
+# Feeds de exemplo (E19.2). Fontes internacionais (cobertura mundial, D-110).
+# USO (D-013): o RSS serve para DESCOBRIR notícias e CITAR a fonte. Nunca se copia o texto nem as
+# imagens do feed. Confira os termos de uso de cada fonte antes de as usar na sua instalação.
+site_key: @@SITE_KEY@@
+feeds:
+- name: NIST News
+  url: https://www.nist.gov/news-events/news/rss.xml
+  domain: www.nist.gov
+  tier: oficial
+  lang: en
+- name: CISA Cybersecurity Advisories
+  url: https://www.cisa.gov/cybersecurity-advisories/all.xml
+  domain: www.cisa.gov
+  tier: oficial
+  lang: en
+- name: IEEE Spectrum AI
+  url: https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss
+  domain: spectrum.ieee.org
+  tier: veiculo
+  lang: en
+- name: Simon Willison's Weblog
+  url: https://simonwillison.net/atom/everything/
+  domain: simonwillison.net
+  tier: veiculo
+  lang: en
+- name: Google AI Blog
+  url: https://blog.google/technology/ai/rss/
+  domain: blog.google
+  tier: fornecedor
+  lang: en

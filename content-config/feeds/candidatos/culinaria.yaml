@@ -1,0 +1,274 @@
+# Candidatos a feeds do site "culinaria" (E5.1). Só entram em ../culinaria.yaml os que
+# passarem scripts/validate_feeds.py. tier: oficial | agencia | veiculo | fornecedor | academico.
+site_key: culinaria
+feeds:
+- name: Embrapa — Notícias
+  url: https://www.embrapa.br/busca-de-noticias/-/busca/rss
+  tier: oficial
+  lang: pt
+- name: Ministério da Agricultura — Notícias
+  url: https://www.gov.br/agricultura/pt-br/assuntos/noticias/RSS
+  tier: oficial
+  lang: pt
+- name: Anvisa — Notícias
+  url: https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/RSS
+  tier: oficial
+  lang: pt
+- name: FDA — Food Safety Recalls
+  url: https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/food-safety-recalls/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+- name: FAO — News
+  url: https://www.fao.org/news/rss-feed/en/
+  tier: oficial
+  lang: en
+- name: USDA — Press Releases
+  url: https://www.usda.gov/rss/latest-releases.xml
+  tier: oficial
+  lang: en
+- name: Harvard Nutrition Source
+  url: https://nutritionsource.hsph.harvard.edu/feed/
+  tier: academico
+  lang: en
+- name: Jornal da USP
+  url: https://jornal.usp.br/feed/
+  tier: academico
+  lang: pt
+- name: Panelinha
+  url: https://panelinha.com.br/rss
+  tier: veiculo
+  lang: pt
+- name: Folha — Comida
+  url: https://feeds.folha.uol.com.br/comida/rss091.xml
+  tier: veiculo
+  lang: pt
+- name: G1 Receitas
+  url: https://g1.globo.com/rss/g1/receitas/
+  tier: veiculo
+  lang: pt
+- name: Estadão Paladar
+  url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/paladar/
+  tier: veiculo
+  lang: pt
+- name: TudoGostoso
+  url: https://www.tudogostoso.com.br/rss
+  tier: veiculo
+  lang: pt
+- name: Cozinha Técnica
+  url: https://cozinhatecnica.com/feed/
+  tier: veiculo
+  lang: pt
+- name: Tastemade Brasil
+  url: https://www.tastemade.com.br/feed
+  tier: veiculo
+  lang: pt
+- name: Presunto Vegetariano
+  url: https://presuntovegetariano.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Technicolor Kitchen
+  url: https://technicolorkitchen.blogspot.com/feeds/posts/default
+  tier: veiculo
+  lang: pt
+- name: Dedo de Moça
+  url: https://dedodemoca.net/feed/
+  tier: veiculo
+  lang: pt
+- name: Receitas de Minuto
+  url: https://receitasdeminuto.com/feed/
+  tier: veiculo
+  lang: pt
+- name: Amando Cozinhar
+  url: https://amandocozinhar.com/feed/
+  tier: veiculo
+  lang: pt
+- name: Guia da Cozinha
+  url: https://guiadacozinha.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Receiteria
+  url: https://www.receiteria.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Casa e Jardim — Receitas
+  url: https://revistacasaejardim.globo.com/rss/casaejardim/
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Serious Eats
+  url: https://www.seriouseats.com/atom.xml
+  tier: veiculo
+  lang: en
+- name: Food52
+  url: https://food52.com/blog.rss
+  tier: veiculo
+  lang: en
+- name: Smitten Kitchen
+  url: https://smittenkitchen.com/feed/
+  tier: veiculo
+  lang: en
+- name: The Kitchn
+  url: https://www.thekitchn.com/main.rss
+  tier: veiculo
+  lang: en
+- name: Simply Recipes
+  url: https://www.simplyrecipes.com/feed
+  tier: veiculo
+  lang: en
+- name: King Arthur Baking
+  url: https://www.kingarthurbaking.com/blog/feed
+  tier: fornecedor
+  lang: en
+  notes: 'blog de uma marca: fonte primária do produto, não avaliação independente'
+- name: Budget Bytes
+  url: https://www.budgetbytes.com/feed/
+  tier: veiculo
+  lang: en
+- name: David Lebovitz
+  url: https://www.davidlebovitz.com/feed/
+  tier: veiculo
+  lang: en
+- name: Minimalist Baker
+  url: https://minimalistbaker.com/feed/
+  tier: veiculo
+  lang: en
+- name: El Comidista (El País)
+  url: https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/gastronomia/subsection/el-comidista
+  tier: veiculo
+  lang: es
+- name: Directo al Paladar
+  url: https://www.directoalpaladar.com/feedburner.xml
+  tier: veiculo
+  lang: es
+- name: EFSA — News
+  url: https://www.efsa.europa.eu/en/rss.xml
+  tier: oficial
+  lang: en
+- name: Food Standards Agency (UK)
+  url: https://www.food.gov.uk/rss-feed/news
+  tier: oficial
+  lang: en
+- name: USDA FSIS — Recalls
+  url: https://www.fsis.usda.gov/fsis-content/rss/recalls.xml
+  tier: oficial
+  lang: en
+- name: Revista Pesquisa FAPESP
+  url: https://revistapesquisa.fapesp.br/feed/
+  tier: academico
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: ScienceDaily — Nutrition
+  url: https://www.sciencedaily.com/rss/health_medicine/nutrition.xml
+  tier: academico
+  lang: en
+  notes: 'agregador de comunicados de imprensa: localizar e citar o estudo original; não é fonte de corroboração'
+- name: Gazeta do Povo — Bom Gourmet
+  url: https://www.gazetadopovo.com.br/feed/rss/bomgourmet.xml
+  tier: veiculo
+  lang: pt
+- name: Metrópoles — Gastronomia
+  url: https://www.metropoles.com/gastronomia/feed
+  tier: veiculo
+  lang: pt
+- name: CNN Brasil — Viagem & Gastronomia
+  url: https://www.cnnbrasil.com.br/viagemegastronomia/feed/
+  tier: veiculo
+  lang: pt
+- name: Claudia — Receitas
+  url: https://claudia.abril.com.br/receitas/feed/
+  tier: veiculo
+  lang: pt
+- name: Veja SP — Comer & Beber
+  url: https://vejasp.abril.com.br/comer-e-beber/feed/
+  tier: veiculo
+  lang: pt
+- name: Prazeres da Mesa
+  url: https://www.prazeresdamesa.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Ana Maria Brogui
+  url: https://anamariabrogui.com.br/feed
+  tier: veiculo
+  lang: pt
+- name: Cozinhando para 2 ou 1
+  url: https://www.cozinhandopara2ou1.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Receitas de Mãe
+  url: https://www.receitasdemae.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: Casa Vogue — Gastronomia
+  url: https://casavogue.globo.com/rss/casavogue/
+  tier: veiculo
+  lang: pt
+  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Love and Lemons
+  url: https://www.loveandlemons.com/feed/
+  tier: veiculo
+  lang: en
+- name: Cookie and Kate
+  url: https://cookieandkate.com/feed/
+  tier: veiculo
+  lang: en
+- name: Sally's Baking
+  url: https://sallysbakingaddiction.com/feed/
+  tier: veiculo
+  lang: en
+- name: Food & Wine
+  url: https://www.foodandwine.com/feeds/all
+  tier: veiculo
+  lang: en
+- name: Saveur
+  url: https://www.saveur.com/feed/
+  tier: veiculo
+  lang: en
+- name: Recetas de rechupete
+  url: https://www.recetasderechupete.com/feed/
+  tier: veiculo
+  lang: es
+- name: Love and Olive Oil
+  url: https://www.loveandoliveoil.com/feed
+  tier: veiculo
+  lang: en
+- name: Receitas que Amo
+  url: https://www.receitasqueamo.com.br/feed/
+  tier: veiculo
+  lang: pt
+- name: La Dolce Rita
+  url: https://ladolcerita.net/feed/
+  tier: veiculo
+  lang: pt
+- name: Vegan Richa
+  url: https://www.veganricha.com/feed/
+  tier: veiculo
+  lang: en
+- name: Joy the Baker
+  url: https://joythebaker.com/feed/
+  tier: veiculo
+  lang: en
+# E14.5f (D-064, aprovados pelo Euclides em 2026-10-26 após a leitura dos termos,
+# E14-termos-culinaria-feeds-2026-10-26). Pinch of Yum saiu (vermelho: termos proíbem uso
+# comercial, raspagem e IA) e Paulina Cocina ficou de fora (vermelho: uso comercial só com
+# autorização). Love and Olive Oil (amarelo) já estava acima.
+- name: The Woks of Life
+  url: https://thewoksoflife.com/feed/
+  tier: veiculo
+  lang: en
+  notes: 'cozinha chinesa; só pauta (robots.txt exclui robôs de IA e o servidor dá 403: a página não é lida)'
+- name: Omnivore's Cookbook
+  url: https://omnivorescookbook.com/feed/
+  tier: veiculo
+  lang: en
+  notes: 'cozinha chinesa; sem termos no site (amarelo); anti-bot pode dar 403 na leitura'
+- name: 101 Cookbooks
+  url: https://www.101cookbooks.com/feed
+  tier: veiculo
+  lang: en
+  notes: 'INVÁLIDO (10/11): sem-leitura marca o RSS como proibido para uso comercial — nem pauta'
+- name: FAO — Newsroom
+  url: https://www.fao.org/feeds/fao-newsroom-rss
+  tier: oficial
+  lang: en
+  notes: 'só pauta (sem-leitura fao.org): termos limitam a produtos/serviços não comerciais; dizer o organismo (FAO/ONU)'

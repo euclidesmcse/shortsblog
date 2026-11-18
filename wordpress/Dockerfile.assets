@@ -1,0 +1,21 @@
+# =========================================================================
+#  ShortsBlog — arquivos do WordPress do pacote (E19.4): mu-plugins, tema e setup.
+#  Imagem só de dados: no Helm chart, um initContainer copia /assets para volumes do pod do blog
+#  (o mesmo papel dos bind mounts de ../../wordpress no compose do pacote).
+#  Contexto do build: esta pasta (wordpress/). Só entram as 3 pastas abaixo.
+# =========================================================================
+FROM busybox:1.37.0@sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec AS runtime
+
+COPY mu-plugins /assets/mu-plugins
+COPY themes/shortsblog /assets/themes/shortsblog
+COPY setup /assets/setup
+# E19.6 (D-112): GPL-2.0-or-later (tema e mu-plugins) e a OFL da fonte (já em themes/…/fonts).
+COPY LICENSE /assets/LICENSE
+COPY licenses /assets/licenses
+LABEL org.opencontainers.image.licenses="GPL-2.0-or-later AND OFL-1.1"
+
+# Leitura para todos (o PHP roda como www-data, uid 33); nada gravável.
+RUN chmod -R a+rX,go-w /assets
+
+USER 65534
+CMD ["ls", "-R", "/assets"]

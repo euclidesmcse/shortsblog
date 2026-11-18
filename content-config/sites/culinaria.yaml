@@ -1,0 +1,33 @@
+# ShortsBlog — site "culinaria" (E4.2). Sem segredos: credenciais ficam no Infisical.
+# A base de dados é sincronizada a partir deste ficheiro (python -m app.core.migrate).
+site_key: culinaria
+name: "Culinária"
+description: "Receitas, técnicas e ingredientes das cozinhas do mundo todo, incluindo receitas originais."
+base_url: https://culinaria.shortsblog.com
+wordpress_api_url: https://culinaria.shortsblog.com/wp-json
+hosting_group: oracle-arm-1
+timezone: Europe/Lisbon  # D-066: slots às 07:00 de Lisboa
+language: pt-BR
+languages: [pt-BR, en, es, zh-CN]
+# Piloto ligado em 2026-10-26 (virada para publicar em 27/10, pedida pelo Euclides; E14.3,
+# runbook piloto-culinaria.md): 1 receita/dia em modo receita (D-080), slot às 07:35 de Lisboa.
+enabled: true
+daily_target: 1
+# Desfasamento dos slots em minutos (spec §5.2): 0, 7, 14, 21, 28, 35.
+slot_offset_minutes: 35
+seo_plugin: ""
+taxonomy_version: "1"
+editorial_policy_version: "1"
+# Categorias aceites (taxonomia v1); as do WordPress são criadas na E8.6.
+categories:
+  - "Receitas"
+  - "Técnicas"
+  - "Ingredientes"
+  - "Doces"
+  - "Dia a Dia"
+  - "Guias"
+# Modo receita (D-080, ADR 0004): uma receita original por dia; as fontes só conferem a plausibilidade.
+# O blog continua desligado (`enabled: false`) até a virada.
+recipe_mode: true
+# Fontes mínimas por artigo (gate da E6.7).
+min_sources: 1

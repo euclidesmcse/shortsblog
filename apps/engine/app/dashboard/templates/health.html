@@ -1,0 +1,66 @@
+{% extends "_base.html" %}
+{% block title %}Saúde — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px; font-weight:600; border:1px solid var(--border); white-space:nowrap}
+  .pill.ok{color:var(--ok); border-color:var(--ok)} .pill.warn{color:var(--warn); border-color:var(--warn)} .pill.bad{color:var(--bad); border-color:var(--bad)}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:8px; padding:5px 11px; font-size:13px; text-decoration:none}
+  .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .notice{border-left:4px solid var(--bad); padding:10px 14px}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <header style="display:flex; flex-wrap:wrap; gap:12px; align-items:baseline; justify-content:space-between; margin-bottom:18px">
+    <h1>Saúde</h1>
+  </header>
+  {% if not mail_ready or not notify %}<div class="card notice">Os alertas por e-mail não saem: falta configurar o envio ({{ 'canal' if not mail_ready else 'destinatário' }}).</div>{% endif %}
+
+  <div class="card"><h2>Alertas em curso ({{ alerts|length }})</h2>
+    {% if alerts %}<ul>{% for a in alerts %}<li><b>{{ a.key }}</b> — há {{ (a.since // 60) }} min{% if a.alerted %} · avisado{% else %} · ainda sem aviso{% endif %}</li>{% endfor %}</ul>
+    {% else %}<p class="muted">Nenhum. Tudo em ordem.</p>{% endif %}</div>
+
+  <div class="grid">
+    <div class="card"><h2>Blogs e painel</h2>
+      <table><tr><th>Quem</th><th>Estado</th><th>Latência</th></tr>
+      {% for s in sites %}<tr><td>{{ s.name }}</td>
+        <td>{% if not s.result %}<span class="pill warn">sem sonda</span>{% elif s.result.ok %}<span class="pill ok">no ar</span>{% else %}<span class="pill bad">fora há {{ s.down_for // 60 }} min</span>{% endif %}</td>
+        <td>{% if s.result %}{{ s.result.ms }} ms{% endif %}</td></tr>{% endfor %}</table></div>
+
+    <div class="card"><h2>Agendador (n8n)</h2>
+      <p>{% if not scheduler.armed %}<span class="pill warn">ainda não armado</span>{% elif scheduler.ok %}<span class="pill ok">em dia</span>{% else %}<span class="pill bad">parado: {{ scheduler.stale|join(', ') }}</span>{% endif %}</p>
+      <table><tr><th>Rota</th><th>Última chamada</th></tr>
+      {% for r, age in scheduler.ages.items() %}<tr><td>{{ r }}</td><td>{% if age is none %}—{% else %}há {{ (age // 60)|int }} min{% endif %}</td></tr>{% endfor %}</table></div>
+
+    <div class="card"><h2>Provedores de IA</h2>
+      <table><tr><th>Provedor</th><th>Estado</th></tr>
+      {% for p in providers %}<tr><td>{{ p.provider }}</td><td><span class="pill {{ 'ok' if p.status == 'ok' else ('warn' if p.status in ('unknown','error') else 'bad') }}">{{ p.status }}</span></td></tr>{% endfor %}</table></div>
+
+    <div class="card"><h2>Orçamentos usados</h2>
+      {% if budgets %}<table><tr><th>Quem</th><th>Teto</th><th>Usado</th></tr>
+      {% for b in budgets %}<tr><td>{{ b.name }} ({{ b.scope }})</td><td>{{ b.period }}</td><td><span class="pill {{ 'bad' if b.value >= 1 else ('warn' if b.value >= 0.8 else 'ok') }}">{{ (b.value * 100)|round|int }} %</span></td></tr>{% endfor %}</table>
+      {% else %}<p class="muted">Sem tetos definidos.</p>{% endif %}</div>
+
+    <div class="card"><h2>Fila e bloqueios de hoje</h2>
+      <table>{% for s in stuck %}<tr><td>{{ s.kind }}</td><td>{{ s.value|int }}</td></tr>{% endfor %}</table>
+      {% if blocked %}<p class="muted" style="margin-top:8px">Bloqueados hoje:</p><table>{% for b in blocked %}<tr><td>{{ b.site }} · {{ b.reason }}</td><td>{{ b.value|int }}</td></tr>{% endfor %}</table>{% endif %}</div>
+
+    <div class="card"><h2>Newsletter</h2>
+      <p>{% if newsletter.enabled %}<span class="pill ok">cadastro aberto</span>{% else %}<span class="pill warn">desligada</span>{% endif %}
+         · limite do Brevo: {{ newsletter.used_24h }} de {{ newsletter.limit }} em 24 h</p>
+      <table><tr><th>Assinantes</th><th></th></tr>
+      {% for k, label in [('confirmed','confirmados'),('pending','à espera de confirmação'),('unsubscribed','saíram'),('suppressed','suprimidos (bounce/reclamação)')] %}<tr><td>{{ label }}</td><td>{{ newsletter.status[k] }}</td></tr>{% endfor %}</table>
+      {% if newsletter.editions %}<table style="margin-top:8px"><tr><th>Edição</th><th>Posts</th><th>Enviados</th><th>Falhas</th><th>Incertos</th></tr>
+      {% for e in newsletter.editions %}<tr><td>{{ e.edition_date }}</td><td>{{ e.posts }}</td><td>{{ e.sent }}</td><td>{% if e.failed %}<span class="pill bad">{{ e.failed }}</span>{% else %}0{% endif %}</td><td>{% if e.unknown %}<span class="pill warn">{{ e.unknown }}</span>{% else %}0{% endif %}</td></tr>{% endfor %}</table>
+      {% else %}<p class="muted">Nenhuma edição enviada.</p>{% endif %}</div>
+
+    <div class="card"><h2>Custos e tempos</h2>
+      <p>Custo médio por artigo (30 dias): <b>{% if per_post is not none %}US$ {{ '%.4f'|format(per_post) }}{% else %}—{% endif %}</b>
+         · chamadas de IA por artigo: <b>{% if calls_per_post is not none %}{{ '%.1f'|format(calls_per_post) }}{% else %}—{% endif %}</b></p>
+      <p>Tempo médio até à decisão: <b>{% if approval_s is not none %}{{ (approval_s // 60)|int }} min{% else %}—{% endif %}</b></p>
+      {% if stages %}<table><tr><th>Etapa</th><th>Média</th></tr>{% for s in stages %}<tr><td>{{ s.stage }}</td><td>{{ s.value|int }} s</td></tr>{% endfor %}</table>{% endif %}
+      {% if costs %}<table><tr><th>Provedor</th><th>Janela</th><th>USD</th></tr>{% for c in costs %}<tr><td>{{ c.provider }}</td><td>{{ c.window }}</td><td>{{ '%.4f'|format(c.value) }}</td></tr>{% endfor %}</table>{% endif %}</div>
+  </div>
+</div>
+{% endblock %}

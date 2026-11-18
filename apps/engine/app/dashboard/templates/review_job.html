@@ -1,0 +1,135 @@
+{% extends "_base.html" %}
+{% block title %}Job {{ job.id }} — Aprovações — {{ brand }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px; font-weight:600;
+        border:1px solid var(--border); white-space:nowrap}
+  .mini-btn{border:1px solid var(--border); background:var(--surface); color:var(--text);
+            border-radius:8px; padding:5px 11px; font-size:13px; cursor:pointer; text-decoration:none}
+  .tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+  .tabs input{position:absolute; opacity:0}
+  .tabs label{border:1px solid var(--border); border-radius:8px; padding:6px 14px; cursor:pointer}
+  .lang{display:none}
+  {% for l in languages %}#t-{{ l }}:checked ~ .panes #p-{{ l }}{display:block}
+  #t-{{ l }}:checked ~ .tabs label[for=t-{{ l }}]{border-color:var(--primary); font-weight:700}
+  {% endfor %}
+  iframe{width:100%; height:65vh; border:1px solid var(--border); border-radius:10px; background:#fff}
+  .actions{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+  .actions input[type=text]{flex:1 1 260px; font:inherit; padding:9px; border:1px solid var(--border);
+        border-radius:8px; background:var(--bg); color:var(--text)}
+  .btn.no{background:var(--bad)} .btn.go{background:var(--ok)}
+</style>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <header style="display:flex; flex-wrap:wrap; gap:12px; align-items:baseline; justify-content:space-between; margin-bottom:18px">
+    <h1>Job #{{ job.id }} · {{ job.site_key }} <span class="pill">{{ job.status }}</span></h1>
+    <a class="mini-btn" href="/dashboard/review">← Aprovações</a>
+  </header>
+
+  {% if images %}
+  <div class="card"><h2>Imagem</h2>
+    {% for i in images %}
+    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px">
+      {% if i.filename %}<img src="/media/{{ i.filename }}" alt="" style="max-width:320px; border-radius:10px">{% endif %}
+      <div class="muted" style="flex:1 1 260px">
+        {{ i.provider }} · {{ i.license }}{% if i.ai_generated %} · gerada por IA{% endif %}<br>
+        {% if i.credit %}{{ i.credit }}<br>{% endif %}
+        {% if i.license_proof_url %}<a href="{{ i.license_proof_url }}" rel="noopener noreferrer">prova da licença</a><br>{% endif %}
+        {% if i.captions %}Legenda (pt-BR): {{ i.captions.get('pt-BR', '') }}{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Texto</h2>
+    <div class="tabs-root" style="position:relative">
+      {% for l in languages %}<input type="radio" name="lang" id="t-{{ l }}" {{ 'checked' if loop.first }} style="position:absolute; opacity:0">{% endfor %}
+      <div class="tabs" style="margin-top:0">
+        {% for l in languages %}<label for="t-{{ l }}">{{ labels[l] }}{% if not texts.get(l) or texts[l].status != 'ready' %} ⚠{% endif %}</label>{% endfor %}
+      </div>
+      <div class="panes">
+        {% for l in languages %}
+        <div class="lang" id="p-{{ l }}">
+          {% if texts.get(l) %}
+          <h3>{{ texts[l].title }}</h3>
+          <p class="muted">{{ texts[l].excerpt }}</p>
+          <iframe sandbox srcdoc="{{ texts[l].html }}" title="{{ labels[l] }}"></iframe>
+          {% else %}<p class="muted">Sem texto neste idioma.</p>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Fontes lidas</h2>
+    {% if evidence %}<ul>
+      {% for e in evidence %}<li><a href="{{ e.source_url }}" rel="noopener noreferrer" target="_blank">{{ e.source_name or e.source_url }}</a>
+        {% if e.source_published_at %}<span class="muted"> ({{ e.source_published_at.strftime('%Y-%m-%d') }})</span>{% endif %}
+        {% if 'busca' in (e.usage_rights_note or '') %}<span class="muted"> · <b>reforço por busca</b></span>{% endif %}
+        {% if e.claims_supported %}<span class="muted"> — {{ e.claims_supported }}</span>{% endif %}</li>{% endfor %}
+    </ul>{% else %}<p class="muted">Sem fontes registadas.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Parecer do revisor</h2>
+    <p>Nota <b>{{ report.get('score', '—') }}</b> · redator {{ report.get('writer', '—') }} · revisor {{ report.get('reviewer', '—') }} · reescritas {{ report.get('rewrites', '—') }}</p>
+    {% if report.get('notes') %}<ul>{% for n in report['notes'] %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+    {% if job.blocked_reason and job.status != 'PUBLISHED_CONFIRMED' %}<p class="muted">Motivo registado: {{ job.blocked_reason }}</p>{% endif %}
+  </div>
+
+  {% if job.status == 'APPROVED' or publication %}
+  <div class="card">
+    <h2>Publicação no WordPress</h2>
+    {% if job.status == 'APPROVED' %}
+    {% if publish_mode == 'live' and job.due_at_utc > now %}
+    <p><b>Agendado:</b> publica sozinho em {{ job.due_at_utc|when }}. Não é preciso fazer nada.</p>
+    <form method="post" action="/dashboard/review/{{ job.id }}/publish" class="actions">
+      <input type="hidden" name="early" value="1">
+      <button class="mini-btn" type="submit" onclick="return confirm('Publicar agora, antes do horário ({{ job.due_at_utc|when }})? O post sai já nos 4 idiomas.')">Publicar antes do horário</button>
+    </form>
+    {% else %}
+    <form method="post" action="/dashboard/review/{{ job.id }}/publish" class="actions">
+      <button class="btn" type="submit">{{ 'Publicar agora' if publish_mode == 'live' else 'Criar rascunhos no WordPress' }}</button>
+      <span class="muted">{% if publish_mode == 'live' %}Publica os 4 idiomas no blog.{% else %}Modo rascunho: cria os 4 idiomas como rascunho, nada fica público.{% endif %}</span>
+    </form>
+    {% endif %}
+    {% endif %}
+    {% if publication %}<ul style="margin-top:12px">
+      {% for e in publication %}<li><span class="muted">{{ e.timestamp_utc.strftime('%Y-%m-%d %H:%M') }}</span>
+        {{ {'drafts_created': 'rascunhos criados', 'draft_failed': 'falhou', 'site_suspended': 'site suspenso', 'publish_requested': 'pedido'}.get(e.event_type, e.event_type) }}
+        {% if e.details.get('reason') %} — {{ e.details['reason'] }}{% endif %}
+        {% if e.details.get('posts') %} — posts {{ e.details['posts'].values()|list|join(', ') }}{% endif %}</li>{% endfor %}
+    </ul>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if job.status == 'BLOCKED' %}
+  <div class="card">
+    <h2>Devolver à fila</h2>
+    <form method="post" action="/dashboard/review/{{ job.id }}/requeue" class="actions">
+      <input type="text" name="note" maxlength="500" minlength="3" required placeholder="Motivo (obrigatório)">
+      <button class="btn" type="submit" onclick="return confirm('Devolver o job {{ job.id }} à fila? A produção recomeça do zero e o artigo volta para a sua aprovação.')">Devolver à fila</button>
+    </form>
+    <p class="muted">O job volta a QUEUED e o próximo dispatch o reproduz do zero — pesquisa, gates,
+      revisão e a sua aprovação acontecem de novo; nenhum atalho.</p>
+  </div>
+  {% endif %}
+
+  {% if job.status == 'AWAITING_APPROVAL' %}
+  <div class="card">
+    <h2>Decisão (vale para os 4 idiomas)</h2>
+    <form method="post" class="actions">
+      <input type="text" name="note" maxlength="500" placeholder="Nota (opcional)">
+      <button class="btn go" type="submit" formaction="/dashboard/review/{{ job.id }}/approve">Aprovar</button>
+      <button class="btn no" type="submit" formaction="/dashboard/review/{{ job.id }}/reject">Rejeitar</button>
+    </form>
+    <p class="muted">Aprovar marca o job como APPROVED; a publicação automática é da E9.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

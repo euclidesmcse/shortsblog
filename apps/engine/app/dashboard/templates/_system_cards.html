@@ -1,0 +1,77 @@
+{#- Cartões do cofre compartilhados pela tela Sistema e pelo assistente de 1.º arranque (E19.5).
+    `back`: '' volta para a tela Sistema; 'setup' volta para o assistente. -#}
+{% macro cards_css() -%}
+<style>
+  .notice{border-left:4px solid var(--ok); padding:10px 14px} .notice.bad{border-left-color:var(--bad)}
+  input[type=text], input[type=password]{font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--border);
+        border-radius:8px; background:var(--bg); color:var(--text); width:100%; box-sizing:border-box}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px 18px}
+  .field label{display:block; font-size:13px; font-weight:600; margin-bottom:4px}
+  .field .meta{font-size:12px; margin-top:4px}
+  .src{display:inline-block; border-radius:99px; padding:0 7px; font-size:11px; border:1px solid var(--border)}
+  .src.banco{border-color:var(--ok)} .src.vazio{border-color:var(--bad)}
+  .actions{margin:14px 0 0; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  .linkbtn{background:none; border:0; padding:0; color:var(--accent); text-decoration:underline; cursor:pointer; font:inherit; font-size:12px}
+  h2{margin:0 0 6px; font-size:18px}
+</style>
+{%- endmacro %}
+
+{% macro source(d) -%}
+  {% if d.unreadable %}<span class="src vazio" title="o valor do banco não abre com o SB_SECRET_KEY atual">banco ilegível → ambiente</span>
+  {%- elif d.source == 'banco' %}<span class="src banco">cofre</span>
+  {%- elif d.source == 'ambiente' %}<span class="src">ambiente</span>
+  {%- elif d.source == 'brevo' %}<span class="src banco">usa a chave SMTP do Brevo</span>
+  {%- else %}<span class="src vazio">faltando</span>{% endif %}
+{%- endmacro %}
+
+{% macro field(d, name, version) -%}
+  <div class="field">
+    <label for="f-{{ d.key }}">{{ d.label }} {{ source(d) }}</label>
+    {% if d.secret %}
+      <input type="password" id="f-{{ d.key }}" name="{{ name }}" autocomplete="new-password"
+             placeholder="{{ d.shown or 'sem valor' }} — em branco mantém" maxlength="4000">
+    {% else %}
+      <input type="text" id="f-{{ d.key }}" name="{{ name }}" value="{{ d.shown }}" maxlength="400">
+    {% endif %}
+    <div class="meta muted">{% if d.help %}{{ d.help }} {% endif %}
+      {% if d.source == 'banco' %}Gravado por {{ d.updated_by }} em {{ d.updated_at.strftime('%d/%m %H:%M') if d.updated_at else '' }}.
+        <button class="linkbtn" type="submit" form="clear-{{ d.key|replace('.', '-') }}">Voltar ao ambiente</button>{% endif %}
+    </div>
+  </div>
+{%- endmacro %}
+
+{% macro clear_forms(items, version, back='') -%}
+  {% for d in items if d.source == 'banco' %}
+    <form method="post" action="/dashboard/system/clear" id="clear-{{ d.key|replace('.', '-') }}" hidden>
+      <input type="hidden" name="key" value="{{ d.key }}"><input type="hidden" name="version" value="{{ version }}">
+      {% if back %}<input type="hidden" name="back" value="{{ back }}">{% endif %}</form>
+  {% endfor %}
+{%- endmacro %}
+
+{% macro email_form(email, email_version, back='') -%}
+    <p class="muted" style="margin:0 0 12px; font-size:13px">Com chave de API do Brevo o envio vai pela API; com chave SMTP
+      (<code>xsmtpsib-</code>) ou só SMTP, pelo relay. O teste não envia e-mail.</p>
+    <form method="post" action="/dashboard/system/email">
+      <input type="hidden" name="version" value="{{ email_version }}">
+      {% if back %}<input type="hidden" name="back" value="{{ back }}">{% endif %}
+      <div class="grid">{% for d in email %}{{ field(d, d.key, email_version) }}{% endfor %}</div>
+      <p class="actions">
+        <button class="btn" type="submit" name="action" value="test">Testar conexão</button>
+        <button class="btn" type="submit" name="action" value="save">Gravar no cofre</button>
+        <label style="font-size:13px"><input type="checkbox" name="force" value="1"> gravar mesmo se o teste falhar</label></p>
+    </form>
+    {{ clear_forms(email, email_version, back) }}
+{%- endmacro %}
+
+{% macro wp_form(b, back='') -%}
+    <form method="post" action="/dashboard/system/wp/{{ b.site_key }}">
+      <input type="hidden" name="version" value="{{ b.version }}">
+      {% if back %}<input type="hidden" name="back" value="{{ back }}">{% endif %}
+      <div class="grid">{{ field(b.user, 'user', b.version) }}{{ field(b.password, 'password', b.version) }}</div>
+      <p class="actions">
+        <button class="btn" type="submit" name="action" value="test">Testar conexão</button>
+        <button class="btn" type="submit" name="action" value="save">Gravar no cofre</button>
+        <label style="font-size:13px"><input type="checkbox" name="force" value="1"> gravar mesmo se o teste falhar</label></p>
+    </form>
+    {{ clear_forms((b.user, b.password), b.version, back) }}
+{%- endmacro %}
