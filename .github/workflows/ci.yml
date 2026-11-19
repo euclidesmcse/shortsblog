@@ -67,7 +67,8 @@ jobs:
           ! helm template sb "$c" >/dev/null 2>&1
           ! helm template sb "$c" $args --set site.key=Meu_Blog >/dev/null 2>&1
           # R71: hífen no identificador vira `_` no nome da credencial que o motor lê.
-          helm template sb "$c" $args --set site.key=meu-blog | grep -q "name: SB_WP_MEU_BLOG_APP_PASSWORD"
+          # (sem `grep -q`: ele sai no 1.º acerto e, com pipefail, o SIGPIPE do helm derruba o passo)
+          helm template sb "$c" $args --set site.key=meu-blog | grep "name: SB_WP_MEU_BLOG_APP_PASSWORD" >/dev/null
           curl -sSfL -o kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz
           tar -xzf kc.tgz kubeconform
           helm template sb "$c" -n sb $args | ./kubeconform -strict -summary -kubernetes-version 1.31.0 -
