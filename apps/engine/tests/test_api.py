@@ -83,7 +83,9 @@ def test_painel(panel_client):
     assert '<div class="value">1</div>\n      <div class="sub">nos últimos 30 dias' in html
     assert f'href="/dashboard/review/{waiting}">Post à espera' in html
     assert 'href="https://cloud.shortsblog.com/publicado/"' in html and "Post publicado" in html
-    assert "Lisboa" in html and "ligado · 2/dia" in html and "desligado" in html
+    # Horários no fuso da instalação (TZ; PANEL_TIMEZONES vazio): sem Lisboa fixa (E19.6).
+    assert "Sao Paulo" in html and "Lisboa" not in html
+    assert "ligado · 2/dia" in html and "desligado" in html
     assert "Receita" not in html and "EPC" not in html and "chart.umd" not in html
 
 
@@ -104,3 +106,22 @@ def test_media_serve_capa_por_ia_na_subpasta_illustrations(client, _media_dir):
     response = client.get("/media/job-1-abc.webp")
     assert response.status_code == 200 and response.content == b"webp"
     assert client.get("/media/illustrations%2f..%2f..%2fetc%2fpasswd").status_code == 404
+
+
+# --- E19.6: fusos do portal configuráveis -----------------------------------------------------
+def test_horarios_do_portal_no_fuso_configurado(monkeypatch):
+    from datetime import UTC, datetime
+
+    from app.api.routes.dashboard import panel_zones, when_local
+
+    moment = datetime(2026, 11, 18, 12, 0, tzinfo=UTC)
+    monkeypatch.setattr(settings, "panel_timezones", "")
+    monkeypatch.setattr(settings, "tz", "Asia/Tokyo")
+    assert when_local(moment) == "18/11 21:00 Tokyo"
+    # A nossa produção: Lisboa com data e São Paulo ao lado, como antes da E19.6.
+    monkeypatch.setattr(settings, "panel_timezones", "Europe/Lisbon=Lisboa, America/Sao_Paulo=SP")
+    assert when_local(moment) == "18/11 12:00 Lisboa · 09:00 SP"
+    assert when_local(None) == "—"
+    # Fuso inválido é ignorado; sem nenhum válido, UTC (a tela não quebra).
+    assert [label for _, label in panel_zones("Marte/Olympus,Europe/Paris")] == ["Paris"]
+    assert [label for _, label in panel_zones("Marte/Olympus")] == ["UTC"]

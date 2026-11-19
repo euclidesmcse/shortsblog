@@ -243,7 +243,7 @@ def test_orcamento_do_blog_vai_para_a_auditoria(panel_client):
 
 def test_painel_mostra_o_primeiro_slot_do_cofre(panel_client):
     put("slot_times", "06:00,09:00,12:00,15:00,18:00")
-    assert "1.º slot às 06:00 de Lisboa" in panel_client.get("/").text
+    assert "1.º slot às 06:00 na hora local de cada blog" in panel_client.get("/").text
 
 
 def test_cli_status_mostra_os_limites(monkeypatch, capsys):

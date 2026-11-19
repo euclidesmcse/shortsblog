@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     environment: str = "production"
     log_level: str = "INFO"
     tz: str = "America/Sao_Paulo"
+    # E19.6: fusos em que o portal mostra os horários, `fuso[=rótulo]` separados por vírgula
+    # (o 1.º com a data). Vazio = só o fuso da instalação (`TZ`; o pacote usa o SB_TZ). A nossa
+    # produção: "Europe/Lisbon=Lisboa,America/Sao_Paulo=SP" (slots em Lisboa, D-066).
+    panel_timezones: str = ""
 
     # --- Infra ---
     database_url: str = "postgresql+psycopg://sb_app:sb_app@sb-engine-postgres:5432/sb"
