@@ -25,10 +25,10 @@ from __future__ import annotations
 import pathlib
 import re
 import unicodedata
+from calendar import timegm
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from time import mktime
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -72,7 +72,8 @@ def country_counts(db: Session, site_key: str, now: datetime) -> Counter[str]:
     since = now - timedelta(days=settings.world_window_days)
     rows = db.execute(
         text("""SELECT i.country FROM publication_jobs j JOIN ideas i ON i.id = j.idea_id
-                 WHERE j.site_key = :s AND j.due_at_utc >= :since AND j.status = ANY(:st)"""),
+                 WHERE j.site_key = :s AND j.due_at_utc >= :since AND j.status = ANY(:st)
+                   AND NOT j.reserve"""),
         {"s": site_key, "since": since, "st": list(_COUNTED)}).scalars().all()
     return Counter(country_code(c) for c in rows if c)
 
@@ -110,8 +111,11 @@ class SourceConfigError(ValueError):
 # --- Normalização --------------------------------------------------------------------------
 
 
-def canonical_url(url: str) -> str | None:
-    """Forma canónica de uma ligação, ou None se não for `https` utilizável."""
+def canonical_url(url: str, *, keep_www: bool = False) -> str | None:
+    """Forma canónica de uma ligação, ou None se não for `https` utilizável.
+
+    Sem o `www.`: é a IDENTIDADE da ligação (deduplicação). Para ir buscar a página usa-se
+    `keep_www=True` (R42: há sítios que só respondem com o `www.`)."""
     try:
         parts = urlsplit(url.strip())
     except ValueError:
@@ -123,8 +127,11 @@ def canonical_url(url: str) -> str | None:
     if "/*https:/" in parts.path:
         target = parts.path.split("/*", 1)[1]
         target = re.sub(r"^https:/(?!/)", "https://", target)
-        return canonical_url(target + (f"?{parts.query}" if parts.query else ""))
-    host = parts.hostname.lower().removeprefix("www.")
+        return canonical_url(target + (f"?{parts.query}" if parts.query else ""),
+                             keep_www=keep_www)
+    host = parts.hostname.lower()
+    if not keep_www:
+        host = host.removeprefix("www.")
     query = urlencode(sorted((k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
                              if not _TRACKING.match(k)))
     path = re.sub(r"/{2,}", "/", parts.path).rstrip("/") or "/"
@@ -299,14 +306,49 @@ class DiscoveryResult:
 
 
 def _entry_date(entry: Any) -> datetime | None:
+    """Data do item em UTC. O feedparser dá a hora em UTC (`*_parsed`): `timegm`, não
+    `mktime` — com `TZ=America/Sao_Paulo` no container, toda data ficava 3 h no futuro (22/11).
+    Data fora do padrão do RSS que o feedparser não entende («November 19, 2026 15:57:58
+    +0000», Tax Foundation: 0 pautas desde sempre) é lida por `_loose_date`."""
+    # `dict.get` direto: o `get` do feedparser mapeia `updated_*` para `published_*` com aviso.
+    fields = entry if isinstance(entry, dict) else {}
     for attr in ("published_parsed", "updated_parsed"):
-        parsed = getattr(entry, attr, None) or (entry.get(attr) if hasattr(entry, "get") else None)
+        parsed = dict.get(fields, attr)
         if parsed:
             try:
-                return datetime.fromtimestamp(mktime(parsed), tz=UTC)
+                return datetime.fromtimestamp(timegm(parsed), tz=UTC)
             except (OverflowError, ValueError):
                 return None
+    for attr in ("published", "updated"):
+        raw = dict.get(fields, attr)
+        if not raw:
+            continue
+        found = _loose_date(str(raw))
+        if found is not None:
+            return found
     return None
+
+
+# Formatos fora do RFC 822 vistos em feeds reais (o ISO 8601 vai pelo `fromisoformat`).
+_LOOSE_FORMATS = ("%B %d, %Y %H:%M:%S %z", "%B %d, %Y %H:%M %z", "%B %d, %Y",
+                  "%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z", "%Y-%m-%d %H:%M:%S")
+
+
+def _loose_date(raw: str) -> datetime | None:
+    text_ = raw.strip()
+    try:
+        found = datetime.fromisoformat(text_)
+    except ValueError:
+        found = None
+        for fmt in _LOOSE_FORMATS:
+            try:
+                found = datetime.strptime(text_, fmt)
+                break
+            except ValueError:
+                continue
+    if found is None:
+        return None
+    return (found if found.tzinfo else found.replace(tzinfo=UTC)).astimezone(UTC)
 
 
 def store_idea(db: Session, *, site_key: str, origin: str, topic: str, url: str | None,
@@ -321,6 +363,8 @@ def store_idea(db: Session, *, site_key: str, origin: str, topic: str, url: str 
     """
     moment = now or datetime.now(UTC)
     canonical = canonical_url(url) if url else None
+    # O endereço a buscar guarda o `www.` original (R42); a identidade continua sem ele.
+    fetchable = canonical_url(url, keep_www=True) if url else None
     key = title_key(topic)
     if canonical and db.execute(
         text("SELECT 1 FROM ideas WHERE site_key = :s AND canonical_url = :u"),
@@ -347,7 +391,7 @@ def store_idea(db: Session, *, site_key: str, origin: str, topic: str, url: str 
                 VALUES (:s, :o, :t, :a, :urls, :u, :p, :exp, :src, :pub, :k, :dup, :by, :tl, :c)
                 RETURNING id"""),
         {"s": site_key, "o": origin, "t": topic[:500], "a": angle[:2000],
-         "urls": [canonical] if canonical else [], "u": canonical, "p": priority,
+         "urls": [fetchable or canonical] if canonical else [], "u": canonical, "p": priority,
          "exp": moment + timedelta(days=ttl_days or settings.idea_ttl_days), "src": source_id,
          "pub": published_at, "k": key, "dup": primary, "by": created_by, "tl": timeless,
          "c": country_code(country) if country is not None else None},
@@ -367,20 +411,30 @@ def _page_items(page: fetcher.Fetched) -> list[tuple[str, str, datetime | None]]
             for item in listing.parse(page.text, page.url)]
 
 
+def _newest_first(items: list[tuple[str, str, datetime | None]]
+                  ) -> list[tuple[str, str, datetime | None]]:
+    """Os mais novos primeiro (sem data no fim), antes do corte de `feed_max_items`. Há feeds
+    em ordem cronológica: o do Health Canada traz 525 itens desde 2020 e os 30 primeiros eram
+    todos velhos — 0 pautas em 14 dias (22/11)."""
+    floor = datetime.min.replace(tzinfo=UTC)
+    return sorted(items, key=lambda item: item[2] or floor, reverse=True)
+
+
 def discover_site(db: Session, site_key: str, now: datetime | None = None) -> DiscoveryResult:
     """Lê os feeds (e as páginas de notícias) de um blog e guarda as recentes como ideias."""
     moment = now or datetime.now(UTC)
     oldest = moment - timedelta(days=settings.idea_max_age_days)
     result = DiscoveryResult()
     sources = db.execute(
-        text("SELECT id, name, feed_url, source_type FROM sources WHERE site_key = :s "
+        text("SELECT id, name, feed_url, source_type, lang FROM sources WHERE site_key = :s "
              "AND enabled ORDER BY id"), {"s": site_key},
     ).all()
-    for source_id, name, feed_url, kind in sources:
+    for source_id, name, feed_url, kind, lang in sources:
         result.sources += 1
         is_page = kind == "html"
         try:
-            page = fetcher.fetch(feed_url, accept=PAGE_ACCEPT if is_page else FEED_ACCEPT)
+            page = fetcher.fetch(feed_url, accept=PAGE_ACCEPT if is_page else FEED_ACCEPT,
+                                 language=lang)
             if page.status != 200:
                 raise fetcher.FetchError("http_status", str(page.status))
         except fetcher.FetchError as exc:
@@ -390,7 +444,7 @@ def discover_site(db: Session, site_key: str, now: datetime | None = None) -> Di
                                       fail_count = fail_count + 1 WHERE id = :i"""),
                        {"n": moment, "st": exc.kind, "i": source_id})
             continue
-        items = _page_items(page) if is_page else _feed_items(page.body)
+        items = _newest_first(_page_items(page) if is_page else _feed_items(page.body))
         stored = 0
         for raw_title, raw_link, date in items[: settings.feed_max_items]:
             title = re.sub(r"\s+", " ", raw_title).strip()
@@ -447,7 +501,8 @@ class Picked:
     timeless: bool = False  # E18.2: pauta manual intemporal (busca sem filtro de data)
 
 
-def pick(db: Session, site_key: str, now: datetime | None = None) -> Picked | None:
+def pick(db: Session, site_key: str, now: datetime | None = None, *,
+         reserve: bool = False) -> Picked | None:
     """Escolhe a próxima ideia do blog e marca-a como pegada.
 
     Ordem: manuais primeiro, depois as mais recentes. Salta (e descarta) a ideia
@@ -455,6 +510,8 @@ def pick(db: Session, site_key: str, now: datetime | None = None) -> Picked | No
     À mesma prioridade, pauta de fonte legível vai antes da de domínio sem-leitura
     (D-070) sem corroboração: essa parte de 0 fontes e precisa de 2 só da busca —
     na Saúde, 46% do estoque nascia assim e queimava as tentativas do dia (5/11).
+
+    A reserva (D-115) só pega as pautas dela (`origin = 'reserve'`), e os slots nunca as pegam.
     """
     moment = now or datetime.now(UTC)
     since = moment - timedelta(days=settings.idea_window_days)
@@ -474,6 +531,7 @@ def pick(db: Session, site_key: str, now: datetime | None = None) -> Picked | No
         # páginas do mesmo sítio não corroboram nada); depois as de feeds do tema, antes das
         # de feeds generalistas; depois as mais recentes.
         text("""SELECT i.id, i.topic, i.angle, i.origin, i.canonical_url, i.title_key, s.lang,
+                       COALESCE(i.source_urls[1], i.canonical_url) AS fetch_url,
                        i.priority, i.timeless, i.country,
                        (SELECT count(DISTINCT substring(d.canonical_url FROM 'https://([^/]+)'))
                           FROM ideas d
@@ -483,6 +541,7 @@ def pick(db: Session, site_key: str, now: datetime | None = None) -> Picked | No
                        ) AS corroboration
                   FROM ideas i LEFT JOIN sources s ON s.id = i.source_id
                  WHERE i.site_key = :s AND i.status = 'new' AND i.duplicate_of IS NULL
+                   AND (i.origin = 'reserve') = :reserve
                  ORDER BY i.priority DESC,
                           -- as já triadas com boa nota antes das que ainda não foram triadas
                           (i.relevance IS NOT NULL) DESC,
@@ -491,7 +550,7 @@ def pick(db: Session, site_key: str, now: datetime | None = None) -> Picked | No
                           (COALESCE(s.usage_notes, '') LIKE 'feed generalista%') ASC,
                           i.published_at DESC NULLS LAST, i.id
                  FOR UPDATE OF i SKIP LOCKED"""),
-        {"s": site_key},
+        {"s": site_key, "reserve": reserve},
     ).all()
 
     def handicapped(url: str | None, corroboration: int) -> bool:
@@ -508,7 +567,7 @@ def pick(db: Session, site_key: str, now: datetime | None = None) -> Picked | No
     candidates = sorted(rows, key=lambda r: (-r.priority, handicapped(r.canonical_url,
                                                                       r.corroboration)))
     held = 0
-    for (idea_id, topic, angle, origin, url, key, lang, _priority, timeless, country,
+    for (idea_id, topic, angle, origin, url, key, lang, fetch_url, _priority, timeless, country,
          _corroboration) in candidates:
         if (url and url in taken_urls) or any(similar(key, other) for other in taken_keys):
             db.execute(text("UPDATE ideas SET status = 'discarded' WHERE id = :i OR "
@@ -518,7 +577,7 @@ def pick(db: Session, site_key: str, now: datetime | None = None) -> Picked | No
         # (a de feed sem país espera a triagem) e dentro da cota do blog. A recusada fica na
         # fila: volta a valer quando a janela andar.
         if origin != "manual":
-            if country is None and origin != "rescue":
+            if country is None and origin not in ("rescue", "reserve"):
                 held += 1
                 continue
             if country is not None and over_quota(country_code(country), counts):
@@ -526,10 +585,10 @@ def pick(db: Session, site_key: str, now: datetime | None = None) -> Picked | No
                 continue
         extra = db.execute(
             text("""UPDATE ideas SET status = 'taken' WHERE duplicate_of = :i
-                    RETURNING canonical_url"""), {"i": idea_id},
+                    RETURNING COALESCE(source_urls[1], canonical_url)"""), {"i": idea_id},
         ).scalars().all()
         db.execute(text("UPDATE ideas SET status = 'taken' WHERE id = :i"), {"i": idea_id})
-        urls = tuple(dict.fromkeys(u for u in (url, *extra) if u))
+        urls = tuple(dict.fromkeys(u for u in (fetch_url, *extra) if u))
         if held:
             log.info("Escolha de %s: %d ideia(s) retidas pela cota por país (D-110)", site_key,
                      held)
@@ -564,7 +623,7 @@ _WORLD_TRIAGE = (
     "hospital) leva 1 a 4. Fora disso, o país não dá nem tira pontos.\n")
 
 
-def triage(db: Session, site: dict[str, Any]) -> dict[str, int]:
+def triage(db: Session, site: dict[str, Any], now: datetime | None = None) -> dict[str, int]:
     """Dá uma nota de pertinência (0–10) às ideias novas do blog, numa só chamada.
 
     Só os títulos seguem para o modelo, como conteúdo externo delimitado. As ideias
@@ -580,12 +639,32 @@ def triage(db: Session, site: dict[str, Any]) -> dict[str, int]:
     from app.services.ai import chain
     from app.services.ai.prompting import External
 
+    moment = now or datetime.now(UTC)
+    # O lote reveza as fontes; a de rendimento baixo entra a cada `triage_source_penalty`
+    # voltas (config.py, 22/11).
     rows = db.execute(
-        text("""SELECT id, topic FROM ideas
-                 WHERE site_key = :s AND status = 'new' AND duplicate_of IS NULL
-                   AND relevance IS NULL AND origin NOT IN ('manual', 'rescue')
-                 ORDER BY published_at DESC NULLS LAST, id LIMIT :n"""),
-        {"s": site["site_key"], "n": settings.triage_batch},
+        text("""WITH yield AS (
+                   SELECT source_id, avg(relevance) AS average, count(*) AS scored
+                     FROM ideas
+                    WHERE site_key = :s AND relevance IS NOT NULL AND source_id IS NOT NULL
+                      AND created_at >= :yield_since
+                    GROUP BY source_id),
+                 queue AS (
+                   SELECT id, topic, source_id, published_at,
+                          ROW_NUMBER() OVER (PARTITION BY source_id
+                                             ORDER BY published_at DESC NULLS LAST, id) AS turn
+                     FROM ideas
+                    WHERE site_key = :s AND status = 'new' AND duplicate_of IS NULL
+                      AND relevance IS NULL AND origin NOT IN ('manual', 'rescue', 'reserve'))
+                 SELECT q.id, q.topic FROM queue q LEFT JOIN yield y ON y.source_id = q.source_id
+                  ORDER BY q.turn * CASE WHEN y.scored >= :min_scored AND y.average < :low
+                                         THEN :penalty ELSE 1 END,
+                           q.published_at DESC NULLS LAST, q.id
+                  LIMIT :n"""),
+        {"s": site["site_key"], "n": settings.triage_batch,
+         "yield_since": moment - timedelta(days=settings.triage_yield_days),
+         "min_scored": settings.triage_source_min_scored,
+         "low": settings.triage_source_low_avg, "penalty": settings.triage_source_penalty},
     ).all()
     if not rows:
         return {"scored": 0, "discarded": 0, "grouped": 0}
@@ -594,7 +673,7 @@ def triage(db: Session, site: dict[str, Any]) -> dict[str, int]:
     older = db.execute(
         text("""SELECT id, topic, relevance FROM ideas
                  WHERE site_key = :s AND status = 'new' AND duplicate_of IS NULL
-                   AND relevance IS NOT NULL AND origin NOT IN ('manual', 'rescue')
+                   AND relevance IS NOT NULL AND origin NOT IN ('manual', 'rescue', 'reserve')
                  ORDER BY published_at DESC NULLS LAST, id LIMIT :n"""),
         {"s": site["site_key"], "n": settings.triage_batch // 2},
     ).all()
@@ -656,6 +735,9 @@ def triage(db: Session, site: dict[str, Any]) -> dict[str, int]:
             "acontecimento, noticiado por veículos diferentes ou em mais de um título). Só quando "
             "for claramente o mesmo acontecimento; o mesmo tema geral não chega. Cada id entra no "
             "máximo num grupo; se não houver nenhum, devolve uma lista vazia.")
+    # R42: a leitura acaba aqui. A chamada ao modelo leva dezenas de segundos; a transação
+    # não fica aberta («idle in transaction») à espera dela. A escrita das notas abre outra.
+    db.commit()
     result = chain.run(
         "researcher", task,
         system="És editor deste blog e fazes a triagem das notícias do dia.",

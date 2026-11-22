@@ -104,6 +104,8 @@ shortsblog.io/wp-client: "true"
   value: {{ include "sb.panelUrl" . | quote }}
 - name: PANEL_REQUIRE_ACCESS
   value: "false"
+- name: TRUSTED_PROXIES
+  value: {{ .Values.panel.trustedProxies | quote }}
 - name: PANEL_PASSWORD
   valueFrom: {secretKeyRef: {name: {{ include "sb.secretName" . }}, key: panelPassword}}
 - name: APPROVAL_NOTIFY_EMAIL

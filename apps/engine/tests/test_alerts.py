@@ -81,7 +81,10 @@ def test_fetch_ok_erro_http_redirecionamento_e_falha_de_ligacao(monkeypatch):
     assert result["ok"] is False and result["status"] == 0 and result["error"] == "ConnectError"
 
 
-def test_targets_run_e_desde_quando_falha(cloud, configured):  # noqa: F811
+def test_targets_run_e_desde_quando_falha(cloud, configured, monkeypatch):  # noqa: F811
+    # Relógio fixo: o carimbo `sbprobe` muda de segundo para segundo, e o `run` volta a
+    # gerar os endereços (falhava quando o segundo virava entre as duas chamadas).
+    monkeypatch.setattr(probes.time, "time", lambda: 1_795_000_000)
     with session_scope() as db:
         urls = probes.targets(db)
     assert set(urls) == {"cloud", "ia", "financas", "saude", "politica", "culinaria", "painel"}
@@ -265,6 +268,31 @@ def test_avaliacao_completa_sem_problemas_nao_avisa(cloud, configured, monkeypat
     assert result["firing"] == [] and out.sent == []
 
 
+def test_backup_parado_so_avisa_depois_da_primeira_pulsacao(configured):
+    """R52: sem pulsação nenhuma (pacote sem backup ligado ao motor) não há aviso falso."""
+    from app.services import backup_beat
+
+    with session_scope() as db:
+        assert alerts.check_backup(db, T0) == []
+    assert backup_beat.main(["abc"]) == 2  # epoch inválido: uso, nada gravado
+    assert backup_beat.main([str(T0 - 25 * 3600)]) == 0
+    with session_scope() as db:
+        assert backup_beat.last_ok(db) == T0 - 25 * 3600
+        assert alerts.check_backup(db, T0) == []  # 25 h: dentro da folga de 26 h
+    backup_beat.record(T0 - 30 * 3600)
+    with session_scope() as db:
+        (item,) = alerts.check_backup(db, T0)
+    assert item.key == "backup_stale" and item.title == "backup sem sucesso há 30 h"
+    # Pelo avaliador: vai por e-mail e avisa a recuperação quando o backup volta
+    out = Outbox()
+    checks = {"backup": lambda db: alerts.check_backup(db, T0)}
+    assert alerts.evaluate(T0, out, checks)["firing"] == ["backup_stale"]
+    assert "backup sem sucesso" in out.sent[-1][0] + out.sent[-1][1]
+    backup_beat.record(T0)
+    alerts.evaluate(T0 + 60, out, checks)
+    assert "resolvido" in out.sent[-1][0]
+
+
 # --- Painel de saúde e métricas -------------------------------------------------------------------
 
 
@@ -300,3 +328,25 @@ def test_metricas_das_sondas_e_dos_alertas(client, cloud, configured):  # noqa: 
     assert 'sb_site_up{site="ia"} 0.0' in text_ and 'sb_site_up{site="cloud"} 1.0' in text_
     assert 'sb_site_latency_seconds{site="cloud"} 0.25' in text_
     assert 'sb_alert_active{alert="redis_down"} 1.0' in text_
+
+
+def test_volume_de_cli_acima_do_teto_avisa(monkeypatch):
+    """R31: o gateway mede os volumes das CLIs; acima do teto o motor avisa."""
+    from app.services.ai import gateway
+
+    sizes = {"claude": 1024, "codex": 600 * 1024 * 1024, "agy": 10}
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/health/storage"
+        return httpx.Response(200, json=sizes)
+
+    monkeypatch.setattr(gateway, "_transport", httpx.MockTransport(handle))
+    with session_scope() as db:
+        firing = alerts.check_ai_storage(db)
+    assert [f.key for f in firing] == ["ai_storage:codex"]
+    assert "600 MB" in firing[0].title
+
+    monkeypatch.setattr(gateway, "_transport",
+                        httpx.MockTransport(lambda r: httpx.Response(502)))
+    with session_scope() as db:
+        assert alerts.check_ai_storage(db) == []           # gateway mudo: outro alerta cuida

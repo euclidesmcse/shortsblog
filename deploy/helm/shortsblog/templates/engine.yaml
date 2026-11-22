@@ -62,10 +62,10 @@ spec:
   selector: {{- include "sb.selector" (list . "api") | nindent 4 }}
   ports: [{name: http, port: 8000, targetPort: 8000}]
 {{- $components := list
-      (dict "name" "api" "res" "api" "cmd" (list) "queues" "" "config" "all")
-      (dict "name" "worker" "res" "worker" "cmd" (list "python" "-m" "app.jobs.worker") "queues" "content,low,default" "config" "sem-leitura")
-      (dict "name" "worker-fast" "res" "workerFast" "cmd" (list "python" "-m" "app.jobs.worker") "queues" "fast,high" "config" "sem-leitura")
-      (dict "name" "scheduler" "res" "scheduler" "cmd" (list "python" "-m" "app.jobs.scheduler") "queues" "" "config" "none") }}
+      (dict "name" "api" "res" "api" "cmd" (list) "queues" "" "config" "all" "grace" 30)
+      (dict "name" "worker" "res" "worker" "cmd" (list "python" "-m" "app.jobs.worker") "queues" "content,low,default" "config" "sem-leitura" "grace" 1500)
+      (dict "name" "worker-fast" "res" "workerFast" "cmd" (list "python" "-m" "app.jobs.worker") "queues" "fast,high" "config" "sem-leitura" "grace" 300)
+      (dict "name" "scheduler" "res" "scheduler" "cmd" (list "python" "-m" "app.jobs.scheduler") "queues" "" "config" "none" "grace" 30) }}
 {{- range $c := $components }}
 {{- $media := ne $c.name "scheduler" }}
 ---
@@ -96,6 +96,9 @@ spec:
       {{- include "sb.mediaAffinity" $ | nindent 6 }}
       {{- end }}
       securityContext: {runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001}
+      # O worker termina o job em curso antes de sair (SIGTERM = warm shutdown do RQ): um
+      # artigo leva até ~20 min, uma publicação até alguns minutos.
+      terminationGracePeriodSeconds: {{ $c.grace }}
       initContainers:
         {{- include "sb.waitMigrations" $ | nindent 8 }}
       containers:

@@ -31,10 +31,18 @@ services:
       POSTGRES_DB: sb_test
       POSTGRES_USER: sb_test
       POSTGRES_PASSWORD: sb_test
+    # Dados em tmpfs contam no limite de memória do container. Com o WAL normal a suíte
+    # encostava nos 256 MB (pico medido 254,8 MB, 22/11) e o kernel matava um processo do
+    # Postgres a meio — «server terminated abnormally» no CI (teste das migrações, que cria
+    # uma base nova). Base descartável: WAL mínimo e checkpoints curtos; limite com folga.
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off",
+              "-c", "full_page_writes=off", "-c", "max_wal_size=64MB",
+              "-c", "min_wal_size=32MB", "-c", "wal_level=minimal",
+              "-c", "max_wal_senders=0"]
     tmpfs:
       - /var/lib/postgresql/data
     networks: [test]
-    mem_limit: 256m
+    mem_limit: 512m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sb_test -d sb_test"]
       interval: 2s

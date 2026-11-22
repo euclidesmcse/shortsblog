@@ -396,3 +396,12 @@ def test_credencial_em_falta_nao_suspende_o_site_24h(wp, approved, monkeypatch):
         n = db.execute(text("SELECT count(*) FROM publication_events "
                             "WHERE event_type = 'site_suspended'")).scalar()
     assert n == 0
+
+
+def test_espera_da_producao_sem_aprovacao_nunca_vira_aprovado(wp, cloud):  # noqa: F811
+    """21/11: em live, RETRY_WAIT passava a APPROVED aqui sem olhar a aprovação."""
+    job = insert_job(cloud, 2, "PLANNED")
+    advance(job, "QUEUED", "CLAIMED", "RESEARCHING", "RETRY_WAIT")
+    with pytest.raises(sitepub.PublishError, match="sem aprovação"):
+        sitepub.publish_job(job, mode="live")
+    assert status(job) == "RETRY_WAIT" and wp.requests == []

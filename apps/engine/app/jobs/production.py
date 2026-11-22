@@ -17,11 +17,10 @@ from collections import Counter
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 
-from app.core import cache
+from app.core import cache, localtime
 from app.core.config import settings
 from app.core.db import session_scope
 from app.core.logging import get_logger
@@ -44,7 +43,9 @@ from app.utils.text import slugify
 log = get_logger(__name__)
 
 ACTOR = "worker:content"
-_SAO_PAULO = ZoneInfo("America/Sao_Paulo")   # hora que o Euclides lê no painel e no resumo
+# Pautas sem notícia por trás: resgate do slot (D-101) e reserva (D-115). Sem filtro de idade
+# nas fontes e com a busca no bolso próprio do orçamento do job.
+_TIMELESS = ("rescue", "reserve")
 TARGET_LANGUAGES = ("en", "es", "zh-CN")
 
 
@@ -106,7 +107,8 @@ def _corroboration_window(db: Any, now: datetime) -> list[tuple[str, str, str, A
     extração de entidades dos 500 títulos são o que custa) e cada ideia tentada apenas filtra.
     """
     rows = db.execute(
-        text("""SELECT i.canonical_url, i.title_key, i.topic, COALESCE(s.lang, '')
+        text("""SELECT COALESCE(i.source_urls[1], i.canonical_url), i.title_key, i.topic,
+                       COALESCE(s.lang, '')
                   FROM ideas i LEFT JOIN sources s ON s.id = i.source_id
                  WHERE i.canonical_url IS NOT NULL AND i.created_at >= :since
                  ORDER BY i.published_at DESC NULLS LAST LIMIT 500"""),
@@ -174,24 +176,48 @@ def _release_taken_idea(job_id: int, owner: str) -> None:
                               AND i.status = 'taken'"""), {"j": job_id, "o": owner})
 
 
-def _research(job_id: int, owner: str, site: dict[str, Any], now: datetime) -> tuple[
-        discovery.Picked, article.Research]:
-    """Escolhe uma ideia com fontes suficientes e levanta os factos. Tenta várias ideias."""
+def _research(job_id: int, owner: str, site: dict[str, Any], now: datetime, *,
+              reserve: bool = False) -> tuple[discovery.Picked, article.Research]:
+    """Escolhe uma ideia com fontes suficientes e levanta os factos. Tenta várias ideias.
+
+    A reserva (D-115) só usa as pautas dela, intemporais: não tria notícias."""
     minimum = int((site.get("config") or {}).get("min_sources", 2))
     recipe_mode = bool((site.get("config") or {}).get("recipe_mode"))   # D-080
     last = "sem ideias na fila"
     attempts: list[dict[str, Any]] = []   # diagnóstico do bloqueio: que ideias se tentaram
     # Triagem (D-040): uma chamada barata ordena as ideias novas e afasta as de outro assunto,
     # antes de se gastar uma pesquisa em cada uma.
-    with session_scope() as db:
-        triaged = discovery.triage(db, site)
-    if triaged["scored"]:
-        log.info("Triagem de %s: %s", site["site_key"], triaged)
+    if not reserve:
+        with session_scope() as db:
+            triaged = discovery.triage(db, site, now)
+        if triaged["scored"]:
+            log.info("Triagem de %s: %s", site["site_key"], triaged)
     window: list[tuple[str, str, str, Any]] | None = None
+    # R42: pautas cujo artigo-fonte falhou por motivo passageiro (rede, tempo, 5xx). Não são
+    # descartadas: ficam presas durante este job (para o laço não as pegar de novo) e voltam
+    # à fila no fim, para outro job tentar noutra hora.
+    deferred: list[int] = []
+    try:
+        return _research_loop(job_id, owner, site, now, reserve=reserve, minimum=minimum,
+                              recipe_mode=recipe_mode, attempts=attempts, deferred=deferred,
+                              window=window, last=last)
+    finally:
+        for idea_id in deferred:
+            try:
+                _release_idea(job_id, owner, idea_id)
+            except _Stale:
+                break        # o job já não é nosso: a reconciliação devolve as pautas órfãs
+
+
+def _research_loop(job_id: int, owner: str, site: dict[str, Any], now: datetime, *,
+                   reserve: bool, minimum: int, recipe_mode: bool,
+                   attempts: list[dict[str, Any]], deferred: list[int],
+                   window: list[tuple[str, str, str, Any]] | None,
+                   last: str) -> tuple[discovery.Picked, article.Research]:
     for _ in range(settings.idea_attempts):
         _alive(job_id, owner)
         with session_scope() as db:
-            picked = discovery.pick(db, site["site_key"], now)
+            picked = discovery.pick(db, site["site_key"], now, reserve=reserve)
             if picked is not None and window is None:
                 window = _corroboration_window(db, now)
         if picked is None:
@@ -199,8 +225,18 @@ def _research(job_id: int, owner: str, site: dict[str, Any], now: datetime) -> t
         extra = _corroboration(window or [], picked)
         # Fontes só de pauta (D-070): o site não deixa a página ir para a IA.
         skipped: list[str] = []
+        transient: list[str] = []
         sources = article.read_sources([*picked.source_urls, *extra], now, skipped=skipped,
-                                       with_recipe=recipe_mode)
+                                       with_recipe=recipe_mode, transient=transient)
+        if (len(sources) < minimum and picked.source_urls
+                and picked.source_urls[0] in transient):
+            # O artigo-fonte não respondeu agora: sem gastar busca, a pauta fica para outra
+            # hora (R42) em vez de morrer «sem fontes».
+            last = f"artigo-fonte inalcançável por agora ({picked.source_urls[0][:120]})"
+            attempts.append({"idea_id": picked.id, "topic": picked.topic[:160],
+                             "reason": last, "pauta": 0, "transient": True})
+            deferred.append(picked.id)
+            continue
         via_search: set[str] = set()
         searched: dict[str, Any] | None = None
         if len(sources) < minimum and websearch.enabled():
@@ -213,7 +249,7 @@ def _research(job_id: int, owner: str, site: dict[str, Any], now: datetime) -> t
                 more = websearch.search(picked.topic, site=site, exclude=tried, need=minimum,
                                         stats=searched, lang=picked.lang, recipe=recipe_mode,
                                         job_id=job_id,
-                                        pocket="rescue" if picked.origin == "rescue" else "")
+                                        pocket="rescue" if picked.origin in _TIMELESS else "")
             except chain.ChainExhausted:
                 # Sem IA nenhuma a produção espera (R27); a pauta volta à fila.
                 _release_idea(job_id, owner, picked.id)
@@ -225,7 +261,7 @@ def _research(job_id: int, owner: str, site: dict[str, Any], now: datetime) -> t
                 # NOTÍCIA de hoje. A pauta de resgate é intemporal por definição: as
                 # suas melhores fontes são páginas oficiais de referência (diretrizes,
                 # calendários, guias) com meses ou anos — sem filtro de idade para ela.
-                timeless = recipe_mode or picked.origin == "rescue" or picked.timeless
+                timeless = recipe_mode or picked.origin in _TIMELESS or picked.timeless
                 sources = article.read_sources(
                     more, now, fresh_urls=frozenset(more),
                     max_age_days=0 if timeless else settings.searxng_max_age_days,
@@ -325,18 +361,26 @@ def _save(job_id: int, owner: str, language: str, *, title: str, slug: str, exce
         )
 
 
+def _is_reserve(job_id: int) -> bool:
+    """O job nasceu reserva (D-115) e ainda espera um slot."""
+    with session_scope() as db:
+        return bool(db.execute(text("SELECT reserve FROM publication_jobs WHERE id = :i"),
+                               {"i": job_id}).scalar())
+
+
 def _produce(job_id: int, owner: str, now: datetime) -> str:
     with session_scope() as db:
-        row = db.execute(text("SELECT site_key FROM publication_jobs WHERE id = :i"),
+        row = db.execute(text("SELECT site_key, reserve FROM publication_jobs WHERE id = :i"),
                          {"i": job_id}).first()
         site = sites.get(db, row[0]) if row else None
-    if site is None:
+    if site is None or row is None:
         raise _Blocked("site desconhecido")
+    reserve = bool(row[1])
 
     recipe_mode = bool((site.get("config") or {}).get("recipe_mode"))   # D-080, ADR 0004
     # --- Pesquisa (E6.3)
     _step(job_id, owner, "RESEARCHING")
-    picked, found = _research(job_id, owner, site, now)
+    picked, found = _research(job_id, owner, site, now, reserve=reserve)
     refs = [recipe.Reference(s.name, s.recipe, s.text) for s in found.sources
             if s.recipe is not None] if recipe_mode else []
     with session_scope() as db:
@@ -591,8 +635,11 @@ def _source_retry_at(job_id: int, now: datetime) -> datetime | None:
     """Quando repetir a pesquisa de um job sem ideia viável; None se já repetiu ou não cabe.
 
     Só repete `source_retries` vezes e só se a nova tentativa começa antes do slot (com a
-    D-066 a produção começa 14 h antes, então há folga para produzir e aprovar).
+    D-066 a produção começa 14 h antes, então há folga para produzir e aprovar). A reserva
+    (D-115) não espera notícia fresca: as pautas dela são intemporais e vêm do resgate.
     """
+    if _is_reserve(job_id):
+        return None
     retry_at = now + timedelta(hours=settings.source_retry_hours)
     with session_scope() as db:
         due, done = db.execute(
@@ -642,15 +689,18 @@ def _slot_rescue(job_id: int, owner: str, now: datetime) -> bool:
                                                            AND event_type = 'status_changed'
                                                            AND to_status = 'QUEUED'), 0)"""),
                           {"i": job_id}).scalar() or 0
-        row = db.execute(text("SELECT site_key FROM publication_jobs WHERE id = :i"),
+        row = db.execute(text("SELECT site_key, reserve FROM publication_jobs WHERE id = :i"),
                          {"i": job_id}).first()
         site = sites.get(db, row[0]) if row else None
         # O que já falhou ou está nas mãos de alguém não volta como "tema novo".
         burned = list(db.execute(text(
             """SELECT topic FROM ideas WHERE site_key = :s AND status IN ('taken', 'discarded')
                 ORDER BY id DESC LIMIT 30"""), {"s": row[0] if row else ""}).scalars())
-    if site is None or done:
+    if site is None or row is None or done:
         return False
+    # A reserva (D-115) usa o mesmo editor, com pautas que só ela pega.
+    reserve = bool(row[1])
+    origin = "reserve" if reserve else "rescue"
     config = site.get("config") or {}
     if config.get("recipe_mode"):
         kind = (f"Propõe {settings.rescue_topics} pratos CLÁSSICOS e bem documentados "
@@ -666,10 +716,14 @@ def _slot_rescue(job_id: int, owner: str, now: datetime) -> bool:
                 "saúde», e não «o que a OMS recomenda»): os termos de uso de alguns sítios "
                 "oficiais impedem a leitura das suas páginas, e um tema amarrado a uma "
                 "organização ilegível morre sem fontes")
+    why = ("O blog precisa de um artigo de RESERVA: fica guardado e só é publicado no dia em "
+           "que a notícia não render post, talvez semanas depois — nada de «hoje», «esta "
+           "semana» nem datas que envelheçam." if reserve else
+           "Hoje nenhuma notícia da fila deu artigo (fontes insuficientes ou reprovação nos "
+           "gates), e o blog não pode ficar sem post.")
     task = (
         f"Blog: {site['name']} — {config.get('description', '')}\n"
-        "Hoje nenhuma notícia da fila deu artigo (fontes insuficientes ou reprovação nos "
-        f"gates), e o blog não pode ficar sem post. {kind}, que:\n"
+        f"{why} {kind}, que:\n"
         "- não repitam nem rocem os títulos do bloco «títulos a evitar»;\n"
         "- caibam na política editorial.\n"
         + (f"Categorias do blog: {', '.join(config['categories'])}.\n"
@@ -697,13 +751,13 @@ def _slot_rescue(job_id: int, owner: str, now: datetime) -> bool:
             if len(topic) < 8:
                 continue
             outcome, _ = discovery.store_idea(
-                db, site_key=site["site_key"], origin="rescue", topic=topic, url=None,
+                db, site_key=site["site_key"], origin=origin, topic=topic, url=None,
                 angle=angle, priority=discovery.RESCUE_PRIORITY, created_by=ACTOR,
                 ttl_days=1, now=now, country=str(item.get("country") or ""))
             if outcome == "new":
                 stored.append(topic[:160])
         jobs.record_event(db, job_id, "slot_rescue", actor=ACTOR,
-                          details={"stored": len(stored), "topics": stored})
+                          details={"stored": len(stored), "topics": stored, "origin": origin})
     if not stored:
         log.warning("Job %d: o resgate não guardou pauta nova (D-101)", job_id)
     return bool(stored)
@@ -820,7 +874,7 @@ def produce(job_id: int, owner: str, now: datetime | None = None) -> str:
             details["source_retry"] = True
             fields = {"retry_after_utc": retry_at,
                       "blocked_reason": (f"{reason} — nova tentativa às "
-                                         f"{retry_at.astimezone(_SAO_PAULO):%H:%M} SP")[:1000]}
+                                         f"{localtime.clock(retry_at)}")[:1000]}
         else:
             # A pauta não morre com o job (M5): se ainda está `taken` (bloqueio pós-redação,
             # pelos gates), volta à fila para outro dia recontar a história; as descartadas
@@ -837,7 +891,7 @@ def produce(job_id: int, owner: str, now: datetime | None = None) -> str:
         outcome = "RETRY_WAIT"
         retry_at = _provider_backoff(job_id, moment)
         fields = {"blocked_reason": (f"{reason} — nova tentativa às "
-                                     f"{retry_at.astimezone(_SAO_PAULO):%H:%M} SP")[:1000],
+                                     f"{localtime.clock(retry_at)}")[:1000],
                   "retry_after_utc": retry_at}
         details = {"reason": reason[:500], "provider_wait": True}
     try:

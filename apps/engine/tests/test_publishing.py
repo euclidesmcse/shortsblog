@@ -46,6 +46,17 @@ def approved(site: str, slot: int = 1) -> int:
     return job
 
 
+def of_today(job: int) -> int:
+    """Os testes com o relógio real: o slot é de hoje no fuso do blog (senão é um post
+    atrasado, que espera um slot para cobrir — `reserve.LATE_SQL`)."""
+    with session_scope() as db:
+        db.execute(text("""UPDATE publication_jobs j SET local_date =
+                              (now() AT TIME ZONE s.timezone)::date
+                             FROM sites s WHERE s.site_key = j.site_key AND j.id = :i"""),
+                   {"i": job})
+    return job
+
+
 def run(now: datetime, mode: str = "draft") -> dict:
     with session_scope() as db:
         return publishing.publish_due(db, now, mode)
@@ -71,7 +82,7 @@ def test_aprovado_depois_do_slot_publica_logo_na_corrida_seguinte(enabled, queue
 
 
 def test_pedido_recente_nao_se_repete_e_em_draft_so_uma_vez(enabled, queued):
-    job = approved(enabled)
+    job = of_today(approved(enabled))
     now = datetime.now(UTC)                       # os eventos levam a hora real da base
     assert run(now)["requested"] == [job]
     assert run(now + timedelta(seconds=30))["requested"] == []          # ainda a correr
@@ -129,8 +140,35 @@ def test_sem_aprovacao_expira_72_horas_depois_do_slot(enabled):
 
 def test_aprovado_tarde_nao_expira_antes_de_publicar(enabled):
     """Aprovar às 60 h após o slot: o prazo conta desde a aprovação, não desde o slot."""
-    job = approved(enabled)
+    job = of_today(approved(enabled))
     with session_scope() as db:
         assert job not in dispatcher.reconcile(db, datetime.now(UTC) + timedelta(hours=1)).expired
     with session_scope() as db:
         assert job in dispatcher.reconcile(db, datetime.now(UTC) + timedelta(hours=25)).expired
+
+
+# --- 21/11: RETRY_WAIT da produção nunca vai para a publicação; slot passado expira ----------
+
+
+def test_espera_da_producao_sem_aprovacao_nao_e_pedida_para_publicar(enabled, queued):
+    """O 372 (nunca aprovado, à espera da cota de IA) recebeu 3 pedidos de publicação."""
+    job = insert_job(enabled, 1, "PLANNED")
+    advance(job, "QUEUED", "CLAIMED", "RESEARCHING", "RETRY_WAIT",
+            retry_after_utc=AFTER - timedelta(minutes=1))
+    assert run(AFTER, "live")["requested"] == [] and queued == []
+
+
+def test_producao_atrasada_expira_pelo_horario_do_slot_mesmo_com_tentativas_recentes(enabled):
+    late = insert_job(enabled, 1, "PLANNED")
+    advance(late, "QUEUED", "CLAIMED", "RESEARCHING", "RETRY_WAIT")
+    paid = approved(enabled, 2)                       # aprovado a repetir a publicação
+    advance(paid, "PUBLISHING", "RETRY_WAIT")
+    with session_scope() as db:                       # tentativas recentes: updated_at é agora
+        db.execute(text("UPDATE publication_jobs SET updated_at = now(), due_at_utc = :d "
+                        "WHERE id IN (:a, :b)"),
+                   {"d": datetime.now(UTC) - timedelta(hours=3), "a": late, "b": paid})
+        assert dispatcher.reconcile(db, datetime.now(UTC)).expired == []    # 3 h: ainda vale
+        db.execute(text("UPDATE publication_jobs SET due_at_utc = :d WHERE id IN (:a, :b)"),
+                   {"d": datetime.now(UTC) - timedelta(hours=7), "a": late, "b": paid})
+        expired = dispatcher.reconcile(db, datetime.now(UTC)).expired
+    assert late in expired and paid not in expired    # o aprovado só pela falta de progresso

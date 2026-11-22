@@ -312,3 +312,62 @@ def test_robots_com_429_proibe_ate_nova_tentativa(net):
     net.add("cheio.test", "/robots.txt", status=429)
     assert kind_of("https://cheio.test/a") == "robots_disallowed"
 
+
+
+# --- R42: espaçamento por servidor, robots.txt grande, saltos intermédios --------------------
+
+
+def test_pedidos_ao_mesmo_servidor_sao_espacados(net, monkeypatch):
+    clock = [100.0]
+    naps: list[float] = []
+    monkeypatch.setattr(settings, "fetch_host_interval_s", 1.0)
+    monkeypatch.setattr(fetcher, "_last_hit", {})
+    monkeypatch.setattr(fetcher.time, "monotonic", lambda: clock[0])
+
+    def nap(seconds: float) -> None:
+        naps.append(round(seconds, 2))
+        clock[0] += seconds
+
+    monkeypatch.setattr(fetcher, "_sleep", nap)
+    net.add("fonte.test", "/a")
+    net.add("fonte.test", "/b")
+    net.add("outra.test", "/c")
+    fetcher.fetch("https://fonte.test/a", respect_robots=False)
+    clock[0] += 0.25
+    fetcher.fetch("https://fonte.test/b", respect_robots=False)     # 0,25 s depois: espera 0,75
+    fetcher.fetch("https://outra.test/c", respect_robots=False)     # outro servidor: não espera
+    assert naps == [0.75]
+
+
+def test_robots_maior_que_o_teto_e_lido_ate_ao_teto(net, monkeypatch):
+    """R42 (ronda 3 da E6): um robots.txt acima de 512 KiB proibia o sítio inteiro."""
+    monkeypatch.setattr(fetcher, "ROBOTS_MAX_BYTES", 64)
+    rules = b"User-agent: *\nDisallow: /privado\n"
+    net.add("grande.test", "/robots.txt", body=rules + b"#" * 500)
+    net.add("grande.test", "/a", body=b"ok")
+    net.add("grande.test", "/privado", body=b"x")
+    assert fetcher.fetch("https://grande.test/a").body == b"ok"
+    assert kind_of("https://grande.test/privado") == "robots_disallowed"
+
+
+def test_salto_intermedio_do_redirecionamento_passa_pelo_robots(net):
+    """R42: o salto do meio (proibido) não pode ser visitado só porque o destino final deixa."""
+    net.add("fonte.test", "/a", status=302, headers={"location": "https://meio.test/privado"})
+    net.add("meio.test", "/robots.txt", body=b"User-agent: *\nDisallow: /privado\n")
+    net.add("meio.test", "/privado", status=302, headers={"location": "https://fim.test/ok"})
+    net.add("fim.test", "/ok", body=b"ok")
+    assert kind_of("https://fonte.test/a") == "robots_disallowed"
+    assert not [r for r in net.requests if r[1] == "meio.test" and r[3] == "/privado"]
+
+
+def test_tls_sem_alpn_e_com_verificacao_do_certificado():
+    """22/11: a ONU News dava 404 a todo o pedido com ALPN `http/1.1` (o httpcore anuncia
+    sempre); sem ALPN, como o urllib, responde 200. A verificação do certificado continua."""
+    import ssl
+
+    context = fetcher._tls_context()
+    context.set_alpn_protocols(["http/1.1"])                  # o que o httpcore faz
+    assert context.verify_mode == ssl.CERT_REQUIRED and context.check_hostname
+    sock = context.wrap_bio(ssl.MemoryBIO(), ssl.MemoryBIO(), server_hostname="x.test")
+    assert sock.selected_alpn_protocol() is None
+    assert context.cert_store_stats()["x509_ca"] > 0

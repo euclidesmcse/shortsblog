@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.services import jobs
+from app.services import jobs, reserve
 
 log = get_logger(__name__)
 
@@ -164,17 +164,21 @@ class ReconcileResult:
     verify_pending: int = 0                                 # à espera de confirmação (E9)
     ideas_released: int = 0                                 # pautas órfãs devolvidas à fila (M5)
     ideas_expired: int = 0                                  # pautas órfãs já fora da validade
+    covered: list[list[int]] = field(default_factory=list)  # [slot, reserva] (D-115)
+    reserves: list[int] = field(default_factory=list)       # reservas encomendadas (D-115)
 
     def as_dict(self) -> dict[str, object]:
         return {"requeued": self.requeued, "failed": self.failed, "verify": self.verify,
                 "expired": self.expired, "verify_pending": self.verify_pending,
-                "ideas_released": self.ideas_released, "ideas_expired": self.ideas_expired}
+                "ideas_released": self.ideas_released, "ideas_expired": self.ideas_expired,
+                "covered": self.covered, "reserves": self.reserves}
 
 
 def reconcile(db: Session, now: datetime | None = None) -> ReconcileResult:
     """Arruma o que ficou a meio.
 
-    Leases expiradas, publicações por confirmar e jobs fora de prazo.
+    Leases expiradas, publicações por confirmar, slots que a reserva cobre (D-115), jobs
+    fora de prazo e reservas a encomendar.
     """
     moment = _now(now)
     result = ReconcileResult()
@@ -202,23 +206,47 @@ def reconcile(db: Session, now: datetime | None = None) -> ReconcileResult:
                             retry_after_utc=moment + backoff)
             result.requeued.append(job_id)
 
+    # D-115: o slot que já não vai sair recebe a reserva aprovada do blog — antes da expiração
+    # por prazo, para o slot ainda ser coberto (depois dela, `job_expire_hours` já passou).
+    result.covered = [list(pair) for pair in reserve.cover(db, moment)]
+
     # Fora de prazo. Só nos blogs ligados: um blog desligado (amostras, testes) não é planeado nem
     # entregue, e o que lá ficou aprovado à espera da E14 não pode expirar por o relógio andar.
-    # - por produzir (PLANNED, QUEUED, BLOCKED): o slot passou há mais de `job_expire_hours`;
+    # - por produzir (PLANNED, QUEUED e RETRY_WAIT sem aprovação): o slot passou há mais de
+    #   `late_production_hours`, contado desde o slot e não desde a última tentativa (21/11: cada
+    #   volta em RETRY_WAIT renovava o `updated_at` e o 372 nunca expirava);
+    # - bloqueado (BLOCKED): o slot passou há mais de `job_expire_hours` (dá tempo de o devolver
+    #   à fila à mão);
     # - à espera de aprovação: 72 h depois do slot (`approval_expire_hours`, E10.4);
-    # - aprovado ou a repetir (APPROVED, RETRY_WAIT): `job_expire_hours` sem progresso, contado
+    # - aprovado ou a repetir a publicação (APPROVED, RETRY_WAIT aprovado): `job_expire_hours`
+    #   sem progresso, contado
     #   desde a última mudança e não desde o slot: aprovar às 60 h não pode expirar antes de
     #   publicar.
+    # - reserva aprovada (D-115): espera sem prazo de progresso; vence no `due_at_utc`, que
+    #   numa reserva é o fim da validade;
+    # - aprovado atrasado (aprovado depois do dia dele, sem slot para cobrir): vence
+    #   `late_hold_hours` depois do slot original.
     overdue = db.execute(
-        text("""SELECT j.id FROM publication_jobs j JOIN sites s ON s.site_key = j.site_key
+        text(f"""SELECT j.id FROM publication_jobs j JOIN sites s ON s.site_key = j.site_key
+                 CROSS JOIN LATERAL (SELECT EXISTS (
+                     SELECT 1 FROM approvals a
+                      WHERE a.job_id = j.id AND a.decision = 'approved') AS ok) approved
                  WHERE s.enabled AND (
-                       (j.status = ANY(:slot_bound) AND j.due_at_utc < :limit)
+                       (j.status = 'BLOCKED' AND j.due_at_utc < :limit)
+                    OR (j.status = ANY(:unproduced) AND NOT approved.ok
+                        AND j.due_at_utc < :late_limit)
                     OR (j.status = 'AWAITING_APPROVAL' AND j.due_at_utc < :approval_limit)
-                    OR (j.status = ANY(:no_progress) AND j.updated_at < :limit))
+                    OR (j.status = 'APPROVED' AND j.updated_at < :limit AND NOT j.reserve)
+                    OR (j.status = 'RETRY_WAIT' AND approved.ok AND j.updated_at < :limit)
+                    OR (j.reserve AND j.status = 'APPROVED' AND j.due_at_utc < :now)
+                    OR ({reserve.LATE_SQL} AND j.due_at_utc < :hold_limit))
                  ORDER BY j.id FOR UPDATE OF j SKIP LOCKED"""),
-        {"slot_bound": ["PLANNED", "QUEUED", "BLOCKED"], "no_progress": ["APPROVED", "RETRY_WAIT"],
+        {"unproduced": ["PLANNED", "QUEUED", "RETRY_WAIT"],
+         "late_limit": moment - timedelta(hours=settings.late_production_hours),
          "limit": moment - timedelta(hours=settings.job_expire_hours),
-         "approval_limit": moment - timedelta(hours=settings.approval_expire_hours)},
+         "approval_limit": moment - timedelta(hours=settings.approval_expire_hours),
+         "hold_limit": moment - timedelta(hours=settings.late_hold_hours),
+         "now": moment},
     ).scalars().all()
     for job_id in overdue:
         jobs.transition(db, job_id, "EXPIRED", actor="reconciler",
@@ -245,9 +273,13 @@ def reconcile(db: Session, now: datetime | None = None) -> ReconcileResult:
     result.ideas_released = sum(1 for fresh in swept if fresh)
     result.ideas_expired = len(swept) - result.ideas_released
 
+    # D-115: cada blog ligado mantém uma reserva viva (a coberta acima é reposta já aqui).
+    result.reserves = reserve.ensure(db, moment)
+
     result.verify_pending = db.execute(
         text("SELECT count(*) FROM publication_jobs WHERE status = 'VERIFY_REQUIRED'")
     ).scalar_one()
-    if result.requeued or result.failed or result.verify or result.expired or swept:
+    if (result.requeued or result.failed or result.verify or result.expired or swept
+            or result.covered or result.reserves):
         log.warning("Reconciliação: %s", result.as_dict())
     return result

@@ -86,7 +86,11 @@
   <div class="card">
     <h2>Publicação no WordPress</h2>
     {% if job.status == 'APPROVED' %}
-    {% if publish_mode == 'live' and job.due_at_utc > now %}
+    {% if job.reserve %}
+    <p><b>Reserva guardada</b> (D-115): publica sozinha no dia em que o post do blog não sair, até {{ job.due_at_utc|when }}. Não é preciso fazer nada.</p>
+    {% elif late_until %}
+    <p><b>Post atrasado</b>: aprovado depois do dia dele ({{ job.local_date.strftime('%d/%m') }}). Não sai junto com o post de hoje; publica sozinho no próximo horário do blog que falhar, até {{ late_until }}. Depois disso, expira. Não é preciso fazer nada.</p>
+    {% elif publish_mode == 'live' and job.due_at_utc > now %}
     <p><b>Agendado:</b> publica sozinho em {{ job.due_at_utc|when }}. Não é preciso fazer nada.</p>
     <form method="post" action="/dashboard/review/{{ job.id }}/publish" class="actions">
       <input type="hidden" name="early" value="1">

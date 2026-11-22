@@ -7,7 +7,6 @@ Access), nunca com um valor vindo do formulário.
 from __future__ import annotations
 
 from datetime import datetime
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
@@ -17,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.db import get_db
+from app.core.localtime import panel_zones
 from app.core.logging import get_logger
 from app.services import readiness, setup, vault
 
@@ -29,26 +29,6 @@ templates = Jinja2Templates(directory="app/dashboard/templates")
 _PUBLISHED = "PUBLISHED_CONFIRMED"
 _PENDING = ("AWAITING_APPROVAL", "APPROVED", "PUBLISHING", "VERIFY_REQUIRED")
 _STUCK = ("BLOCKED", "RETRY_WAIT", "FAILED", "EXPIRED")
-
-
-def panel_zones(spec: str | None = None) -> list[tuple[ZoneInfo, str]]:
-    """Fusos do portal (`settings.panel_timezones`, ou o `TZ` da instalação), com rótulo.
-
-    Rótulo padrão: a cidade do identificador IANA (`America/Sao_Paulo` → `Sao Paulo`). Fuso
-    desconhecido é ignorado com aviso; sem nenhum válido, UTC (a tela nunca quebra por isso)."""
-    raw = settings.panel_timezones if spec is None else spec
-    zones: list[tuple[ZoneInfo, str]] = []
-    for item in (raw or settings.tz or "UTC").split(","):
-        name, _, label = item.strip().partition("=")
-        if not name:
-            continue
-        try:
-            zone = ZoneInfo(name.strip())
-        except (ZoneInfoNotFoundError, ValueError):
-            log.warning("PANEL_TIMEZONES: fuso desconhecido ignorado: %s", name)
-            continue
-        zones.append((zone, label.strip() or name.strip().rsplit("/", 1)[-1].replace("_", " ")))
-    return zones or [(ZoneInfo("UTC"), "UTC")]
 
 
 def _dashboard_data(db: Session, days: int) -> dict:
@@ -99,6 +79,7 @@ def _dashboard_data(db: Session, days: int) -> dict:
                   last.published_at_utc AS last_at,
                   (SELECT j.due_at_utc FROM publication_jobs j
                     WHERE j.site_key = s.site_key AND j.status <> ALL(:done)
+                      AND NOT j.reserve
                       AND j.due_at_utc >= now() - interval '1 day'
                     ORDER BY j.due_at_utc LIMIT 1) AS next_due
              FROM sites s

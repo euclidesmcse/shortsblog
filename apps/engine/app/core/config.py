@@ -56,6 +56,16 @@ class Settings(BaseSettings):
     panel_login_max_failures: int = 5      # erros seguidos até bloquear o usuário
     panel_login_lock_minutes: int = 15
     panel_login_ip_limit: int = 20         # tentativas por IP na janela de bloqueio
+    # R69/E19: proxies cujo `X-Forwarded-For`/`X-Forwarded-Proto` o login aceita (CIDRs separados
+    # por vírgula). Vazio = nenhum (o IP é o do par TCP). O pacote, cujo motor só é alcançável
+    # pelo Caddy, e o Helm chart (ingress) usam as faixas privadas. A nossa produção usa o
+    # `CF-Connecting-IP` do Access e deixa vazio.
+    trusted_proxies: str = ""
+    # R52: alerta por e-mail se o último backup bem-sucedido (pulsação) passar disto.
+    backup_alert_hours: int = 26
+    # R31: teto de cada volume de estado das CLIs (o gateway limpa o velho todo dia; passar
+    # disto é sinal de que a limpeza não está a dar conta ou de que a CLI mudou de pastas).
+    ai_storage_alert_mb: int = 500
 
     # --- Marca do painel ---
     brand_name: str = "ShortsBlog"
@@ -164,6 +174,13 @@ class Settings(BaseSettings):
     llm_job_cap: int = 0
     # Um slot que passou há mais do que isto sem publicar é dado como expirado.
     job_expire_hours: int = 24
+    # Slot que passou há mais do que isto e ainda nem foi produzido (PLANNED, QUEUED ou
+    # RETRY_WAIT sem aprovação) expira: produzir depois disso dá um post de ontem a sair junto
+    # com o de hoje (21/11: o 372 voltaria a produzir à meia-noite o slot das 04:21 da véspera).
+    late_production_hours: int = 6
+    # Aprovado depois do dia dele (o job 372): não sai junto com o do dia; cobre o próximo slot
+    # que falhar, até `late_hold_hours` depois do slot original (notícia envelhece).
+    late_hold_hours: int = 48
     approval_expire_hours: int = 72   # sem aprovação 72 h depois do slot → EXPIRED (E10.4)
     # Pesquisa sem ideia viável (fontes insuficientes ou fila vazia): nova tentativa mais tarde,
     # quando os feeds já trouxeram ideias novas, se ainda couber antes do slot (E14.5l, job 43).
@@ -178,8 +195,17 @@ class Settings(BaseSettings):
     # página HTML. Só vale quando o chamador pede (read_sources). 0 = sem teto especial.
     fetch_max_bytes_pdf: int = 10 * 1024 * 1024
     fetch_timeout_s: float = 30
+    # R42: intervalo mínimo entre dois pedidos ao MESMO servidor (por processo). 0 desliga.
+    fetch_host_interval_s: float = 1.0
     # Descoberta: itens lidos por feed, idade máxima de uma notícia e validade de uma ideia.
     feed_max_items: int = 30
+    # Resumo diário (feed_health, 22/11): fonte com tantas leituras seguidas com erro (a
+    # descoberta corre de hora em hora) ou sem pauta nova há tantos dias aparece para olhar.
+    feed_fail_alert_runs: int = 24
+    feed_silent_days: int = 14
+    # Resumo diário (read_failures): sítios com pelo menos tantas falhas de leitura na semana.
+    read_fail_alert_min: int = 5
+    read_fail_alert_top: int = 15
     idea_max_age_days: int = 3
     idea_ttl_days: int = 4
     # Janela da deduplicação (por blog ao guardar; global ao escolher).
@@ -203,7 +229,16 @@ class Settings(BaseSettings):
     searxng_max_results: int = 8          # ligações de reforço por ideia
     recipe_search_results: int = 12       # modo receita: mais candidatas (muitas não têm receita)
     searxng_max_age_days: int = 7         # página de reforço com data mais velha é ignorada
-    triage_batch: int = 40                # títulos avaliados por chamada de triagem
+    triage_batch: int = 80                # títulos avaliados por chamada de triagem
+    # A triagem corre ~1 vez por dia por blog; Política recebe ~640 títulos/dia e um feed
+    # nacional (805 em 4 dias, nota média 1,1) enchia o lote dos «40 mais novos» (22/11).
+    # O lote reveza as fontes (o mais novo de cada uma, depois o 2.º…), e a fonte de rendimento
+    # baixo — média abaixo de `triage_source_low_avg` em pelo menos `triage_source_min_scored`
+    # notas dos últimos `triage_yield_days` — só entra a cada `triage_source_penalty` voltas.
+    triage_source_low_avg: float = 3.0
+    triage_source_min_scored: int = 20
+    triage_source_penalty: int = 4
+    triage_yield_days: int = 14
     triage_min_relevance: int = 5         # abaixo disto a ideia é descartada
     triage_cache_minutes: int = 60        # P3 do ensaio E14: reentrada não re-triagem (0: sempre)
     triage_group_max: int = 5             # ideias por história agrupada pela triagem
@@ -233,6 +268,14 @@ class Settings(BaseSettings):
     # esgotados), UMA chamada propõe temas intemporais e a busca procura-lhes fontes.
     slot_rescue: bool = True
     rescue_topics: int = 5                # temas propostos por resgate; 1 resgate por job
+    # Post de reserva (D-115): cada blog guarda um artigo intemporal já aprovado; se o post
+    # do dia não ficar pronto a tempo, a reserva publica no horário do slot e outra é feita.
+    # A reserva começa a ser produzida a `reserve_hour` (hora local da instalação, longe da
+    # produção dos slots, que corre na tarde e na noite da véspera) e vale
+    # `reserve_valid_days` depois de criada; vencida, é trocada por outra.
+    reserve_posts: bool = True
+    reserve_hour: int = 6
+    reserve_valid_days: int = 30
     # D-110 — cobertura mundial, regra fixa de TODOS os blogs (inclusive os que forem criados):
     # na janela, por blog, no máximo `world_brazil_max` posts centrados no Brasil e
     # `world_country_max` centrados num mesmo país qualquer. Não é configuração por blog.

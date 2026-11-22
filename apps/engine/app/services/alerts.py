@@ -8,7 +8,8 @@ não se ter conseguido ver). Corre no scheduler do motor, que não depende do n8
 Engine; o monitoramento da máquina continua a ser do Growth Engine.
 
 Alertas: blog ou painel em baixo, provedor de IA desautenticado, fila parada, orçamento a 80 %,
-certificado a menos de 14 dias, disco a mais de 85 %, Redis ou Postgres em baixo.
+certificado a menos de 14 dias, disco a mais de 85 %, Redis ou Postgres em baixo, backup
+sem sucesso há mais de 26 h (só depois da 1.ª pulsação do backup, R52).
 """
 
 from __future__ import annotations
@@ -21,13 +22,16 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.cache import redis_client
+from app.core.config import settings
 from app.core.db import engine, session_scope
 from app.core.logging import get_logger
-from app.services import probes, telemetry, vault
+from app.services import backup_beat, probes, telemetry, vault
+from app.services.ai import gateway
 from app.services.notify import mail
 
 log = get_logger(__name__)
@@ -160,6 +164,39 @@ def check_infra(db: Session) -> list[Firing]:
     return out
 
 
+def check_backup(db: Session, now: float | None = None) -> list[Firing]:
+    """R52: o backup diário parou? Só vale depois da 1.ª pulsação (opt-in do operador)."""
+    last = backup_beat.last_ok(db)
+    if last is None:
+        return []
+    hours = ((now or time.time()) - last) / 3600
+    if hours <= settings.backup_alert_hours:
+        return []
+    return [Firing("backup_stale", f"backup sem sucesso há {hours:.0f} h",
+                   "Ver o backup.log e o timer sb-backup (systemctl --user status sb-backup).")]
+
+
+def check_ai_storage(db: Session) -> list[Firing]:
+    """R31: algum volume de estado das CLIs passou do teto? Gateway mudo = sem alerta aqui
+    (a queda dos provedores já avisa por `provider_auth`)."""
+    try:
+        with httpx.Client(transport=gateway._transport, timeout=15) as client:
+            response = client.get(settings.ai_gateway_url.rstrip("/") + "/health/storage")
+        sizes = response.json() if response.status_code == 200 else {}
+    except (httpx.HTTPError, ValueError):
+        return []
+    limit = settings.ai_storage_alert_mb * 1024 * 1024
+    out = []
+    for cli, size in sorted(sizes.items()) if isinstance(sizes, dict) else []:
+        if isinstance(size, int) and size > limit:
+            out.append(Firing(
+                f"ai_storage:{cli}", f"volume da CLI {cli} com {size // (1024 * 1024)} MB",
+                f"Acima de {settings.ai_storage_alert_mb} MB. A limpeza diária do gateway "
+                "(R31, `housekeeping.RULES`) só apaga pastas conhecidas: ver o que cresceu "
+                f"com `docker run --rm -v sb_ai_{cli}:/v:ro alpine du -d 3 -h /v`."))
+    return out
+
+
 CHECKS: dict[str, Callable[[Session], list[Firing]]] = {
     "site_down": check_sites,
     "provider_auth": check_providers,
@@ -168,6 +205,8 @@ CHECKS: dict[str, Callable[[Session], list[Firing]]] = {
     "cert": check_certs,
     "disk_high": check_disk,
     "infra": check_infra,
+    "backup": check_backup,
+    "ai_storage": check_ai_storage,
 }
 _PREFIXES = {
     "site_down": ("site_down:",),
@@ -177,6 +216,8 @@ _PREFIXES = {
     "cert": ("cert:",),
     "disk_high": ("disk_high",),
     "infra": ("redis_down", "postgres_down"),
+    "backup": ("backup_stale",),
+    "ai_storage": ("ai_storage:",),
 }
 
 

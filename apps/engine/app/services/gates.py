@@ -163,6 +163,100 @@ def spelled_numbers(html: str) -> Counter[str]:
     return Counter(str(_SPELLED[m.lower()]) for m in _SPELLED_WORD.findall(plain_text(html)))
 
 
+# R44: o número por extenso tem de chegar à tradução. «dois comprimidos a cada oito horas»
+# vertido como «two tablets every three hours» não tinha dígito nenhum dos dois lados e
+# passava. Cada número por extenso do original (2 a 12 e meses) tem de aparecer na tradução,
+# em dígito OU por extenso na língua dela. Quem conta a tradução é generoso (palavras como
+# «both»/«twice»/两 também valem): o risco a evitar aqui é o falso alarme, que queima pauta.
+_TARGET_SPELLED: dict[str, dict[str, int]] = {
+    "en": {"two": 2, "both": 2, "twice": 2, "couple": 2, "pair": 2, "three": 3, "four": 4,
+           "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+           "eleven": 11, "twelve": 12, "dozen": 12,
+           "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+           "july": 7, "august": 8, "september": 9, "october": 10, "november": 11,
+           "december": 12, "jan": 1, "feb": 2, "mar": 3, "apr": 4, "jun": 6, "jul": 7,
+           "aug": 8, "sep": 9, "sept": 9, "oct": 10, "nov": 11, "dec": 12},
+    "es": {"dos": 2, "ambos": 2, "ambas": 2, "tres": 3, "cuatro": 4, "cinco": 5,
+           "seis": 6, "siete": 7, "ocho": 8, "nueve": 9, "diez": 10, "once": 11, "doce": 12,
+           "docena": 12, "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5,
+           "junio": 6, "julio": 7, "agosto": 8, "septiembre": 9, "setiembre": 9,
+           "octubre": 10, "noviembre": 11, "diciembre": 12},
+}
+_TARGET_WORD = {lang: re.compile(r"\b(" + "|".join(sorted(words, key=len, reverse=True))
+                                 + r")\b", re.IGNORECASE)
+                for lang, words in _TARGET_SPELLED.items()}
+_ZH_SPELLED = re.compile(r"十[一二]|[二两双俩三四五六七八九十]")
+_ZH_VALUES = {"十一": 11, "十二": 12, "二": 2, "两": 2, "双": 2, "俩": 2, "三": 3, "四": 4,
+              "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+# Parte de um número maior: «vinte e dois» (22), «dois mil» (2000), «três milhões».
+_TENS_BEFORE = re.compile(
+    r"\b(?:vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|"
+    r"duzent[oa]s|trezent[oa]s|quatrocent[oa]s|quinhent[oa]s|seiscent[oa]s|setecent[oa]s|"
+    r"oitocent[oa]s|novecent[oa]s|mil)\s+e\s+$", re.IGNORECASE)
+_SCALE_AFTER = re.compile(r"\s+(?:mil\b|milh|bilh|trilh)", re.IGNORECASE)
+# Endereços e domínios (`veja.abril.com.br`) e o nome da cidade não são números.
+# Só ASCII: o chinês não tem espaços, e um `\S*` engolia frases inteiras à volta do domínio.
+_DOMAIN = re.compile(r"(?:https?://)?[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+(?:/[\x21-\x7e]*)?")
+_ZH_RESCALED_PT = re.compile(r"(?<![\d.,])(\d+(?:[.,]\d+)?)\s*(?:mil\b|milh|bilh|trilh|bi\b|mi\b)",
+                             re.IGNORECASE)
+_PROPER = re.compile(r"\bRio\s+de\s+Janeiro\b", re.IGNORECASE)
+
+
+def _words_only(text: str) -> str:
+    return _PROPER.sub(" ", _DOMAIN.sub(" ", text))
+
+
+def _spelled_alone(text: str) -> list[tuple[str, str]]:
+    """(palavra, valor) dos números por extenso do original que valem sozinhos."""
+    out = []
+    text = _words_only(text)
+    for found in _SPELLED_WORD.finditer(text):
+        if _TENS_BEFORE.search(text[:found.start()]) or _SCALE_AFTER.match(text[found.end():]):
+            continue
+        out.append((found.group(1), str(_SPELLED[found.group(1).lower()])))
+    return out
+
+
+def _target_numbers(text: str, language: str) -> Counter[str]:
+    if language == "zh-CN":
+        return Counter(str(_ZH_VALUES[m]) for m in _ZH_SPELLED.findall(text))
+    pattern = _TARGET_WORD.get(language)
+    if pattern is None:
+        return Counter()
+    words = _TARGET_SPELLED[language]
+    return Counter(str(words[m.lower()]) for m in pattern.findall(text))
+
+
+def spelled_flaws(original_html: str, translated_html: str, language: str,
+                  where: str = "") -> list[str]:
+    """Números por extenso do original sem correspondente na tradução (R44). [] = ok.
+
+    Cada VALOR por extenso do original (2 a 12, meses) tem de aparecer na tradução pelo
+    menos uma vez além dos dígitos que o original já tinha desse valor."""
+    if language not in (*_TARGET_SPELLED, "zh-CN"):
+        return []
+    original = plain_text(original_html)
+    alone = _spelled_alone(original)
+    if not alone:
+        return []
+    translated = _words_only(plain_text(translated_html))
+    before = numbers(original_html)
+    if language == "zh-CN":
+        # O chinês muda a escala («6 bilhões» → 60亿): esse dígito do original some de lá.
+        before -= Counter(_normal(m.group(1)) for m in _ZH_RESCALED_PT.finditer(original))
+    # Na tradução contam o dígito, a palavra na língua dela e a palavra em português (os
+    # títulos das fontes ficam na língua original). Basta UMA ocorrência por valor: exigir a
+    # contagem exata acusava paráfrases inofensivas («os dois veículos» → «both outlets»,
+    # 2 dos 25 falsos alarmes na medição com 432 traduções publicadas).
+    total = (numbers(translated_html) + _target_numbers(translated, language)
+             + Counter(str(_SPELLED[w.lower()]) for w in _SPELLED_WORD.findall(translated)))
+    missing = {value for _, value in alone if total[value] < before[value] + 1}
+    if not missing:
+        return []
+    words = sorted({f"«{word}» ({value})" for word, value in alone if value in missing})
+    return [f"números por extenso {where}sem correspondente na tradução: " + ", ".join(words[:5])]
+
+
 # Citação seguida da tradução entre parênteses: «Maintain 0 mg tomorrow» (mantenha 0 mg amanhã).
 _QUOTE_GLOSS = re.compile(r"[«“\"]([^«»“”\"]{1,300})[»”\"]\s*[(（]([^()（）]{1,300})[)）]")
 
@@ -427,6 +521,7 @@ def check_translation(original_html: str, translated_html: str, *, title: str = 
         problems.append(f"links diferentes do original (faltam {sum(missing.values())}, "
                         f"a mais {sum(extra.values())})")
     problems.extend(_number_flaws(original_html, translated_html, language, ""))
+    problems.extend(spelled_flaws(original_html, translated_html, language))
     # Uma data numérica que o original não tem é ambígua (1/10/2026 é 10 de janeiro para um
     # americano): a tradução escreve o mês por extenso (E14, 2026-10-07).
     new_dates = (Counter(m.group(0) for m in _NUMERIC_DATE.finditer(plain_text(translated_html)))

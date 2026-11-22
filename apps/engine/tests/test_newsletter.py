@@ -389,7 +389,7 @@ def test_pending_orfao_de_execucao_caida_volta_a_tentar(nl):
     confirmed(out)
     out.sent.clear()
     published_post()
-    edition = NOW.astimezone(newsletter.TZ).date()
+    edition = NOW.astimezone(newsletter.local_zone()).date()
     with session_scope() as db:
         sid = db.execute(text("SELECT id FROM subscribers")).scalar_one()
         assert sends.claim(db, "newsletter_sends",            # reserva… e a execução morre aqui

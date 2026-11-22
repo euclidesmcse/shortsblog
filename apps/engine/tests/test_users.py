@@ -265,6 +265,56 @@ def test_client_ip_so_confia_no_cf_quando_o_access_validou():
     assert panel_auth.client_ip(req(None, "203.0.113.7")) == "10.0.0.9"
 
 
+def _req(peer, headers=None, scheme="http", access=None):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(state=SimpleNamespace(access_email=access), headers=headers or {},
+                           client=SimpleNamespace(host=peer), url=SimpleNamespace(scheme=scheme))
+
+
+def test_client_ip_atras_de_proxy_de_confianca(monkeypatch):
+    """R69: sem o Access (pacote), o teto por IP é do visitante, não do Caddy/ingress."""
+    xff = {"x-forwarded-for": "198.51.100.1, 203.0.113.7, 172.18.0.5"}
+    # Sem proxies de confiança (padrão): o X-Forwarded-For é ignorado
+    monkeypatch.setattr(settings, "trusted_proxies", "")
+    assert panel_auth.client_ip(_req("172.18.0.2", xff)) == "172.18.0.2"
+    monkeypatch.setattr(settings, "trusted_proxies", "10.0.0.0/8,172.16.0.0/12")
+    # O último salto que não é proxy nosso; o 198.51.100.1 à esquerda pode ser forjado
+    assert panel_auth.client_ip(_req("172.18.0.2", xff)) == "203.0.113.7"
+    # Par TCP de fora (chamando a origem direto): o cabeçalho dele não vale
+    assert panel_auth.client_ip(_req("203.0.113.99", xff)) == "203.0.113.99"
+    # Salto malformado: para ali e fica com o par
+    bad = {"x-forwarded-for": "203.0.113.7, lixo"}
+    assert panel_auth.client_ip(_req("172.18.0.2", bad)) == "172.18.0.2"
+    # Rede inválida na configuração é ignorada (não derruba o login)
+    monkeypatch.setattr(settings, "trusted_proxies", "nao-e-rede,172.16.0.0/12")
+    assert panel_auth.client_ip(_req("172.18.0.2", xff)) == "203.0.113.7"
+
+
+def test_cookie_secure_por_https_atras_do_proxy(monkeypatch):
+    from fastapi import Response
+
+    from app.api.routes import auth
+
+    user = {"id": 1, "session_version": 1}
+    monkeypatch.setattr(settings, "public_base_url", "https://painel.exemplo.test")
+    monkeypatch.setattr(settings, "sb_host", "painel.exemplo.test")
+    monkeypatch.setattr(settings, "trusted_proxies", "172.16.0.0/12")
+
+    def cookie(req):
+        resp = Response()
+        auth._start_session(req, resp, user)
+        return resp.headers["set-cookie"].lower()
+
+    https_proxy = {"host": "outro.exemplo.test", "x-forwarded-proto": "https"}
+    assert "secure" in cookie(_req("172.18.0.2", https_proxy))
+    # O mesmo cabeçalho vindo de fora não conta; http local continua sem Secure
+    assert "secure" not in cookie(_req("203.0.113.9", https_proxy))
+    assert "secure" not in cookie(_req("172.18.0.2", {"host": "outro.exemplo.test"}))
+    # Pelo nome público, como antes
+    assert "secure" in cookie(_req("172.18.0.2", {"host": "painel.exemplo.test"}))
+
+
 def test_senha_provisoria_sempre_passa_na_validacao():
     """Email curto (`n@…`): a senha sorteada nunca pode conter o nome do email."""
     for _ in range(300):

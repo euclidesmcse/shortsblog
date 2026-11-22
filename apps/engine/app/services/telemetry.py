@@ -50,7 +50,7 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
     for site, status, n in db.execute(
         text(
             "SELECT site_key, status, count(*) FROM publication_jobs WHERE local_date = :d "
-            "GROUP BY 1, 2"
+            "AND NOT reserve GROUP BY 1, 2"
         ),
         {"d": day},
     ).all():
@@ -58,7 +58,8 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
             ("sb_jobs_today", "Jobs de hoje por blog e estado", {"site": site, "status": status}, n)
         )
     for site, n in db.execute(
-        text("SELECT site_key, count(*) FROM publication_jobs WHERE local_date = :d GROUP BY 1"),
+        text("SELECT site_key, count(*) FROM publication_jobs WHERE local_date = :d "
+             "AND NOT reserve GROUP BY 1"),
         {"d": day},
     ).all():
         out.append(("sb_slots_planned_today", "Slots planeados hoje por blog", {"site": site}, n))
@@ -66,7 +67,7 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
     for site, reason in db.execute(
         text(
             "SELECT site_key, blocked_reason FROM publication_jobs WHERE local_date = :d "
-            "AND status IN ('BLOCKED', 'RETRY_WAIT', 'FAILED')"
+            "AND NOT reserve AND status IN ('BLOCKED', 'RETRY_WAIT', 'FAILED')"
         ),
         {"d": day},
     ).all():

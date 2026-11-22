@@ -89,6 +89,12 @@ def _no_illustration(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_host_spacing(monkeypatch):
+    """O espaçamento por servidor (R42) só corre nos testes que o pedem: faria a suíte dormir."""
+    monkeypatch.setattr(settings, "fetch_host_interval_s", 0)
+
+
+@pytest.fixture(autouse=True)
 def _media_dir(tmp_path, monkeypatch):
     media = tmp_path / "media"
     monkeypatch.setattr(settings, "media_dir", str(media))

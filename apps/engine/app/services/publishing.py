@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.cache import QUEUES
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.services import jobs, sitepub
+from app.services import jobs, reserve, sitepub
 
 log = get_logger(__name__)
 
@@ -36,11 +36,21 @@ def due_jobs(db: Session, now: datetime, mode: str) -> list[int]:
     states = ["APPROVED"] if mode == "draft" else ["APPROVED", "RETRY_WAIT", "VERIFY_REQUIRED"]
     rows = (
         db.execute(
-            text("""SELECT DISTINCT ON (j.site_key) j.id
+            text(f"""SELECT DISTINCT ON (j.site_key) j.id
                   FROM publication_jobs j JOIN sites s ON s.site_key = j.site_key
                  WHERE s.enabled AND j.status = ANY(:states) AND j.due_at_utc <= :now
+                   AND NOT j.reserve  -- reserva guardada (D-115) só sai quando cobre um slot
+                   -- aprovado depois do dia dele: não sai junto com o do dia; espera cobrir um
+                   -- slot que falhe (`reserve.LATE_SQL`, 22/11: job 372)
+                   AND NOT {reserve.LATE_SQL}
                    AND (j.status <> 'RETRY_WAIT' OR j.retry_after_utc IS NULL
                         OR j.retry_after_utc <= :now)
+                   -- RETRY_WAIT também é a espera da PRODUÇÃO (fontes, cota de IA): só volta a
+                   -- publicar o que já foi aprovado e falhou ao publicar (21/11: o job 372,
+                   -- nunca aprovado, recebeu 3 pedidos de publicação; salvou-o a corrida).
+                   AND (j.status <> 'RETRY_WAIT' OR EXISTS (
+                        SELECT 1 FROM approvals a
+                         WHERE a.job_id = j.id AND a.decision = 'approved'))
                    AND NOT EXISTS (SELECT 1 FROM publication_jobs p
                                     WHERE p.site_key = j.site_key AND p.status = 'PUBLISHING')
                    AND NOT EXISTS (SELECT 1 FROM publication_events e

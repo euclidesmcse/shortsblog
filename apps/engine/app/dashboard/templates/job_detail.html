@@ -30,7 +30,7 @@
 
   <div class="card">
     <dl>
-      <dt>Blog</dt><dd>{{ job.site_key }} · {{ job.local_date.strftime('%d/%m/%Y') }} · slot {{ job.slot_number }}</dd>
+      <dt>Blog</dt><dd>{{ job.site_key }} · {{ job.local_date.strftime('%d/%m/%Y') }} · {% if job.slot_number == 0 %}reserva{% if job.reserve %} (guardada até {{ job.due_at_utc.strftime('%d/%m') }}){% elif job.covers_job_id %} — cobre o job #{{ job.covers_job_id }}{% endif %}{% else %}slot {{ job.slot_number }}{% endif %}</dd>
       <dt>Horário</dt><dd>{{ job.due_at_utc|when }}</dd>
       <dt>Produção a partir de</dt><dd>{{ job.produce_after_utc|when }}</dd>
       {% if job.published_at_utc %}<dt>Publicado</dt><dd>{{ job.published_at_utc|when }}

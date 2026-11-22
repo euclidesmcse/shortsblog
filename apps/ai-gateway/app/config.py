@@ -37,5 +37,13 @@ class Settings(BaseSettings):
     # "redator e revisor de famílias diferentes" (ADR 0003).
     agy_model: str = "gemini-3.1-pro-high"
 
+    # R31: pastas de estado das CLIs (os volumes) e a limpeza periódica delas.
+    claude_state_dir: str = "/state/claude"
+    codex_state_dir: str = "/state/codex"
+    agy_state_dir: str = "/home/sb/.gemini"
+    housekeeping_enabled: bool = True
+    housekeeping_interval_h: float = 24
+    housekeeping_first_delay_s: float = 600
+
 
 settings = Settings()

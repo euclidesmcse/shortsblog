@@ -25,6 +25,13 @@ TOMORROW = datetime.now(UTC).date() + timedelta(days=1)
 NOON = datetime(2026, 10, 5, 12, 0, tzinfo=UTC)
 
 
+@pytest.fixture(autouse=True)
+def _late_production_wide(monkeypatch):
+    """Estes testes usam um relógio fixo depois do slot e medem leases e tentativas; o prazo de
+    produção atrasada (21/11, `late_production_hours`) tem testes próprios em test_publishing."""
+    monkeypatch.setattr(settings, "late_production_hours", 48)
+
+
 @pytest.fixture
 def planned():
     with session_scope() as db:
@@ -260,7 +267,8 @@ def test_slots_fora_de_prazo_expiram(planned):
         assert dispatcher.reconcile(db, datetime(2026, 10, 5, 23, 0, tzinfo=UTC)).expired == []
     with session_scope() as db:
         result = dispatcher.reconcile(db, late())
-    assert len(result.expired) == 29                  # tudo menos o publicado
+    # tudo menos o publicado (as reservas da D-115 encomendadas na 1.ª volta também vencem)
+    assert len([j for j in result.expired if j in ids]) == 29
     final = statuses()
     assert final[published] == "PUBLISHED_CONFIRMED"
     assert final[waiting] == final[approved] == "EXPIRED"
@@ -456,7 +464,7 @@ def test_reconcile_pela_rota(client, auth, planned):
     body = client.post("/api/sched/reconcile", headers=auth).json()
     assert body["requeued"] == [job]
     assert set(body) == {"requeued", "failed", "verify", "expired", "verify_pending", "queued",
-                         "ideas_released", "ideas_expired"}
+                         "ideas_released", "ideas_expired", "covered", "reserves"}
 
 
 def test_rotas_ainda_sem_logica_dizem_em_que_etapa_chegam(client, auth):
@@ -526,7 +534,8 @@ def test_falha_a_enfileirar_devolve_o_job_sem_gastar_a_tentativa(client, auth, m
     assert all(r["attempt_count"] == 0 and r["lease_owner"] is None for r in rows)
 
 
-def test_slots_demasiado_antigos_nao_entram_na_fila_nem_sao_entregues(planned):
+def test_slots_demasiado_antigos_nao_entram_na_fila_nem_sao_entregues(planned, monkeypatch):
+    monkeypatch.setattr(settings, "late_production_hours", 6)     # o prazo real (21/11)
     stale = NOON + timedelta(hours=settings.job_expire_hours + 12)
     with session_scope() as db:
         assert dispatcher.queue_due(db, stale) == 0     # dispatch antes do reconcile

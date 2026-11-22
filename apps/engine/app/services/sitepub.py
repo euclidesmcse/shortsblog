@@ -465,6 +465,11 @@ def _publish_locked(job_id: int, *, mode: str | None, owner: str) -> Result:
     if mode not in ("draft", "live"):
         raise ValueError(f"modo desconhecido: {mode!r}")
     with session_scope() as db:
+        # Nada é publicado sem a decisão humana registada (E6.9/E10): RETRY_WAIT também é a
+        # espera da produção, e um job nunca aprovado não pode virar APPROVED aqui (21/11).
+        if not db.execute(text("SELECT 1 FROM approvals WHERE job_id = :j "
+                               "AND decision = 'approved' LIMIT 1"), {"j": job_id}).first():
+            raise PublishError(f"job {job_id}: sem aprovação registada; não se publica")
         job, site, texts, image = _load(db, job_id)
         status = str(job["status"])
         allowed = ("APPROVED", "VERIFY_REQUIRED", "RETRY_WAIT") if mode == "live" else ("APPROVED",)

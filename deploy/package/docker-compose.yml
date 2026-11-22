@@ -44,6 +44,9 @@ x-app-env: &app-env
   PUBLIC_BASE_URL: ${SB_SCHEME:-https}://${SB_PANEL_HOST}
   # Sem Cloudflare Access: o login próprio do portal (E18.1) é a porta.
   PANEL_REQUIRE_ACCESS: "false"
+  # R69: o motor só é alcançável pelo Caddy (rede interna); o IP real do cliente vem do
+  # X-Forwarded-For dele, para o teto de tentativas de login ser por pessoa e não coletivo.
+  TRUSTED_PROXIES: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7"
   PANEL_PASSWORD: ${SB_PANEL_PASSWORD:?rode ./install.sh}
   APPROVAL_NOTIFY_EMAIL: ${SB_ADMIN_EMAIL:-}
 
@@ -198,6 +201,9 @@ services:
   sb-engine-worker:
     <<: *app-common
     command: ["python", "-m", "app.jobs.worker"]
+    # Parada (atualização, restart): termina o artigo em curso antes de sair (warm shutdown
+    # do RQ); com os 10 s padrão do Docker o job morria a meio e voltava do zero.
+    stop_grace_period: 25m
     environment:
       <<: *app-env
       WORKER_QUEUES: content,low,default
@@ -217,6 +223,7 @@ services:
   sb-engine-worker-fast:
     <<: *app-common
     command: ["python", "-m", "app.jobs.worker"]
+    stop_grace_period: 5m             # a publicação nunca é cortada a meio
     environment:
       <<: *app-env
       WORKER_QUEUES: fast,high

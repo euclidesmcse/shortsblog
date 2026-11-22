@@ -179,10 +179,6 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'bem-estar e aconselhamento: não transformar em conselho clínico; confirmar em fonte oficial ou estudo'
-- name: Estadão — Saúde
-  url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/saude/
-  tier: veiculo
-  lang: pt
 - name: Metrópoles — Saúde
   url: https://www.metropoles.com/saude/feed
   tier: veiculo
@@ -226,6 +222,16 @@ feeds:
   notes: 'NIH/NLM, domínio público com exceções pontuais; dizer sempre a jurisdição (EUA)'
 - name: UKHSA — News (gov.uk)
   url: https://www.gov.uk/government/organisations/uk-health-security-agency.atom
+  tier: oficial
+  lang: en
+  notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'
+- name: DHSC — News (gov.uk)
+  url: https://www.gov.uk/government/organisations/department-of-health-and-social-care.atom
+  tier: oficial
+  lang: en
+  notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'
+- name: MHRA — News (gov.uk)
+  url: https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency.atom
   tier: oficial
   lang: en
   notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'

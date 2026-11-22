@@ -37,11 +37,6 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
-- name: Google Cloud Release Notes
-  url: https://cloud.google.com/feeds/gcp-release-notes.xml
-  tier: fornecedor
-  lang: en
-  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
 - name: Kubernetes Blog
   url: https://kubernetes.io/feed.xml
   tier: fornecedor

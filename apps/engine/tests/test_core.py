@@ -132,7 +132,7 @@ def test_migracoes_idempotentes():
                                "018_newsletter_covers.sql", "019_rescue_origin.sql",
                                "020_users.sql", "021_idea_timeless.sql",
                              "022_system_secrets.sql", "023_idea_country.sql",
-                             "024_drop_legacy_pipeline.sql"]
+                             "024_drop_legacy_pipeline.sql", "025_reserve_posts.sql"]
 
 
 def test_migracao_editada_avisa_e_nao_reaplica(caplog):

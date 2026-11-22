@@ -10,7 +10,7 @@ publica antes disso com a confirmação explícita «Publicar antes do horário�
 from __future__ import annotations
 
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -22,9 +22,14 @@ from sqlalchemy.orm import Session
 from app.api.routes.dashboard import when_local
 from app.core.config import settings
 from app.core.db import get_db
-from app.services import decisions, jobs, publishing
+from app.services import decisions, jobs, publishing, reserve
 
 router = APIRouter(prefix="/dashboard/review", tags=["dashboard"])
+
+
+def _hold_until(due: datetime) -> str:
+    """Até quando um post atrasado espera um horário para cobrir (`late_hold_hours`)."""
+    return when_local(due + timedelta(hours=settings.late_hold_hours))
 templates = Jinja2Templates(directory="app/dashboard/templates")
 templates.env.filters["when"] = when_local
 
@@ -52,22 +57,25 @@ def _context(request: Request, **extra: object) -> dict[str, object]:
 @router.get("", response_class=HTMLResponse, summary="Fila de aprovação")
 def queue(request: Request, db: Session = Depends(get_db)):
     waiting = db.execute(
-        text("""SELECT j.id, j.site_key, j.local_date, j.updated_at, j.review_report,
+        text("""SELECT j.id, j.site_key, j.local_date, j.updated_at, j.review_report, j.reserve,
+                       NOT j.reserve AND j.local_date < (now() AT TIME ZONE s.timezone)::date
+                           AS late,
                        (SELECT title FROM job_translations t
                          WHERE t.job_id = j.id AND t.language = 'pt-BR') AS title
-                  FROM publication_jobs j
+                  FROM publication_jobs j JOIN sites s ON s.site_key = j.site_key
                  WHERE j.status = 'AWAITING_APPROVAL'
                  ORDER BY j.site_key, j.updated_at DESC""")
     ).mappings().all()
     approved = db.execute(
-        text("""SELECT j.id, j.site_key, j.due_at_utc,
+        text(f"""SELECT j.id, j.site_key, j.due_at_utc, j.reserve,
+                       {reserve.LATE_SQL} AS late,
                        (SELECT title FROM job_translations t
                          WHERE t.job_id = j.id AND t.language = 'pt-BR') AS title,
                        EXISTS (SELECT 1 FROM publication_events e
                                 WHERE e.job_id = j.id AND e.event_type = 'drafts_created') AS drafts
-                  FROM publication_jobs j
+                  FROM publication_jobs j JOIN sites s ON s.site_key = j.site_key
                  WHERE j.status = 'APPROVED'
-                 ORDER BY j.site_key, j.updated_at DESC""")
+                 ORDER BY j.site_key, j.updated_at DESC"""), {"now": datetime.now(UTC)}
     ).mappings().all()
     decided = db.execute(
         text("""SELECT a.job_id, a.decision, a.decided_by, a.decided_at, j.site_key,
@@ -117,6 +125,8 @@ def detail(job_id: int, request: Request, db: Session = Depends(get_db)):
                          labels=LANGUAGE_LABELS, evidence=[dict(e) for e in evidence],
                          images=images, report=job["review_report"] or {},
                          publication=[dict(e) for e in publication],
+                         late_until=(_hold_until(job["due_at_utc"])
+                                     if reserve.is_late(db, job_id) else ""),
                          publish_mode=settings.wp_publish_mode, now=datetime.now(UTC)))
 
 
@@ -134,9 +144,14 @@ def approve(job_id: int, request: Request, note: str = Form(""),
     error = _decide(db, job_id, request, "approved", note.strip()[:500])
     if error:
         return _back(err=error)
-    due = db.execute(text("SELECT due_at_utc FROM publication_jobs WHERE id = :i"),
-                     {"i": job_id}).scalar()
+    due, kept = db.execute(text("SELECT due_at_utc, reserve FROM publication_jobs WHERE id = :i"),
+                           {"i": job_id}).one()
     when = f" Publica sozinho em {when_local(due)}." if settings.wp_publish_mode == "live" else ""
+    if kept:  # D-115: a reserva aprovada só sai quando cobre um slot
+        when = " Fica guardado como reserva: publica no dia em que o post do blog não sair."
+    elif reserve.is_late(db, job_id):
+        when = (" O dia dele já passou: não sai junto com o post de hoje; publica no próximo "
+                f"horário do blog que falhar, até {_hold_until(due)}.")
     return _back(msg=f"Job {job_id} aprovado.{when}")
 
 
@@ -177,13 +192,19 @@ def _request_publish(db: Session, job_id: int, user: str, channel: str,
     Em modo `live`, antes da hora do slot só com `early` (confirmação explícita no painel):
     um clique distraído em «Publicar» antecipava o post (jobs 41–47 e 49).
     """
-    row = db.execute(text("SELECT status, due_at_utc FROM publication_jobs WHERE id = :i"),
-                     {"i": job_id}).first()
+    row = db.execute(text("SELECT status, due_at_utc, reserve FROM publication_jobs "
+                          "WHERE id = :i"), {"i": job_id}).first()
     if row is None:
         return f"Job {job_id} não existe."
-    status, due = row
+    status, due, kept = row
     if status != "APPROVED":
         return f"Só se publica um job APPROVED (o {job_id} está {status})."
+    if kept:  # D-115: sem slot, publicar a reserva seria um post a mais no dia
+        return (f"Job {job_id} é a reserva do blog: publica sozinho no dia em que o post "
+                "do blog não sair.")
+    if reserve.is_late(db, job_id):  # aprovado depois do dia dele (22/11, job 372)
+        return (f"Job {job_id} é de um dia que já passou: publica sozinho no próximo horário "
+                f"do blog que falhar, até {_hold_until(due)}.")
     before_slot = settings.wp_publish_mode == "live" and due > datetime.now(UTC)
     if before_slot and not early:
         return (f"Job {job_id} publica sozinho em {when_local(due)}; para antecipar, "

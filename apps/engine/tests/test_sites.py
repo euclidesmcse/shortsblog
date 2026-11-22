@@ -192,7 +192,7 @@ def test_slot_unico_por_site_e_dia(cloud):
         insert_job(cloud, 1)
 
 
-@pytest.mark.parametrize(("slot", "status"), [(0, "PLANNED"), (6, "PLANNED"),
+@pytest.mark.parametrize(("slot", "status"), [(-1, "PLANNED"), (6, "PLANNED"),
                                               (1, "READY_TO_PUBLISH"), (1, "planned")])
 def test_slot_e_estado_invalidos(cloud, slot, status):
     with pytest.raises(IntegrityError):

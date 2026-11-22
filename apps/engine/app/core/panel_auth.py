@@ -19,6 +19,7 @@ O n8n e os healthchecks falam pela rede interna (`Host: sb-engine-api:8000`):
 """
 from __future__ import annotations
 
+import ipaddress
 import time
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
@@ -117,11 +118,64 @@ def _load_user(user_id: int, version: int) -> dict[str, Any] | None:
         return users.session_user(db, user_id, version)
 
 
+@lru_cache(maxsize=4)
+def _networks(spec: str) -> tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...]:
+    nets = []
+    for item in spec.split(","):
+        if item.strip():
+            try:
+                nets.append(ipaddress.ip_network(item.strip(), strict=False))
+            except ValueError:
+                log.warning("TRUSTED_PROXIES: rede inválida ignorada: %s", item)
+    return tuple(nets)
+
+
+def _trusted(ip: str | None) -> bool:
+    """O IP é de um proxy de confiança (`settings.trusted_proxies`)?"""
+    if not ip:
+        return False
+    try:
+        addr = ipaddress.ip_address(ip.strip())
+    except ValueError:
+        return False
+    return any(addr in net for net in _networks(settings.trusted_proxies))
+
+
+def _peer(request: Request) -> str | None:
+    return request.client.host if request.client else None
+
+
 def client_ip(request: Request) -> str:
-    """IP de quem tenta entrar. Atrás do Cloudflare (Access validado), vale o `CF-Connecting-IP`."""
+    """IP de quem tenta entrar (base do teto de tentativas por IP, R69).
+
+    - Atrás do Cloudflare (Access validado): o `CF-Connecting-IP`.
+    - Atrás de um proxy de confiança (`TRUSTED_PROXIES`: o Caddy do pacote, o ingress do Helm):
+      o último salto do `X-Forwarded-For` que NÃO é um proxy de confiança — os saltos à esquerda
+      vêm do cliente e podem ser forjados, os da direita foram acrescentados pelos nossos proxies.
+    - Senão, o par TCP (um `X-Forwarded-For` vindo de fora é ignorado).
+    """
     if request.state.access_email and request.headers.get("cf-connecting-ip"):
         return request.headers["cf-connecting-ip"]
-    return request.client.host if request.client else "desconhecido"
+    peer = _peer(request)
+    if _trusted(peer):
+        chain = request.headers.get("x-forwarded-for", "")
+        hops = [h.strip() for h in chain.split(",") if h.strip()]
+        for hop in reversed(hops):
+            try:
+                ipaddress.ip_address(hop)
+            except ValueError:
+                break  # salto malformado: não dá para confiar no que está à esquerda
+            if not _trusted(hop):
+                return hop
+    return peer or "desconhecido"
+
+
+def forwarded_https(request: Request) -> bool:
+    """O navegador falou https? (direto, ou pelo `X-Forwarded-Proto` de um proxy de confiança)."""
+    if request.url.scheme == "https":
+        return True
+    proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    return proto == "https" and _trusted(_peer(request))
 
 
 def _access_expiry(token: str) -> float | None:

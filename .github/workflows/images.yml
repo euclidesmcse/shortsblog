@@ -3,9 +3,9 @@
 # kind descartável (E19.4), com as imagens recém-publicadas.
 #
 # Quando: tag `v*` (versão do pacote) ou à mão (Actions → Imagens → Run workflow).
-# Os pacotes nascem ligados a este repositório (label org.opencontainers.image.source) e, como o
-# repositório é privado, herdam a visibilidade PRIVADA. Torná-los públicos é decisão da E19.6
-# (D-OPEN-18) — não mudar a visibilidade aqui.
+# Só publica a partir de um repositório PÚBLICO (D-112): as imagens têm de corresponder ao código
+# publicado (AGPL), e os pacotes do GHCR pertencem ao repositório público, que os criou e de quem
+# herdam a visibilidade. Num repositório privado (a nossa fonte de trabalho), o build é pulado.
 #
 # Sem segredos além do GITHUB_TOKEN do próprio job; nada fala com a nossa produção.
 name: Imagens
@@ -25,6 +25,7 @@ concurrency:
 jobs:
   build:
     name: Build e push (${{ matrix.image }})
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:

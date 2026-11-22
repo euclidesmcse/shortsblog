@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import text
 
 from app.core import cache
+from app.core.config import settings
 from app.core.db import session_scope
 from app.jobs import discovery as discovery_task
 from app.services import discovery, fetcher, sites
@@ -188,7 +189,7 @@ def test_pagina_de_noticias_sem_rss_vira_ideias(feeds, two_sites):
     result = discover("saude")
     assert (result.new, result.skipped) == (2, 1)        # a de fora do sítio nem chega a item
     got = ideas("site_key = 'saude'")
-    assert [(i["topic"], i["canonical_url"]) for i in got] == [
+    assert sorted((i["topic"], i["canonical_url"]) for i in got) == [
         ("Company opens a new office and signs agreement", "https://c.test/news/office"),
         ("Introducing a new model for everyone today", "https://c.test/model")]
     assert all("RESUMO" not in str(v) for r in fetch("SELECT * FROM ideas") for v in r.values())
@@ -529,3 +530,90 @@ def test_pick_prioridade_manda_mais_que_a_legibilidade(two_sites, lista_fechado)
                              url="https://aberto.test/corriqueiro", published_at=NOW, now=NOW)
         first = pick_triaged(db, "saude", NOW)
     assert first is not None and first.source_urls == ("https://fechado.test/manual",)
+
+
+def test_endereco_a_buscar_guarda_o_www_e_a_identidade_nao():
+    """R42: há sítios que só respondem com o `www.`; a deduplicação continua sem ele."""
+    from datetime import UTC, datetime
+
+    from app.core.db import session_scope
+    from app.services import discovery, sites
+    from tests.conftest import fetch
+
+    now = datetime(2026, 10, 5, 12, 0, tzinfo=UTC)
+    with session_scope() as db:
+        sites.sync(db)
+        discovery.store_idea(db, site_key="saude", origin="manual", now=now,
+                             url="https://WWW.Exemplo.test/artigo/?utm_source=x",
+                             topic="Um tema qualquer de saúde mundial")
+        picked = discovery.pick(db, "saude", now)
+    row = fetch("SELECT canonical_url, source_urls FROM ideas")[0]
+    assert row["canonical_url"] == "https://exemplo.test/artigo"
+    assert row["source_urls"] == ["https://www.exemplo.test/artigo"]
+    assert picked is not None and picked.source_urls == ("https://www.exemplo.test/artigo",)
+    assert discovery.canonical_url("https://www.exemplo.test/a") == "https://exemplo.test/a"
+
+
+def test_feed_em_ordem_cronologica_guarda_os_mais_novos(two_sites, feeds, monkeypatch):
+    """22/11: o feed do Health Canada traz 525 itens desde 2020, do mais velho para o mais novo;
+    o corte de `feed_max_items` ficava só com os velhos (0 pautas em 14 dias)."""
+    monkeypatch.setattr(settings, "feed_max_items", 3)
+    words = ("girafa", "cometa", "violino", "farol", "orquídea", "vulcão")
+    old = [(f"Notícia antiga sobre {w}", f"https://a.test/velha-{n}", NOW - timedelta(days=400 - n))
+           for n, w in enumerate(words)]
+    new = [(f"Novidade de hoje: {w} e {w}s", f"https://a.test/nova-{n}",
+            NOW - timedelta(hours=n + 1)) for n, w in enumerate(words[:2])]
+    feeds["https://a.test/feed"] = rss(*old, *new)
+    result = discover("saude")
+    assert result.new == 2
+    assert sorted(i["canonical_url"] for i in ideas("site_key = 'saude'")) == [
+        "https://a.test/nova-0", "https://a.test/nova-1"]
+
+
+def test_data_do_feed_em_utc_mesmo_com_o_container_noutro_fuso(monkeypatch):
+    """22/11: `mktime` lia a hora UTC do feedparser como hora local (TZ=America/Sao_Paulo):
+    toda data ficava 3 h no futuro."""
+    import time
+
+    monkeypatch.setenv("TZ", "America/Sao_Paulo")
+    time.tzset()
+    try:
+        body = rss(("Item", "https://a.test/x", datetime(2026, 11, 22, 12, 0, tzinfo=UTC)))
+        assert discovery._feed_items(body)[0][2] == datetime(2026, 11, 22, 12, 0, tzinfo=UTC)
+    finally:
+        monkeypatch.delenv("TZ")
+        time.tzset()
+
+
+@pytest.mark.parametrize(("raw", "expected"), [
+    ("November 19, 2026 15:57:58 +0000", datetime(2026, 11, 19, 15, 57, 58, tzinfo=UTC)),
+    ("2026-11-19T12:00:00-03:00", datetime(2026, 11, 19, 15, 0, tzinfo=UTC)),
+    ("2026-11-19 10:00:00", datetime(2026, 11, 19, 10, 0, tzinfo=UTC)),
+    ("ontem à tarde", None),
+])
+def test_data_fora_do_padrao_do_rss(raw, expected):
+    """Tax Foundation: «November 19, 2026 15:57:58 +0000» no pubDate — o feedparser não lê,
+    o item ficava sem data e era descartado (0 pautas desde sempre)."""
+    body = (f'<rss version="2.0"><channel><item><title>T</title><link>https://a.test/x</link>'
+            f"<pubDate>{raw}</pubDate></item></channel></rss>").encode()
+    assert discovery._feed_items(body)[0][2] == expected
+
+
+def test_feed_pedido_na_lingua_da_fonte(two_sites, monkeypatch):
+    """A AWS servia ao `Accept-Language: pt-BR` o feed em português parado desde 2024."""
+    asked: list[str | None] = []
+
+    def fake_fetch(url: str, **kwargs) -> fetcher.Fetched:
+        asked.append(kwargs.get("language"))
+        return fetcher.Fetched(url=url, status=200, content_type="application/rss+xml",
+                               body=rss())
+
+    monkeypatch.setattr(fetcher, "fetch", fake_fetch)
+    with session_scope() as db:
+        db.execute(text("UPDATE sources SET lang = 'en' WHERE feed_url = 'https://b.test/feed'"))
+    discover("saude")
+    assert sorted(asked, key=str) == ["en", "pt"]
+    assert fetcher._accept_language("en") == "en,*;q=0.5"
+    assert fetcher._accept_language("es").startswith("es,")
+    assert fetcher._accept_language("pt").startswith(settings.content_locale)
+    assert fetcher._accept_language(None).startswith(settings.content_locale)

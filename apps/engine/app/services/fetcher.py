@@ -12,19 +12,25 @@ Garantias:
 - a ligação é feita **ao IP que foi verificado** (com o nome no SNI e no `Host`),
   por isso um DNS que mude de resposta entre a verificação e o pedido não serve
   de nada;
-- cada redirecionamento passa pelas mesmas verificações, e há um máximo;
+- cada redirecionamento passa pelas mesmas verificações, e há um máximo — inclusive o
+  `robots.txt` de cada salto intermédio (R42), não só o do destino final;
 - limite de tamanho (lido em blocos) e de tempo total;
-- identifica-se sempre como `ShortsBlogBot` e respeita o `robots.txt`.
+- identifica-se sempre como `ShortsBlogBot` e respeita o `robots.txt` (um `robots.txt`
+  maior que o teto é lido até ao teto, como os motores de busca fazem — R42);
+- espaça os pedidos ao mesmo servidor (`fetch_host_interval_s`, R42).
 """
 from __future__ import annotations
 
 import ipaddress
 import socket
+import ssl
 import time
 import urllib.robotparser
+from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import urljoin, urlsplit
 
+import certifi
 import httpx
 
 from app.core.config import settings
@@ -38,8 +44,41 @@ ROBOTS_MAX_BYTES = 512 * 1024
 
 # Só os testes o substituem (httpx.MockTransport).
 _transport: httpx.BaseTransport | None = None
+
+
+class _NoAlpnContext(ssl.SSLContext):
+    """TLS sem ALPN, como o `urllib`. O httpcore anuncia sempre `http/1.1` no ALPN, e há
+    servidores que respondem diferente a isso: a ONU News (Fastly) dava 404 a todo o pedido
+    com ALPN `http/1.1` e 200 sem ALPN — os 3 feeds de saúde da ONU (inglês, português,
+    espanhol) estavam mortos no motor há ~500 leituras e passavam no validador (22/11)."""
+
+    def set_alpn_protocols(self, alpn_protocols: object) -> None:  # noqa: D102
+        return None
+
+
+def _tls_context() -> ssl.SSLContext:
+    context = _NoAlpnContext(ssl.PROTOCOL_TLS_CLIENT)        # verifica nome e certificado
+    context.load_verify_locations(certifi.where())
+    return context
+
+
+_TLS = _tls_context()
+
+
+def _accept_language(language: str | None) -> str:
+    """Sem língua, a do blog (pt-BR). Com a da fonte, ela primeiro: a AWS servia ao
+    `Accept-Language: pt-BR` o feed em português, parado desde junho de 2024, em vez do
+    What's New em inglês (22/11)."""
+    code = (language or "").strip()
+    if not code or code.lower().startswith("pt"):
+        return f"{settings.content_locale},pt;q=0.9,en;q=0.8"
+    return f"{code},en;q=0.8,*;q=0.5" if not code.lower().startswith("en") else "en,*;q=0.5"
 # host → (expira, parser | None). None = sem robots.txt utilizável → permitido.
 _robots: dict[str, tuple[float, urllib.robotparser.RobotFileParser | None]] = {}
+# host → instante (monotónico) do último pedido; R42. Os testes substituem `_sleep`.
+_last_hit: dict[str, float] = {}
+_sleep = time.sleep
+_LAST_HIT_MAX = 5000
 
 
 class FetchError(Exception):
@@ -134,10 +173,29 @@ def check_url(url: str) -> tuple[str, str]:
     return host, addresses[0]
 
 
+def _space(host: str) -> None:
+    """Espera o que faltar para o intervalo mínimo desde o último pedido a `host` (R42)."""
+    interval = settings.fetch_host_interval_s
+    if interval <= 0:
+        return
+    last = _last_hit.get(host)
+    if last is not None:
+        gap = interval - (time.monotonic() - last)
+        if gap > 0:
+            _sleep(gap)
+    if len(_last_hit) >= _LAST_HIT_MAX:
+        _last_hit.clear()
+    _last_hit[host] = time.monotonic()
+
+
 def _request(url: str, *, max_bytes: int, deadline: float, accept: str,
-             max_bytes_pdf: int | None = None) -> Fetched | str:
-    """Um pedido, sem seguir redirecionamentos. Devolve o conteúdo ou o endereço seguinte."""
+             max_bytes_pdf: int | None = None, truncate: bool = False,
+             language: str | None = None) -> Fetched | str:
+    """Um pedido, sem seguir redirecionamentos. Devolve o conteúdo ou o endereço seguinte.
+
+    `truncate`: passado o teto, devolve o que leu até ele em vez de falhar (robots.txt)."""
     host, ip = check_url(url)
+    _space(host)
     parts = urlsplit(url)
     target = f"[{ip}]" if ":" in ip else ip
     path = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
@@ -146,10 +204,11 @@ def _request(url: str, *, max_bytes: int, deadline: float, accept: str,
         raise FetchError("timeout")
     try:
         with httpx.Client(transport=_transport, timeout=min(remaining, settings.http_timeout),
-                          follow_redirects=False, trust_env=False) as client, client.stream(
+                          follow_redirects=False, trust_env=False, verify=_TLS) as client, \
+                client.stream(
             "GET", f"https://{target}{path}",
             headers={"Host": host, "User-Agent": settings.http_user_agent, "Accept": accept,
-                     "Accept-Language": f"{settings.content_locale},pt;q=0.9,en;q=0.8"},
+                     "Accept-Language": _accept_language(language)},
             # Liga ao IP verificado; o certificado é validado contra o nome.
             extensions={"sni_hostname": host},
         ) as response:
@@ -170,7 +229,10 @@ def _request(url: str, *, max_bytes: int, deadline: float, accept: str,
             for chunk in response.iter_bytes():
                 size += len(chunk)
                 if size > limit:
-                    raise FetchError("too_large", f"> {limit} bytes")
+                    if not truncate:
+                        raise FetchError("too_large", f"> {limit} bytes")
+                    chunks.append(chunk[: len(chunk) - (size - limit)])
+                    break
                 if time.monotonic() > deadline:
                     raise FetchError("timeout")
                 chunks.append(chunk)
@@ -184,12 +246,18 @@ def _request(url: str, *, max_bytes: int, deadline: float, accept: str,
 
 
 def _fetch(url: str, *, max_bytes: int, timeout_s: float, accept: str,
-           max_bytes_pdf: int | None = None) -> Fetched:
+           max_bytes_pdf: int | None = None, truncate: bool = False,
+           on_hop: Callable[[str], None] | None = None,
+           language: str | None = None) -> Fetched:
+    """`on_hop`: chamado com cada destino de redirecionamento ANTES de lhe fazer o pedido
+    (o `fetch` confere ali o robots.txt do salto, R42)."""
     deadline = time.monotonic() + timeout_s
     current = url
     for _ in range(MAX_REDIRECTS + 1):
+        if on_hop is not None and current != url:
+            on_hop(current)
         result = _request(current, max_bytes=max_bytes, deadline=deadline, accept=accept,
-                          max_bytes_pdf=max_bytes_pdf)
+                          max_bytes_pdf=max_bytes_pdf, truncate=truncate, language=language)
         if isinstance(result, Fetched):
             return result
         current = result          # o destino do redirecionamento é verificado na volta seguinte
@@ -214,8 +282,10 @@ def _robots_for(host: str) -> urllib.robotparser.RobotFileParser | None:
     parser: urllib.robotparser.RobotFileParser | None = None
     ttl = ROBOTS_TTL_S
     try:
+        # Maior que o teto: lê-se o início (R42) — proibir o sítio inteiro por um ficheiro
+        # grande era pior do que ignorar regras no fim dele.
         page = _fetch(f"https://{host}/robots.txt", max_bytes=ROBOTS_MAX_BYTES,
-                      timeout_s=settings.http_timeout, accept="text/plain, */*")
+                      timeout_s=settings.http_timeout, accept="text/plain, */*", truncate=True)
         if page.status == 200:
             parser = urllib.robotparser.RobotFileParser()
             parser.parse(page.text.splitlines())
@@ -246,29 +316,34 @@ def allowed_by_robots(url: str, agents: tuple[str, ...] = ()) -> bool:
 def fetch(url: str, *, max_bytes: int | None = None, timeout_s: float | None = None,
           accept: str = "text/html, application/xhtml+xml, application/xml;q=0.9, */*;q=0.5",
           respect_robots: bool = True, ai_agents: tuple[str, ...] = (),
-          max_bytes_pdf: int | None = None) -> Fetched:
+          max_bytes_pdf: int | None = None, language: str | None = None) -> Fetched:
     """Vai buscar um endereço externo com todas as verificações. Levanta `FetchError`.
 
     `ai_agents` (D-070): a página vai ser entregue a um modelo de IA; se o robots.txt
     proíbe esses robôs, ela não é lida (`ai_disallowed`), mesmo que o nosso possa.
     `max_bytes_pdf`: teto maior só para respostas `application/pdf` (relatórios oficiais
     são maiores que páginas HTML); sem ele vale `max_bytes` para tudo.
+    `language`: a língua da fonte (`sources.lang`) no `Accept-Language`; sem ela, a do blog.
     """
+    def robots(target: str) -> None:
+        # O endereço é verificado antes de se pedir o robots.txt dele: um salto para a rede
+        # interna é `blocked_address`, não «robots inalcançável».
+        check_url(target)
+        if not allowed_by_robots(target):
+            raise FetchError("robots_disallowed", target[:200])
+        if ai_agents and not allowed_by_robots(target, ai_agents):
+            raise FetchError("ai_disallowed", target[:200])
+
     check_url(url)                       # falha cedo, antes de ir ao robots.txt
-    if respect_robots and not allowed_by_robots(url):
-        raise FetchError("robots_disallowed", url[:200])
-    if respect_robots and ai_agents and not allowed_by_robots(url, ai_agents):
-        raise FetchError("ai_disallowed", url[:200])
+    if respect_robots:
+        robots(url)
     page = _fetch(url,
                   max_bytes=settings.fetch_max_bytes if max_bytes is None else max_bytes,
                   timeout_s=settings.fetch_timeout_s if timeout_s is None else timeout_s,
-                  accept=accept, max_bytes_pdf=max_bytes_pdf)
+                  accept=accept, max_bytes_pdf=max_bytes_pdf,
+                  on_hop=robots if respect_robots else None, language=language)
     # O destino de um redirecionamento passa pelas mesmas verificações, com os mesmos
     # tipos de erro: um bloqueio só dos robôs de IA é `ai_disallowed` (conta como «só de
     # pauta» na D-070), não `robots_disallowed` (revisão E14).
-    if respect_robots and page.url != url:
-        if not allowed_by_robots(page.url):
-            raise FetchError("robots_disallowed", page.url[:200])
-        if ai_agents and not allowed_by_robots(page.url, ai_agents):
-            raise FetchError("ai_disallowed", page.url[:200])
+    # (Cada salto, inclusive o último, já passou pelo `robots` em `on_hop`.)
     return page

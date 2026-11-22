@@ -596,6 +596,10 @@ POLIDA = ("<p>Todos os itens são vendidos em qualquer supermercado ou feira; o 
 def test_polimento_aplica_as_notas_e_a_re_revisao_limpa_os_reparos(recipe_job, ai):
     ai.draft_html = [good_recipe(),
                      good_recipe(**{"Onde encontrar os ingredientes": POLIDA})]
+    # As traduções falsas acompanham o texto polido («duas medidas»): o gate R44 exige que
+    # o número por extenso chegue a cada tradução.
+    ai.translations = {lang: [good_recipe(**{"Onde encontrar os ingredientes": POLIDA})]
+                       for lang in ("en", "es", "zh-CN")}
     ai.reviews = [
         {"score": 92, "approved": True, "unsupported_claims": [],
          "issues": [{"text": "diga como dividir o óleo", "severity": "minor"}]},

@@ -210,10 +210,6 @@ feeds:
   tier: oficial
   lang: en
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: Metrópoles — Política
-  url: https://www.metropoles.com/brasil/politica-brasil/feed
-  tier: veiculo
-  lang: pt
 - name: UOL Notícias — Política
   url: https://rss.uol.com.br/feed/noticias.xml
   tier: veiculo

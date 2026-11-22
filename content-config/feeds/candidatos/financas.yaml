@@ -178,11 +178,6 @@ feeds:
   url: https://libertystreeteconomics.newyorkfed.org/feed/
   tier: oficial
   lang: en
-- name: U.S. BLS — Latest
-  url: https://www.bls.gov/feed/bls_latest.rss
-  tier: oficial
-  lang: en
-  notes: 'CPI, payroll e produtividade dos EUA; feed curto (1–5 itens)'
 - name: CFPB — Newsroom
   url: https://www.consumerfinance.gov/about-us/newsroom/feed/
   tier: oficial

@@ -25,7 +25,7 @@ from pypdf import PdfReader
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.services import discovery, fetcher, gates, terms
+from app.services import discovery, fetcher, gates, read_failures, terms
 from app.services import recipe as recipes
 from app.services.ai import chain
 from app.services.ai.prompting import External
@@ -293,7 +293,8 @@ def page_date(body: bytes) -> datetime | None:
 
 def read_sources(urls: list[str], now: datetime, *, fresh_urls: frozenset[str] = frozenset(),
                  max_age_days: int = 0, skipped: list[str] | None = None,
-                 with_recipe: bool = False, base: list[Source] | None = None) -> list[Source]:
+                 with_recipe: bool = False, base: list[Source] | None = None,
+                 transient: list[str] | None = None) -> list[Source]:
     """Vai buscar cada fonte pelo fetcher seguro. As que falham ficam de fora.
 
     Primeiro as ligações da ideia (o artigo-fonte e as repetições noutros feeds);
@@ -310,6 +311,8 @@ def read_sources(urls: list[str], now: datetime, *, fresh_urls: frozenset[str] =
     que servem para conferir a receita escrita.
     `base`: fontes já lidas numa chamada anterior (o reforço, D-063, só lê as ligações novas);
     entram no resultado e os seus domínios não se repetem.
+    `transient`, se vier, recebe as ligações que falharam por motivo passageiro (tempo,
+    rede, 429 ou erro 5xx do servidor): a ideia delas pode valer noutra hora (R42).
     """
     sources: list[Source] = list(base or [])
     seen_domains: set[str] = {_site(s.url) for s in sources}
@@ -329,12 +332,23 @@ def read_sources(urls: list[str], now: datetime, *, fresh_urls: frozenset[str] =
                                  max_bytes_pdf=settings.fetch_max_bytes_pdf)
         except fetcher.FetchError as exc:
             log.info("Fonte ignorada (%s): %s", exc.kind, url[:120])
+            read_failures.failed(domain, exc.kind, now)
             if skipped is not None and exc.kind == "ai_disallowed":
                 skipped.append(url)
+            if transient is not None and exc.kind in ("timeout", "network_error"):
+                transient.append(url)
+            return
+        if page.status != 200:
+            read_failures.failed(domain, f"http_{page.status}", now)
+        if transient is not None and (page.status == 429 or page.status >= 500):
+            transient.append(url)
             return
         ctype = page.content_type.lower()
         is_pdf = "application/pdf" in ctype
-        if page.status != 200 or ("html" not in ctype and not is_pdf):
+        if page.status != 200:
+            return
+        if "html" not in ctype and not is_pdf:
+            read_failures.failed(domain, "content_type", now)
             return
         links: list[str] = []
         if is_pdf:
@@ -348,7 +362,9 @@ def read_sources(urls: list[str], now: datetime, *, fresh_urls: frozenset[str] =
             title, text, links = extract(page)
             published = page_date(page.body)
         if len(text) < 200:
+            read_failures.failed(domain, "no_text", now)
             return                           # página vazia, paywall ou só JavaScript
+        read_failures.read_ok(domain, now)
         ref = recipes.parse_recipe(page.body) if with_recipe else None
         if with_recipe and ref is None:
             log.info("Fonte sem receita estruturada (modo receita): %s", url[:120])

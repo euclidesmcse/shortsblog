@@ -13,7 +13,7 @@ from tests.test_sites import cloud, insert_job  # noqa: F401  (fixture `cloud`)
 
 @pytest.fixture
 def waiting(cloud) -> int:  # noqa: F811
-    job = insert_job(cloud, 1, "PLANNED")
+    job = _of_today(insert_job(cloud, 1, "PLANNED"))
     advance(job, "QUEUED", "CLAIMED", "RESEARCHING", "WRITING", "VALIDATING", "TRANSLATING",
             "AWAITING_APPROVAL")
     with session_scope() as db:
@@ -29,6 +29,17 @@ def waiting(cloud) -> int:  # noqa: F811
                         "h": "<p>corpo</p><script>alert(1)</script>"})
         db.execute(text("INSERT INTO article_evidence (job_id, source_url, source_name) "
                         "VALUES (:j, 'https://exemplo.test/a', 'Fonte A')"), {"j": job})
+    return job
+
+
+def _of_today(job: int) -> int:
+    """O painel corre com o relógio real: o slot é de hoje no fuso do blog (um slot de outro dia
+    aprovado é um post atrasado, que espera um horário para cobrir — `reserve.LATE_SQL`)."""
+    with session_scope() as db:
+        db.execute(text("""UPDATE publication_jobs j SET local_date =
+                              (now() AT TIME ZONE s.timezone)::date
+                             FROM sites s WHERE s.site_key = j.site_key AND j.id = :i"""),
+                   {"i": job})
     return job
 
 
@@ -127,7 +138,7 @@ def test_segundo_clique_em_publicar_e_ignorado(panel_client, waiting, monkeypatc
 
 
 def _extra_waiting(cloud, slot: int) -> int:  # noqa: F811
-    job = insert_job(cloud, slot, "PLANNED")
+    job = _of_today(insert_job(cloud, slot, "PLANNED"))
     advance(job, "QUEUED", "CLAIMED", "RESEARCHING", "WRITING", "VALIDATING", "TRANSLATING",
             "AWAITING_APPROVAL")
     return job

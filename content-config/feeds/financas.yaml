@@ -142,12 +142,6 @@ feeds:
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: dizer sempre a jurisdição; URL corrigida na triagem de 29/10'
-- name: U.S. BLS — Latest
-  url: https://www.bls.gov/feed/bls_latest.rss
-  domain: www.bls.gov
-  tier: oficial
-  lang: en
-  notes: CPI, payroll e produtividade dos EUA; feed curto (1–5 itens)
 - name: Agência Brasil — Economia
   url: https://agenciabrasil.ebc.com.br/rss/economia/feed.xml
   domain: agenciabrasil.ebc.com.br

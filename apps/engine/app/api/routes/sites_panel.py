@@ -84,7 +84,7 @@ def page(request: Request, db: Session = Depends(get_db)):
                   s.slot_offset_minutes, s.timezone,
                   (SELECT min(j.due_at_utc) FROM publication_jobs j
                     WHERE j.site_key = s.site_key AND j.due_at_utc >= :now
-                      AND NOT (j.status = ANY(:term))) AS next_due,
+                      AND NOT j.reserve AND NOT (j.status = ANY(:term))) AS next_due,
                   (SELECT count(*) FROM sources f WHERE f.site_key = s.site_key AND f.enabled)
                     AS feeds,
                   (SELECT count(*) FROM ideas i WHERE i.site_key = s.site_key AND i.status = 'new'
@@ -107,7 +107,7 @@ def page(request: Request, db: Session = Depends(get_db)):
             {"s": site["site_key"]}).mappings().first()
         site["recent"] = [dict(r) for r in db.execute(text(
             """SELECT id, local_date, status FROM publication_jobs
-                WHERE site_key = :s AND local_date BETWEEN :a AND :b
+                WHERE site_key = :s AND local_date BETWEEN :a AND :b AND NOT reserve
                 ORDER BY local_date, slot_number"""),
             {"s": site["site_key"], "a": (now - timedelta(days=2)).date(),
              "b": (now + timedelta(days=1)).date()}).mappings()]

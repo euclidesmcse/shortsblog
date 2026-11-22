@@ -27,8 +27,8 @@ from app.services.notify import mail
 log = get_logger(__name__)
 
 # Segundos sem chamada a partir dos quais se considera parado (o n8n chama a cada 1 min, 5 min, 1 h;
-# o `plan-day` corre 1x por dia às 00:05 SP e o `digest` às 21:00 SP, daí as 25 h; o
-# `approval-batch` corre às 06:30, 10:00, 13:00, 16:00 e 20:00 SP (D-066), o maior intervalo é
+# o `plan-day` corre 1x por dia às 00:05 e o `digest` às 21:00 (no fuso do motor, `TZ`), daí as
+# 25 h; o `approval-batch` corre às 06:30, 10:00, 13:00, 16:00 e 20:00 (D-066), o maior intervalo é
 # de 10,5 h; ficam as 16 h; a `newsletter` (E17.5) corre 1x por dia: 25 h)
 LIMITS = {"dispatch": 300, "publish-due": 300, "reconcile": 900, "discover": 4 * 3600,
           "plan-day": 25 * 3600, "digest": 25 * 3600, "approval-batch": 16 * 3600}

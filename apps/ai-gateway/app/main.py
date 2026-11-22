@@ -11,14 +11,19 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app import login
+from app import housekeeping, login
 from app.api import router
+from app.config import settings
 from app.providers.cli import build_providers
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # R31: limpeza diária dos volumes das CLIs (lista fechada de pastas, por idade).
+    cleaner = asyncio.create_task(housekeeping.loop()) if settings.housekeeping_enabled else None
     yield
+    if cleaner is not None:
+        cleaner.cancel()
     # Não deixar processos de login vivos ao encerrar.
     await login.cancel_all()
 
@@ -70,6 +75,12 @@ async def cli_version(name: str) -> str | None:
 @app.get("/health/live")
 async def live() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/health/storage")
+async def storage() -> dict[str, int]:
+    """Bytes de cada volume de estado das CLIs (R31); o motor avisa acima do teto."""
+    return await asyncio.to_thread(housekeeping.sizes)
 
 
 @app.get("/health/clis")

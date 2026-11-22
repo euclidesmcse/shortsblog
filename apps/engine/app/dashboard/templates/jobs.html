@@ -46,7 +46,7 @@
       <tr>
         <td><a href="/dashboard/jobs/{{ j.id }}">{{ j.id }}</a></td>
         <td>{{ j.site_key }}</td>
-        <td style="white-space:nowrap">{{ j.local_date.strftime('%d/%m') }} · {{ j.slot_number }}</td>
+        <td style="white-space:nowrap">{{ j.local_date.strftime('%d/%m') }} · {{ 'reserva' if j.slot_number == 0 else j.slot_number }}</td>
         <td><span class="pill {{ status_class.get(j.status, '') }}">{{ j.status }}</span>
             {% if j.attempt_count > 1 %}<div class="why">{{ j.attempt_count }} tentativas</div>{% endif %}</td>
         <td style="white-space:nowrap">{{ j.due_at_utc|when }}

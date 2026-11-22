@@ -202,11 +202,6 @@ feeds:
   tier: veiculo
   lang: en
   notes: América do Sul, Mercosul
-- name: Metrópoles — Política
-  url: https://www.metropoles.com/brasil/politica-brasil/feed
-  domain: www.metropoles.com
-  tier: veiculo
-  lang: pt
 - name: Nexo Jornal
   url: https://www.nexojornal.com.br/rss.xml
   domain: www.nexojornal.com.br

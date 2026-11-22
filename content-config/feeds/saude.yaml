@@ -71,11 +71,6 @@ feeds:
   tier: agencia
   lang: pt
   notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
-- name: Estadão — Saúde
-  url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/saude/
-  domain: www.estadao.com.br
-  tier: veiculo
-  lang: pt
 - name: Folha — Equilíbrio e Saúde
   url: https://feeds.folha.uol.com.br/equilibrioesaude/rss091.xml
   domain: feeds.folha.uol.com.br
@@ -161,6 +156,18 @@ feeds:
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: UKHSA — News (gov.uk)
   url: https://www.gov.uk/government/organisations/uk-health-security-agency.atom
+  domain: www.gov.uk
+  tier: oficial
+  lang: en
+  notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'
+- name: DHSC — News (gov.uk)
+  url: https://www.gov.uk/government/organisations/department-of-health-and-social-care.atom
+  domain: www.gov.uk
+  tier: oficial
+  lang: en
+  notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'
+- name: MHRA — News (gov.uk)
+  url: https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency.atom
   domain: www.gov.uk
   tier: oficial
   lang: en

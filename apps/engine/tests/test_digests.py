@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
@@ -69,6 +70,19 @@ def waiting_job(site: str, slot: int, title: str) -> int:
 
 
 # --- Lotes de aprovação ------------------------------------------------------------------------
+
+
+def test_lote_e_resumo_no_fuso_da_instalacao(cloud, configured, monkeypatch):  # noqa: F811
+    """E19: o dia e o horário do lote seguem o TZ do motor (o pacote), não São Paulo fixo."""
+    monkeypatch.setattr(settings, "tz", "Asia/Tokyo")
+    waiting_job("cloud", 1, "Artigo")
+    out = Outbox()
+    # 15:05 UTC de 5/10 = 00:05 de 6/10 em Tóquio → lote das 00:00 do dia 6
+    assert digests.approval_batch(NOON_SP, out)["slot"] == "00:00"
+    assert out.sent[0][1].endswith("| 2026-10-06 00:00")
+    assert fetch("SELECT local_date::text AS d FROM approval_batches")[0]["d"] == "2026-10-06"
+    digests.daily_digest(NOON_SP, out)
+    assert "| 2026-10-06 |" in out.sent[-1][1]
 
 
 def test_sem_destinatario_ou_sem_pendentes_nao_envia(cloud, monkeypatch):  # noqa: F811
@@ -363,3 +377,35 @@ def test_chave_de_api_normal_continua_a_usar_a_api(monkeypatch):
         ),
     )
     assert mail.send_transactional(TO, "", "Teste", "<p>x</p>") == "m1" and sent["ok"]
+
+
+# --- R47: atualizações do WordPress no resumo -------------------------------------------------
+
+
+def test_resumo_lista_atualizacoes_do_wordpress_so_depois_da_primeira_conferencia():
+    from app.services import wp_updates
+
+    with session_scope() as db:
+        assert digests.build_digest(db, NOON_SP.date())["wp_updates"] is None
+    plugin = {"name": "polylang", "status": "active", "version": "3.8.10",
+              "update_version": "3.9.2", "update": "available"}
+    mu = {"name": "sb-seo", "status": "must-use", "version": "", "update_version": "",
+          "update": False}
+    old_theme = {"name": "twentytwentyfour", "status": "inactive", "version": "1.4",
+                 "update_version": "1.6", "update": "available"}
+    report = {"cloud": {"plugins": [plugin, mu], "themes": [old_theme]},
+              "ia": {"plugins": [plugin], "themes": []},
+              "saude": {"error": "wp-cli sem resposta"}}
+    assert wp_updates.main(json.dumps(report)) == 0
+    assert wp_updates.main("não é json") == 2
+    with session_scope() as db:
+        info = digests.build_digest(db, NOON_SP.date())["wp_updates"]
+    assert [(i["name"], i["sites"]) for i in info["items"]] == [
+        ("polylang", ["cloud", "ia"]), ("twentytwentyfour", ["cloud"])]
+    assert info["failed"] == ["saude"] and not info["stale"]
+    html = "".join(digests._updates_html(info))
+    assert "polylang</b>: 3.8.10 → 3.9.2" in html and "(inativo)" in html
+    assert "sem resposta do wp-cli em: saude" in html
+    with session_scope() as db:
+        later = wp_updates.summary(db, now=info["checked_at"] + 4 * 86_400)
+    assert later is not None and later["stale"]

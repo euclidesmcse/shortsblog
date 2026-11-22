@@ -30,7 +30,7 @@
       {% for w in waiting %}
       <tr>
         <td><input class="pick" type="checkbox" name="ids" value="{{ w.id }}" aria-label="Selecionar #{{ w.id }}"></td>
-        <td>#{{ w.id }}</td><td>{{ w.site_key }}</td><td>{{ w.title or '—' }}</td>
+        <td>#{{ w.id }}</td><td>{{ w.site_key }}</td><td>{{ w.title or '—' }}{% if w.reserve %} <span class="muted">(reserva)</span>{% elif w.late %} <span class="muted">(atrasado: dia {{ w.local_date.strftime('%d/%m') }})</span>{% endif %}</td>
         <td>{{ (w.review_report or {}).get('score', '—') }}</td>
         <td>{{ (w.review_report or {}).get('sources', '—') }}</td>
         <td><a class="mini-btn" href="/dashboard/review/{{ w.id }}">Ler e decidir</a></td>
@@ -56,7 +56,7 @@
         <td><input class="pick" type="checkbox" name="ids" value="{{ a.id }}" aria-label="Selecionar #{{ a.id }}"></td>
         <td><a href="/dashboard/review/{{ a.id }}">#{{ a.id }}</a></td><td>{{ a.site_key }}</td>
         <td>{{ a.title or '—' }}</td>
-        <td>{{ a.due_at_utc|when }}{% if publish_mode == 'live' and a.due_at_utc > now %} <span class="muted">(automático)</span>{% endif %}</td>
+        <td>{% if a.reserve %}reserva <span class="muted">(só se faltar um post)</span>{% elif a.late %}atrasado <span class="muted">(só se faltar um post)</span>{% else %}{{ a.due_at_utc|when }}{% if publish_mode == 'live' and a.due_at_utc > now %} <span class="muted">(automático)</span>{% endif %}{% endif %}</td>
         <td>{{ 'criados' if a.drafts else '—' }}</td>
       </tr>
       {% endfor %}

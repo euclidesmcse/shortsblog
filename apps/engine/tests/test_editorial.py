@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app.core import migrate, reimport
 from app.core.db import session_scope
-from app.services import discovery, editorial, pauta, sites, terms
+from app.services import discovery, editorial, gates, pauta, sites, terms
 from tests.conftest import fetch, login_as
 
 FEED = "https://www.who.int/rss-feeds/news-english.xml"
@@ -421,3 +421,36 @@ def test_exportar_yaml_e_md(panel_client):
 def test_operador_nao_edita(client, path):
     login_as(client, "op@example.com", "operador")
     assert client.get(path, follow_redirects=False).status_code == 403
+
+
+# --- R44: número por extenso tem de chegar à tradução --------------------------------------
+
+
+DOSE = "<p>Tome dois comprimidos a cada oito horas, por cinco dias.</p>"
+
+
+@pytest.mark.parametrize(("language", "translated", "flagged"), [
+    ("en", "<p>Take two tablets every three hours, for five days.</p>", "«oito» (8)"),
+    ("en", "<p>Take two tablets every eight hours, for five days.</p>", ""),
+    ("en", "<p>Take 2 tablets every 8 hours, for 5 days.</p>", ""),
+    ("es", "<p>Tome dos comprimidos cada tres horas, durante cinco días.</p>", "«oito» (8)"),
+    ("es", "<p>Tome dos comprimidos cada ocho horas, durante cinco días.</p>", ""),
+    ("zh-CN", "<p>每三小时服用两片,持续五天。</p>", "«oito» (8)"),
+    ("zh-CN", "<p>每八小时服用两片,持续五天。</p>", ""),
+])
+def test_numero_por_extenso_trocado_na_traducao(language, translated, flagged):
+    found = gates.spelled_flaws(DOSE, translated, language)
+    assert (found[0] if found else "").endswith(flagged) if flagged else found == []
+
+
+def test_por_extenso_que_nao_e_numero_sozinho_nao_conta():
+    original = ("<p>Os dois países somam vinte e dois estados e dois mil municípios, segundo o "
+                "Rio de Janeiro e a fonte veja.abril.com.br.</p>")
+    translated = "<p>Both countries have 22 states and 2,000 municipalities, per the source.</p>"
+    assert gates.spelled_flaws(original, translated, "en") == []
+
+
+def test_check_translation_acusa_o_numero_por_extenso_perdido():
+    problems = gates.check_translation(DOSE, "<p>Take two tablets every three hours, for "
+                                             "five days.</p>", language="en")
+    assert any("«oito» (8)" in p for p in problems)

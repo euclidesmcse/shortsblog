@@ -1791,7 +1791,9 @@ def _far_slot(job) -> None:
                    {"d": NOW + timedelta(hours=14), "i": job[0]})
 
 
-def test_sem_fontes_com_folga_tenta_de_novo_uma_vez_e_depois_bloqueia(job, ai, web):
+def test_sem_fontes_com_folga_tenta_de_novo_uma_vez_e_depois_bloqueia(job, ai, web, monkeypatch):
+    # A hora vai no fuso da instalação (TZ), com o rótulo do PANEL_TIMEZONES (a nossa produção).
+    monkeypatch.setattr(settings, "panel_timezones", "Europe/Lisbon=Lisboa,America/Sao_Paulo=SP")
     _far_slot(job)
     web[B] = fetcher.FetchError("http_status", "500")
     assert run(job) == "RETRY_WAIT"
@@ -1906,6 +1908,48 @@ def test_sem_pauta_viavel_o_resgate_propoe_tema_intemporal_e_o_job_produz(
     # A pauta de resgate busca no bolso próprio do orçamento do job (10/11: o requeue do
     # 240 chegou ao resgate com o bolso normal esgotado e as 5 pautas morreram sem busca).
     assert "rescue" in pockets
+
+
+def test_reserva_produz_so_com_pautas_proprias_intemporais(job, ai, web, monkeypatch):
+    """D-115: a reserva não pega notícia da fila (nem tria): o resgate guarda pautas
+    `reserve`, que só ela usa; o pedido ao editor diz que o texto vai ser publicado
+    talvez semanas depois; a busca usa o bolso do resgate e sem filtro de idade."""
+    from app.services import websearch
+
+    with session_scope() as db:
+        db.execute(text("UPDATE publication_jobs SET reserve = true, slot_number = 0 "
+                        "WHERE id = :i"), {"i": job[0]})
+    monkeypatch.setattr(websearch, "enabled", lambda: True)
+    pockets: list[str] = []
+    monkeypatch.setattr(websearch, "search",
+                        lambda topic, **k: pockets.append(k.get("pocket", "")) or [A, B])
+    stamp = '<meta property="article:published_time" content="2024-05-20T10:00:00Z">'
+    web[A] = stamp + str(web[A])
+    web[B] = stamp + str(web[B])
+    ai.rescue = [{"topic": "Entenda como funcionam as vacinas de mRNA",
+                  "angle": "O mecanismo, a segurança e o que dizem as autoridades sanitárias."}]
+    assert run(job) == "AWAITING_APPROVAL"
+    ideas = {r["origin"]: r["status"] for r in fetch("SELECT origin, status FROM ideas")}
+    assert ideas["reserve"] == "used"
+    assert ideas["rss"] == "new"              # as notícias da fila ficaram para os slots
+    call = ai.of("rescue")[0]
+    assert "RESERVA" in call["prompt"] and "Hoje nenhuma notícia" not in call["prompt"]
+    assert ai.of("triage") == []
+    assert pockets == ["rescue"]
+    event = fetch("SELECT details FROM publication_events WHERE job_id = :j "
+                  "AND event_type = 'slot_rescue'", j=job[0])
+    assert event[0]["details"]["origin"] == "reserve"
+
+
+def test_slot_normal_nao_pega_pauta_da_reserva(job, ai):
+    with session_scope() as db:
+        db.execute(text("UPDATE ideas SET status = 'discarded'"))
+        discovery.store_idea(db, site_key="saude", origin="reserve", now=NOW, url=None,
+                             topic="Entenda como funcionam as vacinas de mRNA",
+                             priority=discovery.RESCUE_PRIORITY, country="XX")
+        assert discovery.pick(db, "saude", NOW) is None
+        picked = discovery.pick(db, "saude", NOW, reserve=True)
+    assert picked is not None and picked.origin == "reserve"
 
 
 @pytest.mark.parametrize("timeless,max_age", [(True, 0), (False, None)])
@@ -2038,6 +2082,72 @@ def test_triagem_ignora_as_pautas_de_resgate(job, ai):
     assert "Entenda os tipos de vacina" not in listing and TOPIC in listing
 
 
+
+_WORDS = ("ônibus", "girafa", "telescópio", "cometa", "violino", "farol", "pântano", "orquídea",
+          "trem", "vulcão", "biblioteca", "coral", "deserto", "geleira", "moinho", "ponte",
+          "relâmpago", "safira", "tambor", "xadrez", "zebra", "âncora", "baleia", "cacto")
+
+
+_OTHER = ("Hospital japonês testa robô cirurgião em pacientes idosos",
+          "Estudo nórdico liga sono curto a doenças cardíacas",
+          "Quénia distribui mosquiteiros tratados contra malária")
+
+
+def _feed(db, name: str) -> int:
+    return db.execute(text("""INSERT INTO sources (site_key, name, feed_url, domain, tier, lang)
+                              VALUES ('saude', :n, :u, 'x.test', 'veiculo', 'pt')
+                              RETURNING id"""),
+                      {"n": name, "u": f"https://{name}.test/feed"}).scalar_one()
+
+
+def _flood(db, source: int, count: int, start: int, hours: int = 0,
+           other: bool = False) -> list[int]:
+    """`count` ideias novas da fonte, a mais nova primeiro, com títulos sem nada em comum."""
+    ids = []
+    for n in range(count):
+        word = start + n
+        _, idea = discovery.store_idea(
+            db, site_key="saude", origin="rss", url=f"https://f{source}.test/{word}", now=NOW,
+            published_at=NOW - timedelta(hours=hours, minutes=n), source_id=source,
+            topic=(_OTHER[n] if other else f"{_WORDS[word].capitalize()} e "
+                   f"{_WORDS[(word + 11) % len(_WORDS)]} no caso {word}"))
+        ids.append(idea)
+    return ids
+
+
+def _sent(ai, call: int, ids: list[int]) -> list[int]:
+    listing = ai.of("triage")[call]["prompt"]
+    return [i for i in ids if re.search(rf"^{i}: ", listing, re.M)]
+
+
+def test_triagem_reveza_as_fontes(job, ai, monkeypatch):
+    """22/11: um feed nacional (805 títulos em 4 dias) enchia o lote dos «40 mais novos» da
+    Política. O lote pega o mais novo de cada fonte, depois o 2.º de cada uma…"""
+    monkeypatch.setattr(settings, "triage_batch", 4)
+    with session_scope() as db:
+        db.execute(text("UPDATE ideas SET status = 'discarded'"))      # só as deste teste
+        loud, quiet = _feed(db, "barulhento"), _feed(db, "discreto")
+        flood = _flood(db, loud, 8, 0)                                  # as mais novas
+        calm = _flood(db, quiet, 3, 10, hours=5)                        # mais velhas
+        discovery.triage(db, sites.get(db, "saude"), NOW)
+    assert _sent(ai, 0, [*flood, *calm]) == [*flood[:2], *calm[:2]]
+
+
+def test_triagem_rebaixa_a_fonte_de_rendimento_baixo(job, ai, monkeypatch):
+    """Média abaixo de 3 em 20 notas ou mais (14 dias): a fonte entra a cada 4 voltas."""
+    monkeypatch.setattr(settings, "triage_batch", 4)
+    with session_scope() as db:
+        db.execute(text("UPDATE ideas SET status = 'discarded'"))
+        loud, quiet = _feed(db, "barulhento"), _feed(db, "discreto")
+        scored = _flood(db, loud, 20, 0, hours=30)
+        db.execute(text("UPDATE ideas SET relevance = 1, status = 'discarded' "
+                        "WHERE id = ANY(:i)"), {"i": scored})
+        fresh = _flood(db, loud, 3, 20)                                 # as mais novas
+        calm = _flood(db, quiet, 3, 21, hours=5, other=True)
+        discovery.triage(db, sites.get(db, "saude"), NOW)
+    assert _sent(ai, 0, [*fresh, *calm]) == [fresh[0], *calm]
+
+
 # --- Fontes em PDF (5/11): relatórios oficiais e estudos entram no read_sources -----------------
 
 
@@ -2116,3 +2226,20 @@ def test_pdf_velho_da_busca_nao_corrobora_e_nao_vale_como_receita(monkeypatch):
     assert len(article.read_sources([url], NOW)) == 1
     # …mas em modo receita um PDF nunca confere a receita (precisa de schema.org/Recipe).
     assert article.read_sources([url], NOW, with_recipe=True) == []
+
+
+# --- R42: falha passageira do artigo-fonte -----------------------------------------------------
+
+
+def test_artigo_fonte_fora_do_ar_nao_mata_a_pauta(job, ai, web):
+    """R42: o artigo-fonte respondeu com erro de rede. A pauta não é descartada (nem gasta
+    busca): volta à fila no fim do job, para outro tentar noutra hora."""
+    web[A] = fetcher.FetchError("network_error", "ConnectError")
+    web[B] = fetcher.FetchError("timeout")
+    assert run(job) in ("BLOCKED", "RETRY_WAIT")
+    ideas = {r["canonical_url"]: r["status"] for r in fetch("SELECT canonical_url, status "
+                                                             "FROM ideas")}
+    assert set(ideas.values()) == {"new"}
+    events = fetch("SELECT details FROM publication_events WHERE job_id = :j "
+                   "AND to_status IN ('BLOCKED', 'RETRY_WAIT')", j=job[0])
+    assert all(i.get("transient") for i in events[-1]["details"]["ideas"])

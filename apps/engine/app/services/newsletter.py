@@ -32,7 +32,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -40,6 +39,7 @@ from sqlalchemy.orm import Session
 from app.core.cache import QUEUES, redis_client
 from app.core.config import settings
 from app.core.db import session_scope
+from app.core.localtime import local_zone
 from app.core.logging import get_logger
 from app.core.security import hash_ip
 from app.services import vault
@@ -49,7 +49,6 @@ from app.services.sites import LANGUAGES
 
 log = get_logger(__name__)
 
-TZ = ZoneInfo("America/Sao_Paulo")
 _EMAIL = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$")
 Sender = Callable[..., str]
 
@@ -320,8 +319,8 @@ def edition_start(db: Session, now: datetime) -> datetime:
     seguinte, em vez de não sair em nenhuma (16/11: saúde e política às 10:37 UTC). Sem edição
     anterior, o começo do dia em SP; e nunca antes de `newsletter_catchup_hours`.
     """
-    local = now.astimezone(TZ)
-    day_start = datetime(local.year, local.month, local.day, tzinfo=TZ).astimezone(UTC)
+    local = now.astimezone(local_zone())
+    day_start = datetime(local.year, local.month, local.day, tzinfo=local_zone()).astimezone(UTC)
     previous = db.execute(text(
         """SELECT min(created_at) FROM newsletter_sends
             WHERE edition_date = (SELECT max(edition_date) FROM newsletter_sends
@@ -377,7 +376,7 @@ def send_daily(now: datetime | None = None, send: Sender | None = None,
                pause: Callable[[float], None] = time.sleep) -> dict[str, Any]:
     """A edição do dia para cada assinante confirmado. Chamar de novo não duplica."""
     moment = now or datetime.now(UTC)
-    edition = moment.astimezone(TZ).date()
+    edition = moment.astimezone(local_zone()).date()
     if not settings.newsletter_enabled:
         return {"edition": edition.isoformat(), "sent": 0, "reason": "newsletter desligada"}
     with session_scope() as db:
@@ -446,7 +445,7 @@ def _warn_limit(now: datetime, used: int, deferred: int) -> None:
     limit = settings.newsletter_daily_limit
     if limit <= 0 or (used < 0.8 * limit and not deferred):
         return
-    key = f"nl:limit-warned:{now.astimezone(TZ).date().isoformat()}"
+    key = f"nl:limit-warned:{now.astimezone(local_zone()).date().isoformat()}"
     if not redis_client.set(key, "1", nx=True, ex=2 * 86400):
         return
     recipient = vault.get("approval_notify_email")

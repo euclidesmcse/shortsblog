@@ -62,9 +62,10 @@ def _start_session(request: Request, response: Response, user: dict) -> None:
         panel_auth.make_session(user["id"], user["session_version"]),
         max_age=settings.panel_session_hours * 3600, httponly=True,
         # E19.2: Secure só com o portal em https; no pacote em http (teste local) o navegador
-        # descartaria o cookie e o login não se manteria.
-        secure=(panel_auth.is_public_request(request)
-                and settings.public_base_url.startswith("https://")),
+        # descartaria o cookie e o login não se manteria. R69: também quando o pedido chegou em
+        # https por outro nome (o proxy de confiança diz pelo X-Forwarded-Proto).
+        secure=(settings.public_base_url.startswith("https://")
+                and (panel_auth.is_public_request(request) or panel_auth.forwarded_https(request))),
         samesite="strict",
     )
 

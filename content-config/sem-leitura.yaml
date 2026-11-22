@@ -188,3 +188,11 @@ sites:
 # a RFI passa na validação técnica do validate_feeds e, sem esta marca, ficaria no final
 # (docs/reviews/E14-feeds-politica-ensaio-2026-11-02.md).
 - {domain: rfi.fr, rss: false, reason: "CGU da France Médias Monde (cobrem rfi.fr): proíbem coleta automática e uso por IA; reserva de TDM; uso só pessoal", terms: "https://www.francemm.com/fr/legal-notice"}
+# --- 2026-11-20 (E14.5j): termos NÃO lidos — os sítios bloqueiam robôs e a leitura ficou para o
+# Euclides no navegador (docs/reviews/E14-termos-feeds-2026-11-02.md). Só pauta POR PRECAUÇÃO até
+# essa leitura (decisão do Euclides em 20/11); sem `rss: false`, os feeds continuam como pauta.
+- {domain: g1.globo.com, reason: "termos não verificados (o sítio bloqueia robôs); só pauta por precaução até leitura manual — outras marcas da Globo proíbem IA", terms: "https://g1.globo.com/institucional/termos-de-uso-do-g1.ghtml"}
+- {domain: tecnoblog.net, reason: "termos não verificados (o sítio bloqueia robôs); só pauta por precaução até leitura manual"}
+- {domain: nexojornal.com.br, reason: "termos não verificados (o sítio bloqueia robôs); só pauta por precaução até leitura manual"}
+- {domain: conjur.com.br, reason: "termos não verificados (o sítio bloqueia robôs); só pauta por precaução até leitura manual"}
+- {domain: intercept.com.br, reason: "termos não verificados (o sítio bloqueia robôs); só pauta por precaução até leitura manual"}

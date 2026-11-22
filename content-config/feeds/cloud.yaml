@@ -120,12 +120,6 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
-- name: Google Cloud Release Notes
-  url: https://cloud.google.com/feeds/gcp-release-notes.xml
-  domain: cloud.google.com
-  tier: fornecedor
-  lang: en
-  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
 - name: Grafana Labs Blog
   url: https://grafana.com/blog/index.xml
   domain: grafana.com

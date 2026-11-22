@@ -12,6 +12,9 @@
 
 panel:
   host: ""               # obrigatório: nome do portal (ex.: painel.seudominio.com)
+  # Proxies cujo X-Forwarded-For o login aceita (o ingress controller): o teto de tentativas
+  # passa a ser por IP do visitante, não do ingress. Ajuste se o cluster usar IPs públicos.
+  trustedProxies: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7"
 site:
   host: ""               # obrigatório: nome do blog
   key: exemplo           # identificador: minúsculas, dígitos e hífen
