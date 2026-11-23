@@ -22,6 +22,7 @@ nunca levam o e-mail.
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import hmac
 import html
@@ -30,9 +31,11 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from datetime import time as dtime
 from typing import Any
 from urllib.parse import urlencode
 
+import redis
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -372,13 +375,73 @@ def sent_today(db: Session, now: datetime) -> int:
         {"a": since}).scalar_one())
 
 
+_HELD = "sb:newsletter:held:"
+# Estados de um post do dia que ainda vai ao ar: à espera do clique, aprovado ou a publicar.
+_WAITING = ("AWAITING_APPROVAL", "APPROVED", "PUBLISHING")
+
+
+def waiting_posts(db: Session, now: datetime) -> int:
+    """Posts dos slots das últimas 12 h que ainda não foram ao ar (aprovação ou publicação).
+
+    12 h: os slots do dia (madrugada) contam; um post atrasado de ontem (D-116), que fica
+    aprovado à espera de cobrir uma falha, não segura a edição. A reserva também não."""
+    return int(db.execute(text(
+        """SELECT count(*) FROM publication_jobs
+            WHERE NOT reserve AND status = ANY(:st)
+              AND due_at_utc <= :now AND due_at_utc > :since"""),
+        {"st": list(_WAITING), "now": now, "since": now - timedelta(hours=12)}).scalar_one())
+
+
+def _hold_deadline(now: datetime) -> datetime | None:
+    raw = (settings.newsletter_hold_until or "").strip()
+    if not raw:
+        return None
+    hour, _, minute = raw.partition(":")
+    local = now.astimezone(local_zone())
+    return datetime.combine(local.date(), dtime(int(hour), int(minute or 0)),
+                            tzinfo=local_zone()).astimezone(UTC)
+
+
+def held_ready(now: datetime | None = None) -> bool:
+    """Chamado a cada `publish-due`: a edição retida pode sair? Se sim, tira a marca (só um
+    chamador ganha) e devolve True — quem chama põe `send_daily(final=True)` na fila."""
+    moment = now or datetime.now(UTC)
+    key = f"{_HELD}{moment.astimezone(local_zone()).date().isoformat()}"
+    try:
+        if not redis_client.exists(key):
+            return False
+        deadline = _hold_deadline(moment)
+        if deadline is not None and moment < deadline:
+            with session_scope() as db:
+                if waiting_posts(db, moment):
+                    return False
+        return bool(redis_client.delete(key))
+    except redis.RedisError:
+        return False
+
+
 def send_daily(now: datetime | None = None, send: Sender | None = None,
-               pause: Callable[[float], None] = time.sleep) -> dict[str, Any]:
-    """A edição do dia para cada assinante confirmado. Chamar de novo não duplica."""
+               pause: Callable[[float], None] = time.sleep, *,
+               final: bool = False) -> dict[str, Any]:
+    """A edição do dia para cada assinante confirmado. Chamar de novo não duplica.
+
+    Com post do dia ainda à espera de aprovação, a edição fica retida até
+    `newsletter_hold_until` (23/11); `held_ready` solta-a e a chamada `final` envia."""
     moment = now or datetime.now(UTC)
     edition = moment.astimezone(local_zone()).date()
     if not settings.newsletter_enabled:
         return {"edition": edition.isoformat(), "sent": 0, "reason": "newsletter desligada"}
+    deadline = _hold_deadline(moment)
+    if not final and deadline is not None and moment < deadline:
+        with session_scope() as db:
+            waiting = waiting_posts(db, moment)
+        if waiting:
+            with contextlib.suppress(redis.RedisError):
+                redis_client.set(f"{_HELD}{edition.isoformat()}", "1", ex=86_400)
+                log.info("Newsletter %s retida: %d post(s) do dia à espera (até %s)",
+                         edition, waiting, settings.newsletter_hold_until)
+                return {"edition": edition.isoformat(), "sent": 0, "held": waiting,
+                        "until": settings.newsletter_hold_until}
     with session_scope() as db:
         posts = edition_posts(db, moment)
         if not posts:

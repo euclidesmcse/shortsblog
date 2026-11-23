@@ -22,23 +22,11 @@ feeds:
   domain: importai.substack.com
   tier: veiculo
   lang: en
-- name: Olhar Digital
-  url: https://olhardigital.com.br/feed/
-  domain: olhardigital.com.br
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: Simon Willison's Weblog
   url: https://simonwillison.net/atom/everything/
   domain: simonwillison.net
   tier: veiculo
   lang: en
-- name: Tecnoblog
-  url: https://tecnoblog.net/feed/
-  domain: tecnoblog.net
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: Anthropic News
   url: https://www.anthropic.com/news
   domain: www.anthropic.com

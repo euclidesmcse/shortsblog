@@ -27,6 +27,7 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+  fora: 'inválido em 23/11/2026: HTTP 410'
 - name: Microsoft Research Blog
   url: https://www.microsoft.com/en-us/research/feed/
   tier: fornecedor
@@ -57,6 +58,7 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+  fora: 'inválido em 23/11/2026: XML inválido: not well-formed (invalid token): line 1, column 2714'
 - name: Together AI Blog
   url: https://www.together.ai/blog/rss.xml
   tier: fornecedor
@@ -94,6 +96,7 @@ feeds:
   url: https://bair.berkeley.edu/blog/feed.xml
   tier: academico
   lang: en
+  fora: 'inválido em 23/11/2026: item mais recente sem link HTTPS'
 - name: MIT News — Artificial Intelligence
   url: https://news.mit.edu/rss/topic/artificial-intelligence2
   tier: academico
@@ -102,14 +105,17 @@ feeds:
   url: https://hai.stanford.edu/news/rss.xml
   tier: academico
   lang: en
+  fora: 'inválido em 23/11/2026: XML inválido: not well-formed (invalid token): line 1, column 4651'
 - name: The Gradient
   url: https://thegradient.pub/rss/
   tier: academico
   lang: en
+  fora: 'inválido em 23/11/2026: item mais recente tem 278 dias (limite 30)'
 - name: Agência FAPESP
   url: https://agencia.fapesp.br/rss/
   tier: academico
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: NIST News
   url: https://www.nist.gov/news-events/news/rss.xml
   tier: oficial
@@ -119,6 +125,7 @@ feeds:
   url: https://venturebeat.com/category/ai/feed/
   tier: veiculo
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 429'
 - name: IEEE Spectrum AI
   url: https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss
   tier: veiculo
@@ -136,13 +143,6 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: Olhar Digital
-  url: https://olhardigital.com.br/feed/
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: Tecnoblog
-  url: https://tecnoblog.net/feed/
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'desligado em produção (poda ou decisão anterior)'
+# 23/11/2026 (docs/reviews/E14-feeds-poda-saude-2026-11-23.md): saíram Olhar Digital (média 1,4 em
+# 325 notas, 1 post) e Tecnoblog (1,5): generalistas brasileiros, quase só descarte.

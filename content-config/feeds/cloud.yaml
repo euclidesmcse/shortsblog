@@ -17,11 +17,6 @@ feeds:
   tier: oficial
   lang: en
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: Convergência Digital
-  url: https://convergenciadigital.com.br/feed/
-  domain: convergenciadigital.com.br
-  tier: veiculo
-  lang: pt
 - name: InfoQ
   url: https://feed.infoq.com/
   domain: feed.infoq.com
@@ -37,11 +32,6 @@ feeds:
   domain: thenewstack.io
   tier: veiculo
   lang: en
-- name: TI Inside
-  url: https://tiinside.com.br/feed/
-  domain: tiinside.com.br
-  tier: veiculo
-  lang: pt
 - name: AWS Architecture Blog
   url: https://aws.amazon.com/blogs/architecture/feed/
   domain: aws.amazon.com
@@ -63,12 +53,6 @@ feeds:
 - name: AWS What's New
   url: https://aws.amazon.com/about-aws/whats-new/recent/feed/
   domain: aws.amazon.com
-  tier: fornecedor
-  lang: en
-  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
-- name: Azure Blog
-  url: https://azure.microsoft.com/en-us/blog/feed/
-  domain: azure.microsoft.com
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
@@ -123,12 +107,6 @@ feeds:
 - name: Grafana Labs Blog
   url: https://grafana.com/blog/index.xml
   domain: grafana.com
-  tier: fornecedor
-  lang: en
-  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
-- name: HashiCorp Blog
-  url: https://www.hashicorp.com/blog/feed.xml
-  domain: www.hashicorp.com
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'

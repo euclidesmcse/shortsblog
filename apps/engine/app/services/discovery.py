@@ -501,6 +501,22 @@ class Picked:
     timeless: bool = False  # E18.2: pauta manual intemporal (busca sem filtro de data)
 
 
+def expire_disabled(db: Session) -> int:
+    """Tira da fila as ideias de feeds desligados (23/11).
+
+    Um feed desligado (poda, robots.txt, portal) deixava as ideias dele na fila: 1158 em 23/11,
+    857 só na Política. Elas expiram — nada se apaga — salvo a história que um feed ainda
+    ligado também conta (uma repetição dela é de feed ligado): essa fica, com as fontes.
+    """
+    return len(db.execute(text(
+        """UPDATE ideas i SET status = 'expired'
+             FROM sources s
+            WHERE s.id = i.source_id AND NOT s.enabled AND i.status = 'new'
+              AND NOT EXISTS (SELECT 1 FROM ideas d JOIN sources ds ON ds.id = d.source_id
+                               WHERE d.duplicate_of = i.id AND ds.enabled)
+        RETURNING i.id""")).all())
+
+
 def pick(db: Session, site_key: str, now: datetime | None = None, *,
          reserve: bool = False) -> Picked | None:
     """Escolhe a próxima ideia do blog e marca-a como pegada.
@@ -517,6 +533,7 @@ def pick(db: Session, site_key: str, now: datetime | None = None, *,
     since = moment - timedelta(days=settings.idea_window_days)
     db.execute(text("UPDATE ideas SET status = 'expired' "
                     "WHERE status = 'new' AND expires_at < :n"), {"n": moment})
+    expire_disabled(db)
     taken = db.execute(
         text("""SELECT canonical_url, title_key FROM ideas
                  WHERE status IN ('taken', 'used') AND created_at >= :since"""),
@@ -640,6 +657,7 @@ def triage(db: Session, site: dict[str, Any], now: datetime | None = None) -> di
     from app.services.ai.prompting import External
 
     moment = now or datetime.now(UTC)
+    expire_disabled(db)              # não gasta nota em ideia de feed desligado
     # O lote reveza as fontes; a de rendimento baixo entra a cada `triage_source_penalty`
     # voltas (config.py, 22/11).
     rows = db.execute(

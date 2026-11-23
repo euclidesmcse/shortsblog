@@ -6,11 +6,24 @@
 # o texto nem as imagens do feed; o artigo é escrito de raiz, com atribuição e link.
 site_key: saude
 feeds:
+- name: CDC — MMWR
+  url: https://tools.cdc.gov/api/v2/resources/media/132599.rss
+  domain: tools.cdc.gov
+  tier: oficial
+  lang: en
+  notes: domínio público (gov EUA); feed vivo achado via API tools.cdc.gov (reteste 11/11); links dos
+    itens via redirecionador download.asp
 - name: Câmara — Saúde
   url: https://www.camara.leg.br/noticias/rss/dinamico/SAUDE
   domain: www.camara.leg.br
   tier: oficial
   lang: pt
+- name: DHSC — News (gov.uk)
+  url: https://www.gov.uk/government/organisations/department-of-health-and-social-care.atom
+  domain: www.gov.uk
+  tier: oficial
+  lang: en
+  notes: OGL v3; dizer sempre a jurisdição (Reino Unido)
 - name: ECDC — News
   url: https://www.ecdc.europa.eu/en/taxonomy/term/1244/feed
   domain: www.ecdc.europa.eu
@@ -23,27 +36,18 @@ feeds:
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
-- name: Ministério da Saúde — Notícias (2)
-  url: https://www.gov.br/saude/pt-br/assuntos/noticias/2026/RSS
-  domain: www.gov.br
+- name: MHRA — News (gov.uk)
+  url: https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency.atom
+  domain: www.gov.uk
   tier: oficial
-  lang: pt
+  lang: en
+  notes: OGL v3; dizer sempre a jurisdição (Reino Unido)
 - name: NHS England — News
   url: https://www.england.nhs.uk/feed/
   domain: www.england.nhs.uk
   tier: oficial
   lang: en
   notes: sistema público do Reino Unido
-- name: Noticias ONU — Salud
-  url: https://news.un.org/feed/subscribe/es/news/topic/health/feed/rss.xml
-  domain: news.un.org
-  tier: oficial
-  lang: es
-- name: ONU News — Saúde
-  url: https://news.un.org/feed/subscribe/pt/news/topic/health/feed/rss.xml
-  domain: news.un.org
-  tier: oficial
-  lang: pt
 - name: OPAS — Notícias (português)
   url: https://www.paho.org/pt/rss.xml
   domain: www.paho.org
@@ -54,17 +58,12 @@ feeds:
   domain: www.paho.org
   tier: oficial
   lang: en
-- name: Senado — Notícias
-  url: https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS
-  domain: www12.senado.leg.br
-  tier: oficial
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: UN News — Health
-  url: https://news.un.org/feed/subscribe/en/news/topic/health/feed/rss.xml
-  domain: news.un.org
+- name: UKHSA — News (gov.uk)
+  url: https://www.gov.uk/government/organisations/uk-health-security-agency.atom
+  domain: www.gov.uk
   tier: oficial
   lang: en
+  notes: OGL v3; dizer sempre a jurisdição (Reino Unido)
 - name: Agência Brasil — Saúde
   url: https://agenciabrasil.ebc.com.br/rss/saude/feed.xml
   domain: agenciabrasil.ebc.com.br
@@ -81,6 +80,12 @@ feeds:
   domain: g1.globo.com
   tier: veiculo
   lang: pt
+- name: Global Voices — Health
+  url: https://globalvoices.org/-/topics/health/feed/
+  domain: globalvoices.org
+  tier: veiculo
+  lang: en
+  notes: CC BY 3.0; saúde pelo mundo (D-110)
 - name: Infobae — Salud
   url: https://www.infobae.com/arc/outboundfeeds/rss/category/salud/
   domain: www.infobae.com
@@ -117,13 +122,6 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: Veja Saúde
-  url: https://saude.abril.com.br/feed/
-  domain: saude.abril.com.br
-  tier: veiculo
-  lang: pt
-  notes: 'bem-estar e aconselhamento: não transformar em conselho clínico; confirmar em fonte oficial
-    ou estudo'
 - name: eLife — Latest
   url: https://elifesciences.org/rss/recent.xml
   domain: elifesciences.org
@@ -131,68 +129,48 @@ feeds:
   lang: en
   notes: 'generalista (toda a biologia) e com trabalhos preliminares: citar o estudo e o seu estado de
     revisão'
+- name: Eurosurveillance (ECDC)
+  url: https://www.eurosurveillance.org/rss/content/eurosurveillance/latestarticles?fmt=rss
+  domain: www.eurosurveillance.org
+  tier: academico
+  lang: en
+  notes: revista do ECDC, CC BY desde 2016; vigilância de doenças infecciosas na Europa e no mundo; citar
+    o estudo e dizer a jurisdição
 - name: JAMA — Current
   url: https://jamanetwork.com/rss/site_3/67.xml
   domain: jamanetwork.com
   tier: academico
   lang: en
   notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
-- name: Jornal da USP
-  url: https://jornal.usp.br/feed/
-  domain: jornal.usp.br
+- name: Our World in Data
+  url: https://ourworldindata.org/atom.xml
+  domain: ourworldindata.org
   tier: academico
-  lang: pt
+  lang: en
+  notes: CC BY; dados de saúde de alcance mundial (D-102)
+- name: PLOS Global Public Health
+  url: https://journals.plos.org/globalpublichealth/feed/atom
+  domain: journals.plos.org
+  tier: academico
+  lang: en
+  notes: 'artigos científicos (CC BY), saúde pública mundial: citar o estudo e não extrapolar conclusões
+    clínicas'
 - name: PLOS Medicine
   url: https://journals.plos.org/plosmedicine/feed/atom
   domain: journals.plos.org
   tier: academico
   lang: en
   notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+- name: PLOS Neglected Tropical Diseases
+  url: https://journals.plos.org/plosntds/feed/atom
+  domain: journals.plos.org
+  tier: academico
+  lang: en
+  notes: 'artigos científicos (CC BY), doenças tropicais negligenciadas pelo mundo: citar o estudo e não
+    extrapolar conclusões clínicas'
 - name: Revista Pesquisa FAPESP
   url: https://revistapesquisa.fapesp.br/feed/
   domain: revistapesquisa.fapesp.br
   tier: academico
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: UKHSA — News (gov.uk)
-  url: https://www.gov.uk/government/organisations/uk-health-security-agency.atom
-  domain: www.gov.uk
-  tier: oficial
-  lang: en
-  notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'
-- name: DHSC — News (gov.uk)
-  url: https://www.gov.uk/government/organisations/department-of-health-and-social-care.atom
-  domain: www.gov.uk
-  tier: oficial
-  lang: en
-  notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'
-- name: MHRA — News (gov.uk)
-  url: https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency.atom
-  domain: www.gov.uk
-  tier: oficial
-  lang: en
-  notes: 'OGL v3; dizer sempre a jurisdição (Reino Unido)'
-- name: Our World in Data
-  url: https://ourworldindata.org/atom.xml
-  domain: ourworldindata.org
-  tier: academico
-  lang: en
-  notes: 'CC BY; dados de saúde de alcance mundial (D-102)'
-- name: Health Canada — News
-  url: https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentofhealth&type=newsreleases&format=atom
-  domain: api.io.canada.ca
-  tier: oficial
-  lang: en
-  notes: 'só pauta (sem-leitura canada.ca): reprodução comercial exige permissão; dizer a jurisdição (Canadá)'
-- name: CDC — MMWR
-  url: https://tools.cdc.gov/api/v2/resources/media/132599.rss
-  domain: tools.cdc.gov
-  tier: oficial
-  lang: en
-  notes: 'domínio público (gov EUA); feed vivo achado via API tools.cdc.gov (reteste 11/11); links dos itens via redirecionador download.asp'
-- name: Global Voices — Health
-  url: https://globalvoices.org/-/topics/health/feed/
-  domain: globalvoices.org
-  tier: veiculo
-  lang: en
-  notes: 'CC BY 3.0; saúde pelo mundo (D-110)'

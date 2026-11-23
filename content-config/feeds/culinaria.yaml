@@ -6,23 +6,13 @@
 # o texto nem as imagens do feed; o artigo é escrito de raiz, com atribuição e link.
 site_key: culinaria
 feeds:
-- name: Casa e Jardim — Receitas
-  url: https://revistacasaejardim.globo.com/rss/casaejardim/
-  domain: revistacasaejardim.globo.com
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: Casa Vogue — Gastronomia
-  url: https://casavogue.globo.com/rss/casavogue/
-  domain: casavogue.globo.com
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: Claudia — Receitas
-  url: https://claudia.abril.com.br/receitas/feed/
-  domain: claudia.abril.com.br
-  tier: veiculo
-  lang: pt
+- name: FAO — Newsroom
+  url: https://www.fao.org/feeds/fao-newsroom-rss
+  domain: www.fao.org
+  tier: oficial
+  lang: en
+  notes: 'só pauta (sem-leitura fao.org): termos limitam a produtos/serviços não comerciais; dizer o organismo
+    (FAO/ONU)'
 - name: Directo al Paladar
   url: https://www.directoalpaladar.com/feedburner.xml
   domain: www.directoalpaladar.com
@@ -79,11 +69,6 @@ feeds:
   tier: veiculo
   lang: en
   notes: cozinha chinesa; sem termos no site (amarelo); anti-bot pode dar 403 na leitura
-- name: Prazeres da Mesa
-  url: https://www.prazeresdamesa.com.br/feed/
-  domain: www.prazeresdamesa.com.br
-  tier: veiculo
-  lang: pt
 - name: Receitas que Amo
   url: https://www.receitasqueamo.com.br/feed/
   domain: www.receitasqueamo.com.br
@@ -111,22 +96,12 @@ feeds:
   domain: www.veganricha.com
   tier: veiculo
   lang: en
-- name: Veja SP — Comer & Beber
-  url: https://vejasp.abril.com.br/comer-e-beber/feed/
-  domain: vejasp.abril.com.br
-  tier: veiculo
-  lang: pt
 - name: King Arthur Baking
   url: https://www.kingarthurbaking.com/blog/feed
   domain: www.kingarthurbaking.com
   tier: fornecedor
   lang: en
   notes: 'blog de uma marca: fonte primária do produto, não avaliação independente'
-- name: Jornal da USP
-  url: https://jornal.usp.br/feed/
-  domain: jornal.usp.br
-  tier: academico
-  lang: pt
 - name: Revista Pesquisa FAPESP
   url: https://revistapesquisa.fapesp.br/feed/
   domain: revistapesquisa.fapesp.br
@@ -139,9 +114,3 @@ feeds:
   tier: academico
   lang: en
   notes: 'agregador de comunicados de imprensa: localizar e citar o estudo original; não é fonte de corroboração'
-- name: FAO — Newsroom
-  url: https://www.fao.org/feeds/fao-newsroom-rss
-  domain: www.fao.org
-  tier: oficial
-  lang: en
-  notes: 'só pauta (sem-leitura fao.org): termos limitam a produtos/serviços não comerciais; dizer o organismo (FAO/ONU)'

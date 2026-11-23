@@ -52,7 +52,7 @@ construir, passe a versão na primeira instalação:
 
 ```bash
 docker login ghcr.io          # enquanto as imagens forem privadas (token com read:packages)
-SB_IMAGE_TAG=v0.1.1 ./install.sh
+SB_IMAGE_TAG=v0.1.2 ./install.sh
 ```
 
 O `.env` passa a ter `SB_ENGINE_IMAGE`, `SB_GATEWAY_IMAGE` e `SB_PULL_POLICY=missing`. Para

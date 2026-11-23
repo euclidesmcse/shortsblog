@@ -16,23 +16,22 @@ feeds:
   tier: oficial
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: STF — Notícias
-  url: https://noticias.stf.jus.br/feed/
-  tier: oficial
-  lang: pt
 - name: TSE — Notícias
   url: https://www.tse.jus.br/comunicacao/noticias/rss
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: STJ — Notícias
   url: https://res.stj.jus.br/hrestp-c-portalp/RSS.xml
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Planalto — Notícias
   url: https://www.gov.br/planalto/pt-br/acompanhe-o-planalto/noticias/RSS
   tier: oficial
   lang: pt
   notes: 'comunicação do governo: fonte primária da posição oficial, não avaliação independente'
+  fora: 'desligado em produção (poda ou decisão anterior)'
 - name: Agência Gov — Notícias
   url: https://agenciagov.ebc.com.br/RSS
   tier: oficial
@@ -44,36 +43,32 @@ feeds:
   url: https://www.gov.br/cgu/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: TCU — Notícias
   url: https://portal.tcu.gov.br/RSS/noticias.xml
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: MPF — Notícias
   url: https://www.mpf.mp.br/pgr/noticias-pgr/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Itamaraty — Notas à imprensa
   url: https://www.gov.br/mre/pt-br/canais_atendimento/imprensa/notas-a-imprensa/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Ministério da Justiça — Notícias
   url: https://www.gov.br/mj/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: CNJ — Notícias
   url: https://www.cnj.jus.br/feed/
   tier: oficial
   lang: pt
-- name: UN News
-  url: https://news.un.org/feed/subscribe/en/news/all/rss.xml
-  tier: oficial
-  lang: en
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: ONU News (português)
-  url: https://news.un.org/feed/subscribe/pt/news/all/rss.xml
-  tier: oficial
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'centrado no Brasil (D-110)'
 - name: Agência Brasil — Política
   url: https://agenciabrasil.ebc.com.br/rss/politica/feed.xml
   tier: agencia
@@ -105,10 +100,12 @@ feeds:
   url: https://oglobo.globo.com/rss/politica/
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 400'
 - name: CNN Brasil — Política
   url: https://www.cnnbrasil.com.br/politica/feed/
   tier: veiculo
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Poder360
   url: https://www.poder360.com.br/feed/
   tier: veiculo
@@ -128,10 +125,6 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'host próprio desde 11/2026: o antigo congressoemfoco.uol.com.br ficou sem DNS (visto em 2 e 8/11)'
-- name: Consultor Jurídico
-  url: https://www.conjur.com.br/rss.xml
-  tier: veiculo
-  lang: pt
 - name: Agência Pública
   url: https://apublica.org/feed/
   tier: veiculo
@@ -150,6 +143,7 @@ feeds:
   url: https://jovempan.com.br/noticias/politica/feed
   tier: veiculo
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Aos Fatos (checagem)
   url: https://www.aosfatos.org/noticias/feed/
   tier: veiculo
@@ -164,15 +158,18 @@ feeds:
   tier: oficial
   lang: pt
   notes: 'comunicação do governo: fonte primária da posição oficial, não avaliação independente'
+  fora: 'centrado no Brasil (D-110)'
 - name: AGU — Notícias
   url: https://www.gov.br/agu/pt-br/comunicacao/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Casa Civil — Notícias
   url: https://www.gov.br/casacivil/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
   notes: 'comunicação do governo: fonte primária da posição oficial, não avaliação independente'
+  fora: 'centrado no Brasil (D-110)'
 - name: Câmara — Administração Pública
   url: https://www.camara.leg.br/noticias/rss/dinamico/ADMINISTRACAO-PUBLICA
   tier: oficial
@@ -193,18 +190,22 @@ feeds:
   url: https://www12.senado.leg.br/radio/feed/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: TSE — Notícias (portal)
   url: https://www.tse.jus.br/comunicacao/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Ministério das Relações Exteriores — Notícias
   url: https://www.gov.br/mre/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Parlamento Europeu — Imprensa
   url: https://www.europarl.europa.eu/rss/doc/press-releases/pt.xml
   tier: oficial
   lang: pt
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Comissão Europeia — Comunicados
   url: https://ec.europa.eu/commission/presscorner/api/rss?language=pt
   tier: oficial
@@ -215,21 +216,19 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'centrado no Brasil (D-110)'
 - name: Correio Braziliense — Política
   url: https://www.correiobraziliense.com.br/arc/outboundfeeds/rss/category/politica/?outputType=xml
   tier: veiculo
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: R7 — Brasília
   url: https://noticias.r7.com/brasilia/feed.xml
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: The Intercept Brasil
   url: https://www.intercept.com.br/feed/
-  tier: veiculo
-  lang: pt
-  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
-- name: O Antagonista
-  url: https://oantagonista.com.br/feed/
   tier: veiculo
   lang: pt
   notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
@@ -238,19 +237,23 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+  fora: 'inválido em 23/11/2026: XML inválido: unbound prefix: line 80, column 67'
 - name: Brasil de Fato
   url: https://www.brasildefato.com.br/rss2.xml
   tier: veiculo
   lang: pt
   notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou agência'
+  fora: 'centrado no Brasil (D-110)'
 - name: El País Brasil
   url: https://feeds.elpais.com/mrss-s/pages/ep/site/brasil.elpais.com/portada
   tier: veiculo
   lang: pt
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: RFI Brasil
   url: https://www.rfi.fr/br/rss
   tier: veiculo
   lang: pt
+  fora: 'desligado em produção (poda ou decisão anterior)'
 # E14.5f (D-064, aprovados pelo Euclides em 2026-10-26): cobertura internacional.
 # BBC, Guardian, NPR e Al Jazeera ficaram fora (rss: false em sem-leitura.yaml, D-071).
 - name: UN Press — Meetings coverage
@@ -258,11 +261,6 @@ feeds:
   tier: oficial
   lang: en
   notes: 'Conselho de Segurança e Assembleia Geral'
-- name: Noticias ONU (español)
-  url: https://news.un.org/feed/subscribe/es/news/all/rss.xml
-  tier: oficial
-  lang: es
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: GOV.UK — News
   url: https://www.gov.uk/search/news-and-communications.atom
   tier: oficial
@@ -318,6 +316,7 @@ feeds:
   tier: veiculo
   lang: en
   notes: 'INVÁLIDO (10/11): sem-leitura marca o RSS da aljazeera.com como proibido para uso comercial — nem pauta'
+  fora: 'termos proíbem o uso comercial do RSS (sem-leitura.yaml)'
 - name: Global Voices em Português
   url: https://pt.globalvoices.org/feed/
   tier: veiculo
@@ -328,13 +327,49 @@ feeds:
   tier: veiculo
   lang: en
   notes: 'CC BY 3.0; cidadãos e jornalistas do mundo todo (D-110)'
-- name: ONU News — Paz e segurança
-  url: https://news.un.org/feed/subscribe/pt/news/topic/peace-and-security/feed/rss.xml
+# 23/11/2026 (docs/reviews/E14-feeds-poda-saude-2026-11-23.md): saíram O Antagonista (média 1,0,
+# ~186 ideias/dia) e Consultor Jurídico (1,6). Infobae — América (2,8) fica: fonte internacional
+# perto do corte, já contida pelo rodízio da triagem.
+# 23/11/2026 (docs/reviews/robots-rfc9309-2026-11-23.md): saíram os feeds da ONU News — o
+# robots.txt de news.un.org proíbe `*/news/` a todos os robôs menos o Feedfetcher-Google.
+# 23/11/2026 (docs/reviews/E14-feeds-politica-intl-2026-11-23.md): reposição da pauta internacional
+# perdida com a ONU News. UNRIC e OCHA seguem os termos da ONU (como a ONU News: notícia pode ser
+# usada com crédito); robots.txt deixa o nosso robô e os de IA lerem feed e artigo.
+- name: UNRIC — Nações Unidas (pt)
+  url: https://unric.org/pt/feed/
   tier: oficial
   lang: pt
-  notes: 'conflitos e diplomacia no mundo (D-110); crédito à ONU'
-- name: ONU News — Direitos humanos
-  url: https://news.un.org/feed/subscribe/pt/news/topic/human-rights/feed/rss.xml
+  notes: 'Centro Regional de Informação da ONU (Bruxelas); termos da ONU: notícia com crédito; substitui
+    em parte a ONU News em português'
+- name: UNRIC — United Nations (en)
+  url: https://unric.org/en/feed/
   tier: oficial
+  lang: en
+  notes: 'Centro Regional de Informação da ONU (Bruxelas); termos da ONU: notícia com crédito; ênfase
+    na Europa Ocidental: dizer sempre a jurisdição'
+- name: UNRIC — Naciones Unidas (es)
+  url: https://unric.org/es/feed/
+  tier: oficial
+  lang: es
+  notes: 'Centro Regional de Informação da ONU (Bruxelas); termos da ONU: notícia com crédito; volume
+    baixo'
+- name: OCHA — Notícias humanitárias
+  url: https://www.unocha.org/rss.xml
+  tier: oficial
+  lang: en
+  notes: 'Escritório da ONU para Assuntos Humanitários: conflitos e crises (Ucrânia, Gaza, Sudão, Iêmen…);
+    termos da ONU: notícia com crédito'
+- name: Observador — Mundo
+  url: https://observador.pt/seccao/mundo/feed/
+  tier: veiculo
   lang: pt
-  notes: 'direitos humanos no mundo (D-110); crédito à ONU'
+  notes: 'Portugal, centro-direita liberal: usar para descobrir temas; confirmar os factos em fonte
+    oficial ou agência; feed generalista: filtrar por tema antes de virar ideia'
+- name: The Conversation — Global Politics
+  url: https://theconversation.com/global/politics/articles.atom
+  tier: veiculo
+  lang: en
+  notes: 'análise de académicos, CC BY-ND (uso com anúncios permitido); só pauta (robots.txt bloqueia
+    os robôs de IA); volume baixo'
+# 23/11/2026: saiu o STF — Notícias dos candidatos (centrado no Brasil, D-110); já não estava
+# no ficheiro final, mas voltava a cada corrida completa do validador.

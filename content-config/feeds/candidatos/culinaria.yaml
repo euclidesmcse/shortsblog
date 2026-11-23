@@ -6,39 +6,43 @@ feeds:
   url: https://www.embrapa.br/busca-de-noticias/-/busca/rss
   tier: oficial
   lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 403'
 - name: Ministério da Agricultura — Notícias
   url: https://www.gov.br/agricultura/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: Anvisa — Notícias
   url: https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/RSS
   tier: oficial
   lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: FDA — Food Safety Recalls
   url: https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/food-safety-recalls/rss.xml
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+  fora: 'inválido em 23/11/2026: item mais recente sem link HTTPS'
 - name: FAO — News
   url: https://www.fao.org/news/rss-feed/en/
   tier: oficial
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: USDA — Press Releases
   url: https://www.usda.gov/rss/latest-releases.xml
   tier: oficial
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Harvard Nutrition Source
   url: https://nutritionsource.hsph.harvard.edu/feed/
   tier: academico
   lang: en
-- name: Jornal da USP
-  url: https://jornal.usp.br/feed/
-  tier: academico
-  lang: pt
+  fora: 'inválido em 23/11/2026: item mais recente tem 318 dias (limite 30)'
 - name: Panelinha
   url: https://panelinha.com.br/rss
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: Folha — Comida
   url: https://feeds.folha.uol.com.br/comida/rss091.xml
   tier: veiculo
@@ -47,6 +51,7 @@ feeds:
   url: https://g1.globo.com/rss/g1/receitas/
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: feed sem itens'
 - name: Estadão Paladar
   url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/paladar/
   tier: veiculo
@@ -55,34 +60,42 @@ feeds:
   url: https://www.tudogostoso.com.br/rss
   tier: veiculo
   lang: pt
+  fora: 'termos proíbem o uso comercial do RSS (sem-leitura.yaml)'
 - name: Cozinha Técnica
   url: https://cozinhatecnica.com/feed/
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: XML inválido: not well-formed (invalid token): line 23, column 235'
 - name: Tastemade Brasil
   url: https://www.tastemade.com.br/feed
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: XML inválido: syntax error: line 1, column 0'
 - name: Presunto Vegetariano
   url: https://presuntovegetariano.com.br/feed/
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: item mais recente tem 2549 dias (limite 30)'
 - name: Technicolor Kitchen
   url: https://technicolorkitchen.blogspot.com/feeds/posts/default
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: XML inválido: not well-formed (invalid token): line 1, column 1107'
 - name: Dedo de Moça
   url: https://dedodemoca.net/feed/
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: Receitas de Minuto
   url: https://receitasdeminuto.com/feed/
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: item mais recente tem 123 dias (limite 30)'
 - name: Amando Cozinhar
   url: https://amandocozinhar.com/feed/
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: Guia da Cozinha
   url: https://guiadacozinha.com.br/feed/
   tier: veiculo
@@ -91,23 +104,22 @@ feeds:
   url: https://www.receiteria.com.br/feed/
   tier: veiculo
   lang: pt
-- name: Casa e Jardim — Receitas
-  url: https://revistacasaejardim.globo.com/rss/casaejardim/
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Serious Eats
   url: https://www.seriouseats.com/atom.xml
   tier: veiculo
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 403'
 - name: Food52
   url: https://food52.com/blog.rss
   tier: veiculo
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 429'
 - name: Smitten Kitchen
   url: https://smittenkitchen.com/feed/
   tier: veiculo
   lang: en
+  fora: 'inválido em 23/11/2026: redireciona para fora de HTTPS'
 - name: The Kitchn
   url: https://www.thekitchn.com/main.rss
   tier: veiculo
@@ -116,6 +128,7 @@ feeds:
   url: https://www.simplyrecipes.com/feed
   tier: veiculo
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 403'
 - name: King Arthur Baking
   url: https://www.kingarthurbaking.com/blog/feed
   tier: fornecedor
@@ -125,10 +138,12 @@ feeds:
   url: https://www.budgetbytes.com/feed/
   tier: veiculo
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: David Lebovitz
   url: https://www.davidlebovitz.com/feed/
   tier: veiculo
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Minimalist Baker
   url: https://minimalistbaker.com/feed/
   tier: veiculo
@@ -137,6 +152,7 @@ feeds:
   url: https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/gastronomia/subsection/el-comidista
   tier: veiculo
   lang: es
+  fora: 'desligado em produção (poda ou decisão anterior)'
 - name: Directo al Paladar
   url: https://www.directoalpaladar.com/feedburner.xml
   tier: veiculo
@@ -145,14 +161,17 @@ feeds:
   url: https://www.efsa.europa.eu/en/rss.xml
   tier: oficial
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: Food Standards Agency (UK)
   url: https://www.food.gov.uk/rss-feed/news
   tier: oficial
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: USDA FSIS — Recalls
   url: https://www.fsis.usda.gov/fsis-content/rss/recalls.xml
   tier: oficial
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Revista Pesquisa FAPESP
   url: https://revistapesquisa.fapesp.br/feed/
   tier: academico
@@ -167,6 +186,7 @@ feeds:
   url: https://www.gazetadopovo.com.br/feed/rss/bomgourmet.xml
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: item mais recente tem 895 dias (limite 30)'
 - name: Metrópoles — Gastronomia
   url: https://www.metropoles.com/gastronomia/feed
   tier: veiculo
@@ -175,35 +195,22 @@ feeds:
   url: https://www.cnnbrasil.com.br/viagemegastronomia/feed/
   tier: veiculo
   lang: pt
-- name: Claudia — Receitas
-  url: https://claudia.abril.com.br/receitas/feed/
-  tier: veiculo
-  lang: pt
-- name: Veja SP — Comer & Beber
-  url: https://vejasp.abril.com.br/comer-e-beber/feed/
-  tier: veiculo
-  lang: pt
-- name: Prazeres da Mesa
-  url: https://www.prazeresdamesa.com.br/feed/
-  tier: veiculo
-  lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: Ana Maria Brogui
   url: https://anamariabrogui.com.br/feed
   tier: veiculo
   lang: pt
+  fora: 'termos proíbem o uso comercial do RSS (sem-leitura.yaml)'
 - name: Cozinhando para 2 ou 1
   url: https://www.cozinhandopara2ou1.com.br/feed/
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: item mais recente tem 1378 dias (limite 30)'
 - name: Receitas de Mãe
   url: https://www.receitasdemae.com.br/feed/
   tier: veiculo
   lang: pt
-- name: Casa Vogue — Gastronomia
-  url: https://casavogue.globo.com/rss/casavogue/
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'inválido em 23/11/2026: item mais recente tem 553 dias (limite 30)'
 - name: Love and Lemons
   url: https://www.loveandlemons.com/feed/
   tier: veiculo
@@ -212,14 +219,17 @@ feeds:
   url: https://cookieandkate.com/feed/
   tier: veiculo
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Sally's Baking
   url: https://sallysbakingaddiction.com/feed/
   tier: veiculo
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Food & Wine
   url: https://www.foodandwine.com/feeds/all
   tier: veiculo
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 403'
 - name: Saveur
   url: https://www.saveur.com/feed/
   tier: veiculo
@@ -228,6 +238,7 @@ feeds:
   url: https://www.recetasderechupete.com/feed/
   tier: veiculo
   lang: es
+  fora: 'inválido em 23/11/2026: XML inválido: not well-formed (invalid token): line 47, column 121'
 - name: Love and Olive Oil
   url: https://www.loveandoliveoil.com/feed
   tier: veiculo
@@ -267,8 +278,12 @@ feeds:
   tier: veiculo
   lang: en
   notes: 'INVÁLIDO (10/11): sem-leitura marca o RSS como proibido para uso comercial — nem pauta'
+  fora: 'termos proíbem o uso comercial do RSS (sem-leitura.yaml)'
 - name: FAO — Newsroom
   url: https://www.fao.org/feeds/fao-newsroom-rss
   tier: oficial
   lang: en
   notes: 'só pauta (sem-leitura fao.org): termos limitam a produtos/serviços não comerciais; dizer o organismo (FAO/ONU)'
+# 23/11/2026 (docs/reviews/E14-feeds-poda-saude-2026-11-23.md): saíram Jornal da USP (média 0,0 em
+# 106 notas), Casa Vogue (0,2), Casa e Jardim (0,5), Claudia (0,5), Veja SP — Comer & Beber (1,6) e
+# Prazeres da Mesa (1,7): só geravam descarte na triagem. Directo al Paladar (3,0) fica: gerou posts.

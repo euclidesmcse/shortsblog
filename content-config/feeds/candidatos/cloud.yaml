@@ -22,11 +22,6 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
-- name: Azure Blog
-  url: https://azure.microsoft.com/en-us/blog/feed/
-  tier: fornecedor
-  lang: en
-  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
 - name: Azure Updates
   url: https://www.microsoft.com/releasecommunications/api/v2/azure/rss
   tier: fornecedor
@@ -52,11 +47,6 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
-- name: HashiCorp Blog
-  url: https://www.hashicorp.com/blog/feed.xml
-  tier: fornecedor
-  lang: en
-  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
 - name: Cloudflare Blog
   url: https://blog.cloudflare.com/rss/
   tier: fornecedor
@@ -77,6 +67,7 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Microsoft Security Blog
   url: https://www.microsoft.com/en-us/security/blog/feed/
   tier: fornecedor
@@ -123,6 +114,7 @@ feeds:
   url: https://www.theregister.com/headlines.atom
   tier: veiculo
   lang: en
+  fora: 'inválido em 23/11/2026: XML inválido: not well-formed (invalid token): line 7, column 22'
 - name: LWN.net
   url: https://lwn.net/headlines/rss
   tier: veiculo
@@ -131,16 +123,12 @@ feeds:
   url: https://devops.com/feed/
   tier: veiculo
   lang: en
-- name: Convergência Digital
-  url: https://convergenciadigital.com.br/feed/
-  tier: veiculo
-  lang: pt
-- name: TI Inside
-  url: https://tiinside.com.br/feed/
-  tier: veiculo
-  lang: pt
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: Canaltech
   url: https://canaltech.com.br/rss/
   tier: veiculo
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'desligado em produção (poda ou decisão anterior)'
+# 23/11/2026 (docs/reviews/E14-feeds-poda-saude-2026-11-23.md): saíram TI Inside (média 2,9) e
+# Convergência Digital (3,0): telecom/TI brasileiros, penalizados na triagem.

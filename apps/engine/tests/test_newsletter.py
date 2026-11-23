@@ -517,3 +517,79 @@ def test_nenhum_email_aparece_nos_logs(nl, caplog):
     with session_scope() as db:
         newsletter.brevo_event(db, "hard_bounce", EMAIL)
     assert sid and "example.com" not in caplog.text.lower()
+
+
+def _waiting_post(site: str, due: datetime, status: str = "AWAITING_APPROVAL") -> int:
+    with session_scope() as db:
+        return db.execute(text(
+            """INSERT INTO publication_jobs (site_key, local_date, slot_number, due_at_utc,
+                                             produce_after_utc, status)
+               VALUES (:s, :d, 2, :a, :a, :st) RETURNING id"""),
+            {"s": site, "d": due.date(), "a": due, "st": status}).scalar_one()
+
+
+def _publish(job: int, at: datetime) -> None:
+    with session_scope() as db:
+        db.execute(text("UPDATE publication_jobs SET status = 'PUBLISHED_CONFIRMED', "
+                        "published_at_utc = :a WHERE id = :j"), {"a": at, "j": job})
+        for language, path in (("pt-BR", ""), ("en", "en/")):
+            db.execute(text(
+                """INSERT INTO job_translations (job_id, language, is_original, title, slug,
+                                                 excerpt, html, status, wordpress_url)
+                   VALUES (:j, :l, :o, 'Post do dia', 'post', 'Resumo', '<p>x</p>',
+                           'published', :u)"""),
+                {"j": job, "l": language, "o": language == "pt-BR",
+                 "u": f"https://saude.shortsblog.com/{path}post-{job}/"})
+
+
+def test_edicao_espera_os_posts_do_dia_a_espera_de_aprovacao(nl, monkeypatch):
+    """23/11: a edição das 07:00 saiu com 1 post — os 6 do dia foram aprovados às 07:01.
+    Com post do dia à espera, a edição fica retida e sai quando a fila esvazia."""
+    monkeypatch.setattr(settings, "newsletter_hold_until", "10:00")
+    out = Outbox()
+    confirmed(out)
+    out.sent.clear()
+    seven = datetime(2026, 10, 22, 10, 0, tzinfo=UTC)                 # 07:00 em SP
+    published_post("cloud", at=seven - timedelta(hours=2))             # das 05:00, já no ar
+    waiting = _waiting_post("saude", due=seven - timedelta(hours=3))   # slot das 04:00
+    _waiting_post("ia", due=seven - timedelta(hours=27), status="APPROVED")  # atrasado: não conta
+    held = newsletter.send_daily(seven, out, pause=lambda s: None)
+    assert held["held"] == 1 and held["sent"] == 0 and out.sent == []
+    assert newsletter.held_ready(seven + timedelta(minutes=1)) is False   # ainda à espera
+    _publish(waiting, seven + timedelta(minutes=1))
+    later = seven + timedelta(minutes=2)
+    assert newsletter.held_ready(later) is True
+    assert newsletter.held_ready(later) is False                       # só um ganha
+    result = newsletter.send_daily(later, out, pause=lambda s: None, final=True)
+    assert result["sent"] == 1 and result["posts"] == 2                # o que já estava e o retido
+    assert f"post-{waiting}/" in out.sent[-1]["body"]
+
+
+def test_edicao_retida_sai_no_limite_mesmo_com_post_a_espera(nl, monkeypatch):
+    monkeypatch.setattr(settings, "newsletter_hold_until", "10:00")
+    out = Outbox()
+    confirmed(out)
+    out.sent.clear()
+    seven = datetime(2026, 10, 22, 10, 0, tzinfo=UTC)
+    published_post("cloud", at=seven - timedelta(hours=2))
+    _waiting_post("saude", due=seven - timedelta(hours=3))
+    assert newsletter.send_daily(seven, out, pause=lambda s: None)["held"] == 1
+    assert newsletter.held_ready(seven + timedelta(hours=2, minutes=59)) is False
+    assert newsletter.held_ready(seven + timedelta(hours=3)) is True       # 10:00 em SP
+    # Depois do limite, mesmo sem `final`, a edição já não se retém.
+    assert newsletter.send_daily(seven + timedelta(hours=3), out,
+                                 pause=lambda s: None)["sent"] == 1
+    monkeypatch.setattr(settings, "newsletter_hold_until", "")           # vazio desliga
+    assert "held" not in newsletter.send_daily(seven + timedelta(days=1), out,
+                                               pause=lambda s: None)
+
+
+def test_publish_due_solta_a_edicao_retida(nl, monkeypatch, client, auth):
+    queued: list = []
+    monkeypatch.setattr("app.api.routes.sched.QUEUES",
+                        {"fast": type("Q", (), {"enqueue": lambda self, f, **kw:
+                                                queued.append((f, kw))})()})
+    monkeypatch.setattr(newsletter, "held_ready", lambda now=None: True)
+    body = client.post("/api/sched/publish-due", headers=auth).json()
+    assert body["newsletter"] == "released"
+    assert queued[0][0] is newsletter.send_daily and queued[0][1]["kwargs"] == {"final": True}

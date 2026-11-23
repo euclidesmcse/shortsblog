@@ -38,17 +38,13 @@ feeds:
   domain: www.bis.org
   tier: oficial
   lang: en
-- name: CFPB — Newsroom
-  url: https://www.consumerfinance.gov/about-us/newsroom/feed/
+- name: CFPB — Recent updates
+  url: https://www.consumerfinance.gov/activity-log/feed/
   domain: www.consumerfinance.gov
   tier: oficial
   lang: en
-  notes: proteção ao consumidor financeiro dos EUA; bom fit com Finanças Pessoais
-- name: CVM — Notícias
-  url: https://www.gov.br/cvm/pt-br/assuntos/noticias/RSS
-  domain: www.gov.br
-  tier: oficial
-  lang: pt
+  notes: proteção ao consumidor financeiro dos EUA; bom fit com Finanças Pessoais; feed geral do CFPB
+    (comunicados, relatórios, normas) no lugar do Newsroom, parado desde 14/10 (23/11)
 - name: Câmara — Economia
   url: https://www.camara.leg.br/noticias/rss/dinamico/ECONOMIA
   domain: www.camara.leg.br
@@ -72,30 +68,12 @@ feeds:
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
-- name: Eurostat — Estatísticas (pre-releases)
-  url: https://ec.europa.eu/eurostat/en/search?p_p_id=estatsearchportlet_WAR_estatsearchportlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=atom&_estatsearchportlet_WAR_estatsearchportlet_collection=CAT_PREREL
-  domain: ec.europa.eu
-  tier: oficial
-  lang: en
-  notes: coleção CAT_PREREL; complementa a CAT_EURNEW já ativa
-- name: Eurostat — News
-  url: https://ec.europa.eu/eurostat/en/search?p_p_id=estatsearchportlet_WAR_estatsearchportlet&p_p_lifecycle=2&p_p_state=maximized&p_p_mode=view&p_p_resource_id=atom&_estatsearchportlet_WAR_estatsearchportlet_collection=CAT_EURNEW
-  domain: ec.europa.eu
-  tier: oficial
-  lang: en
-  notes: inflação, PIB e emprego da UE; o endereço longo é o Atom oficial da busca
 - name: Federal Reserve — Discursos
   url: https://www.federalreserve.gov/feeds/speeches.xml
   domain: www.federalreserve.gov
   tier: oficial
   lang: en
   notes: discursos; valor de pauta pontual
-- name: Federal Reserve — Política Monetária
-  url: https://www.federalreserve.gov/feeds/press_monetary.xml
-  domain: www.federalreserve.gov
-  tier: oficial
-  lang: en
-  notes: subconjunto do press_all (já ativo); recorte dedicado a juros/FOMC
 - name: Federal Reserve — Press Releases
   url: https://www.federalreserve.gov/feeds/press_all.xml
   domain: www.federalreserve.gov
@@ -108,6 +86,13 @@ feeds:
   tier: oficial
   lang: en
   notes: análises de dados macro do Fed de St. Louis
+- name: FSB — Financial Stability Board
+  url: https://www.fsb.org/feed/
+  domain: www.fsb.org
+  tier: oficial
+  lang: en
+  notes: 'organismo internacional (G20/BIS); termos: reprodução só não comercial — usar como pauta + citação
+    com link, sem reproduzir texto (como o BIS)'
 - name: Liberty Street Economics (NY Fed)
   url: https://libertystreeteconomics.newyorkfed.org/feed/
   domain: libertystreeteconomics.newyorkfed.org
@@ -130,12 +115,6 @@ feeds:
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
-- name: Senado Notícias
-  url: https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS
-  domain: www12.senado.leg.br
-  tier: oficial
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: SNB — News
   url: https://www.snb.ch/public/rss/en/news
   domain: www.snb.ch
@@ -154,6 +133,12 @@ feeds:
   tier: agencia
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
+- name: Agência Brasil — Internacional
+  url: https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml
+  domain: agenciabrasil.ebc.com.br
+  tier: agencia
+  lang: pt
+  notes: notícias do mundo em português (D-110); agência pública
 - name: A Wealth of Common Sense
   url: https://awealthofcommonsense.com/feed/
   domain: awealthofcommonsense.com
@@ -273,13 +258,6 @@ feeds:
   tier: academico
   lang: en
   notes: só pauta na prática (robots bloqueia robôs de IA; ai-train=no); URL corrigida na triagem de 29/10
-- name: CFA — Market Integrity
-  url: https://blogs.cfainstitute.org/marketintegrity/feed/
-  domain: blogs.cfainstitute.org
-  tier: academico
-  lang: en
-  notes: 'copyright rígido do CFA (uso: pauta + citação, D-070); feed gigante (500 itens; feed_max_items
-    limita)'
 - name: Conversable Economist
   url: https://conversableeconomist.com/feed/
   domain: conversableeconomist.com
@@ -298,6 +276,12 @@ feeds:
   tier: academico
   lang: en
   notes: blog de economistas (GMU); curadoria — melhor como pauta
+- name: Our World in Data
+  url: https://ourworldindata.org/atom.xml
+  domain: ourworldindata.org
+  tier: academico
+  lang: en
+  notes: CC BY; dados e gráficos de alcance mundial (D-102)
 - name: ProMarket — Stigler Center
   url: https://www.promarket.org/feed/
   domain: www.promarket.org
@@ -334,27 +318,3 @@ feeds:
   tier: academico
   lang: en
   notes: CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)
-- name: Our World in Data
-  url: https://ourworldindata.org/atom.xml
-  domain: ourworldindata.org
-  tier: academico
-  lang: en
-  notes: 'CC BY; dados e gráficos de alcance mundial (D-102)'
-- name: ONU News — Desenvolvimento econômico
-  url: https://news.un.org/feed/subscribe/pt/news/topic/economic-development/feed/rss.xml
-  domain: news.un.org
-  tier: oficial
-  lang: pt
-  notes: 'economia mundial (D-110); crédito à ONU'
-- name: UN News — Economic Development
-  url: https://news.un.org/feed/subscribe/en/news/topic/economic-development/feed/rss.xml
-  domain: news.un.org
-  tier: oficial
-  lang: en
-  notes: 'economia mundial (D-110); crédito à ONU'
-- name: Agência Brasil — Internacional
-  url: https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml
-  domain: agenciabrasil.ebc.com.br
-  tier: agencia
-  lang: pt
-  notes: 'notícias do mundo em português (D-110); agência pública'

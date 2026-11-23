@@ -617,3 +617,28 @@ def test_feed_pedido_na_lingua_da_fonte(two_sites, monkeypatch):
     assert fetcher._accept_language("es").startswith("es,")
     assert fetcher._accept_language("pt").startswith(settings.content_locale)
     assert fetcher._accept_language(None).startswith(settings.content_locale)
+
+
+def test_feed_desligado_tira_as_ideias_dele_da_fila(two_sites):
+    """23/11: 1158 ideias de feeds podados seguiam na fila. Expiram — salvo a história que um
+    feed ainda ligado também conta."""
+    with session_scope() as db:
+        src = dict(db.execute(
+            text("SELECT feed_url, id FROM sources WHERE site_key = 'saude'")).all())
+        a, b = src["https://a.test/feed"], src["https://b.test/feed"]
+
+        def add(topic: str, url: str, source: int, dup: int | None = None) -> int:
+            return int(db.execute(text(
+                """INSERT INTO ideas (site_key, origin, topic, canonical_url, source_id,
+                                      duplicate_of)
+                   VALUES ('saude', 'rss', :t, :u, :s, :d) RETURNING id"""),
+                {"t": topic, "u": url, "s": source, "d": dup}).scalar_one())
+
+        sozinha = add("Só o feed podado conta", "https://a.test/1", a)
+        contada = add("Os dois feeds contam", "https://a.test/2", a)
+        repeticao = add("Os dois feeds contam (outro título)", "https://b.test/2", b, contada)
+        ligada = add("Só o feed ligado conta", "https://b.test/3", b)
+        db.execute(text("UPDATE sources SET enabled = false WHERE id = :a"), {"a": a})
+        assert discovery.expire_disabled(db) == 1
+        status = dict(db.execute(text("SELECT id, status FROM ideas")).all())
+    assert status == {sozinha: "expired", contada: "new", repeticao: "new", ligada: "new"}

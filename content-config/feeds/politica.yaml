@@ -57,29 +57,18 @@ feeds:
   tier: oficial
   lang: en
   notes: 'feed generalista: filtrar por tema antes de virar ideia; Open Government Licence'
-- name: Noticias ONU (español)
-  url: https://news.un.org/feed/subscribe/es/news/all/rss.xml
-  domain: news.un.org
+- name: OCHA — Notícias humanitárias
+  url: https://www.unocha.org/rss.xml
+  domain: www.unocha.org
   tier: oficial
-  lang: es
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: ONU News (português)
-  url: https://news.un.org/feed/subscribe/pt/news/all/rss.xml
-  domain: news.un.org
-  tier: oficial
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  lang: en
+  notes: 'Escritório da ONU para Assuntos Humanitários: conflitos e crises (Ucrânia, Gaza, Sudão, Iêmen…);
+    termos da ONU: notícia com crédito'
 - name: Senado Notícias
   url: https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS
   domain: www12.senado.leg.br
   tier: oficial
   lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: UN News
-  url: https://news.un.org/feed/subscribe/en/news/all/rss.xml
-  domain: news.un.org
-  tier: oficial
-  lang: en
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: UN Press — Meetings coverage
   url: https://press.un.org/en/rss.xml
@@ -87,6 +76,27 @@ feeds:
   tier: oficial
   lang: en
   notes: Conselho de Segurança e Assembleia Geral
+- name: UNRIC — Naciones Unidas (es)
+  url: https://unric.org/es/feed/
+  domain: unric.org
+  tier: oficial
+  lang: es
+  notes: 'Centro Regional de Informação da ONU (Bruxelas); termos da ONU: notícia com crédito; volume
+    baixo'
+- name: UNRIC — Nações Unidas (pt)
+  url: https://unric.org/pt/feed/
+  domain: unric.org
+  tier: oficial
+  lang: pt
+  notes: 'Centro Regional de Informação da ONU (Bruxelas); termos da ONU: notícia com crédito; substitui
+    em parte a ONU News em português'
+- name: UNRIC — United Nations (en)
+  url: https://unric.org/en/feed/
+  domain: unric.org
+  tier: oficial
+  lang: en
+  notes: 'Centro Regional de Informação da ONU (Bruxelas); termos da ONU: notícia com crédito; ênfase
+    na Europa Ocidental: dizer sempre a jurisdição'
 - name: Agência Brasil — Internacional
   url: https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml
   domain: agenciabrasil.ebc.com.br
@@ -132,11 +142,6 @@ feeds:
   lang: pt
   notes: 'host próprio desde 11/2026: o antigo congressoemfoco.uol.com.br ficou sem DNS (visto em 2 e
     8/11)'
-- name: Consultor Jurídico
-  url: https://www.conjur.com.br/rss.xml
-  domain: www.conjur.com.br
-  tier: veiculo
-  lang: pt
 - name: DW Brasil
   url: https://rss.dw.com/rdf/rss-br-all
   domain: rss.dw.com
@@ -190,6 +195,18 @@ feeds:
   lang: pt
   notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou
     agência'
+- name: Global Voices
+  url: https://globalvoices.org/feed/
+  domain: globalvoices.org
+  tier: veiculo
+  lang: en
+  notes: CC BY 3.0; cidadãos e jornalistas do mundo todo (D-110)
+- name: Global Voices em Português
+  url: https://pt.globalvoices.org/feed/
+  domain: pt.globalvoices.org
+  tier: veiculo
+  lang: pt
+  notes: CC BY 3.0; cidadãos e jornalistas do mundo todo (D-110)
 - name: Infobae — América
   url: https://www.infobae.com/arc/outboundfeeds/rss/category/america/
   domain: www.infobae.com
@@ -207,13 +224,13 @@ feeds:
   domain: www.nexojornal.com.br
   tier: veiculo
   lang: pt
-- name: O Antagonista
-  url: https://oantagonista.com.br/feed/
-  domain: oantagonista.com.br
+- name: Observador — Mundo
+  url: https://observador.pt/seccao/mundo/feed/
+  domain: observador.pt
   tier: veiculo
   lang: pt
-  notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou
-    agência'
+  notes: 'Portugal, centro-direita liberal: usar para descobrir temas; confirmar os factos em fonte oficial
+    ou agência; feed generalista: filtrar por tema antes de virar ideia'
 - name: Poder360
   url: https://www.poder360.com.br/feed/
   domain: www.poder360.com.br
@@ -237,6 +254,13 @@ feeds:
   tier: veiculo
   lang: pt
   notes: serviço público português
+- name: The Conversation — Global Politics
+  url: https://theconversation.com/global/politics/articles.atom
+  domain: theconversation.com
+  tier: veiculo
+  lang: en
+  notes: análise de académicos, CC BY-ND (uso com anúncios permitido); só pauta (robots.txt bloqueia os
+    robôs de IA); volume baixo
 - name: The Intercept Brasil
   url: https://www.intercept.com.br/feed/
   domain: www.intercept.com.br
@@ -251,27 +275,3 @@ feeds:
   lang: pt
   notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou
     agência'
-- name: Global Voices em Português
-  url: https://pt.globalvoices.org/feed/
-  domain: pt.globalvoices.org
-  tier: veiculo
-  lang: pt
-  notes: 'CC BY 3.0; cidadãos e jornalistas do mundo todo (D-110)'
-- name: Global Voices
-  url: https://globalvoices.org/feed/
-  domain: globalvoices.org
-  tier: veiculo
-  lang: en
-  notes: 'CC BY 3.0; cidadãos e jornalistas do mundo todo (D-110)'
-- name: ONU News — Paz e segurança
-  url: https://news.un.org/feed/subscribe/pt/news/topic/peace-and-security/feed/rss.xml
-  domain: news.un.org
-  tier: oficial
-  lang: pt
-  notes: 'conflitos e diplomacia no mundo (D-110); crédito à ONU'
-- name: ONU News — Direitos humanos
-  url: https://news.un.org/feed/subscribe/pt/news/topic/human-rights/feed/rss.xml
-  domain: news.un.org
-  tier: oficial
-  lang: pt
-  notes: 'direitos humanos no mundo (D-110); crédito à ONU'

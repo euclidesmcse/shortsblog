@@ -14,35 +14,32 @@ feeds:
   url: https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/comunicados
   tier: oficial
   lang: pt
-- name: CVM — Notícias
-  url: https://www.gov.br/cvm/pt-br/assuntos/noticias/RSS
-  tier: oficial
-  lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Ministério da Fazenda — Notícias
   url: https://www.gov.br/fazenda/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Receita Federal — Notícias
   url: https://www.gov.br/receitafederal/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Tesouro Nacional — Notícias
   url: https://www.gov.br/tesouronacional/pt-br/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: IBGE — Agência de Notícias
   url: https://agenciadenoticias.ibge.gov.br/agencia-rss.html
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: IPEA — Notícias
   url: https://www.ipea.gov.br/portal/categorias/45-todas-as-noticias?format=feed&type=rss
   tier: oficial
   lang: pt
-- name: Senado Notícias
-  url: https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS
-  tier: oficial
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'centrado no Brasil (D-110)'
 - name: Câmara — Economia
   url: https://www.camara.leg.br/noticias/rss/dinamico/ECONOMIA
   tier: oficial
@@ -56,10 +53,12 @@ feeds:
   url: https://www.imf.org/en/News/RSS
   tier: oficial
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: BIS — Press releases
   url: https://www.bis.org/doclist/all_pressrels.rss
   tier: oficial
   lang: en
+  fora: 'desligado em produção (poda ou decisão anterior)'
 - name: ECB — Press releases
   url: https://www.ecb.europa.eu/rss/press.html
   tier: oficial
@@ -74,6 +73,7 @@ feeds:
   url: https://www.worldbank.org/en/news/rss.xml
   tier: oficial
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: Agência Brasil — Economia
   url: https://agenciabrasil.ebc.com.br/rss/economia/feed.xml
   tier: agencia
@@ -108,6 +108,7 @@ feeds:
   url: https://www.cnnbrasil.com.br/economia/feed/
   tier: veiculo
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Seu Dinheiro
   url: https://www.seudinheiro.com/feed/
   tier: veiculo
@@ -120,18 +121,22 @@ feeds:
   url: https://www.poder360.com.br/economia/feed/
   tier: veiculo
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Câmara — Trabalho e Previdência
   url: https://www.camara.leg.br/noticias/rss/dinamico/TRABALHO-PREVIDENCIA-E-ASSISTENCIA
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: BNDES — Notícias
   url: https://agenciadenoticias.bndes.gov.br/rss.xml
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: OECD — Newsroom
   url: https://www.oecd.org/newsroom/index.xml
   tier: oficial
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 403'
 - name: Agência Brasil — Geral
   url: https://agenciabrasil.ebc.com.br/rss/geral/feed.xml
   tier: agencia
@@ -145,17 +150,13 @@ feeds:
   url: https://www.metropoles.com/negocios/feed
   tier: veiculo
   lang: pt
+  fora: 'inválido em 23/11/2026: item mais recente tem 104 dias (limite 30)'
 # E14.5f (D-064, aprovados pelo Euclides em 2026-10-26): cobertura internacional.
 # BBC, Guardian, NPR, Fortune, Al Jazeera e Expansión ficaram fora (rss: false, D-071).
 - name: Bank of England — News
   url: https://www.bankofengland.co.uk/rss/news
   tier: oficial
   lang: en
-- name: Eurostat — News
-  url: https://ec.europa.eu/eurostat/en/search?p_p_id=estatsearchportlet_WAR_estatsearchportlet&p_p_lifecycle=2&p_p_state=maximized&p_p_mode=view&p_p_resource_id=atom&_estatsearchportlet_WAR_estatsearchportlet_collection=CAT_EURNEW
-  tier: oficial
-  lang: en
-  notes: 'inflação, PIB e emprego da UE; o endereço longo é o Atom oficial da busca'
 - name: DW — Business
   url: https://rss.dw.com/rdf/rss-en-bus
   tier: veiculo
@@ -178,21 +179,16 @@ feeds:
   url: https://libertystreeteconomics.newyorkfed.org/feed/
   tier: oficial
   lang: en
-- name: CFPB — Newsroom
-  url: https://www.consumerfinance.gov/about-us/newsroom/feed/
+- name: CFPB — Recent updates
+  url: https://www.consumerfinance.gov/activity-log/feed/
   tier: oficial
   lang: en
-  notes: 'proteção ao consumidor financeiro dos EUA; bom fit com Finanças Pessoais'
+  notes: 'proteção ao consumidor financeiro dos EUA; bom fit com Finanças Pessoais; feed geral do CFPB (comunicados, relatórios, normas) no lugar do Newsroom, parado desde 14/10 (23/11)'
 - name: ECB — Blog
   url: https://www.ecb.europa.eu/rss/blog.html
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: dizer sempre a jurisdição'
-- name: Eurostat — Estatísticas (pre-releases)
-  url: https://ec.europa.eu/eurostat/en/search?p_p_id=estatsearchportlet_WAR_estatsearchportlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=atom&_estatsearchportlet_WAR_estatsearchportlet_collection=CAT_PREREL
-  tier: oficial
-  lang: en
-  notes: 'coleção CAT_PREREL; complementa a CAT_EURNEW já ativa'
 - name: Bank of Canada — Press
   url: https://www.bankofcanada.ca/content_type/press-releases/feed/
   tier: oficial
@@ -236,11 +232,6 @@ feeds:
 # aprovado pelo Euclides em 29/10 («pode aplicar o bloco B também»). Robots dos domínios
 # novos conferidos em 29/10: só theconversation.com bloqueia robôs de IA (vira só-pauta
 # automático no fetcher, D-070/D-013).
-- name: Federal Reserve — Política Monetária
-  url: https://www.federalreserve.gov/feeds/press_monetary.xml
-  tier: oficial
-  lang: en
-  notes: 'subconjunto do press_all (já ativo); recorte dedicado a juros/FOMC'
 - name: Federal Reserve — Discursos
   url: https://www.federalreserve.gov/feeds/speeches.xml
   tier: oficial
@@ -329,11 +320,6 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'CC; viés editorial forte (aceito pelo Euclides em 29/10); só pauta na prática (robots bloqueia robôs de IA)'
-- name: CFA — Market Integrity
-  url: https://blogs.cfainstitute.org/marketintegrity/feed/
-  tier: academico
-  lang: en
-  notes: 'copyright rígido do CFA (uso: pauta + citação, D-070); feed gigante (500 itens; feed_max_items limita)'
 # Reteste dos transientes da triagem (30/10, «pode retestar os transientes também»):
 # arXiv q-fin/econ ok (anunciam por dia útil; o «sem itens» de 29/10 era transiente).
 # Vitalik ficou fora (post mais novo com 34 dias — reavaliar quando voltar a publicar);
@@ -353,6 +339,7 @@ feeds:
   tier: oficial
   lang: en
   notes: 'dizer sempre a jurisdição (Japão)'
+  fora: 'inválido em 23/11/2026: item mais recente sem link HTTPS'
 - name: Our World in Data
   url: https://ourworldindata.org/atom.xml
   tier: academico
@@ -363,18 +350,20 @@ feeds:
   tier: oficial
   lang: en
   notes: 'dizer sempre a jurisdição (UE)'
-- name: ONU News — Desenvolvimento econômico
-  url: https://news.un.org/feed/subscribe/pt/news/topic/economic-development/feed/rss.xml
-  tier: oficial
-  lang: pt
-  notes: 'economia mundial (D-110); crédito à ONU'
-- name: UN News — Economic Development
-  url: https://news.un.org/feed/subscribe/en/news/topic/economic-development/feed/rss.xml
-  tier: oficial
-  lang: en
-  notes: 'economia mundial (D-110); crédito à ONU'
+  fora: 'inválido em 23/11/2026: itens sem data utilizável (ausente ou no futuro)'
 - name: Agência Brasil — Internacional
   url: https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml
   tier: agencia
   lang: pt
   notes: 'notícias do mundo em português (D-110); agência pública'
+# 23/11/2026 (docs/reviews/E14-feeds-poda-saude-2026-11-23.md): saíram Senado Notícias
+# (média 0,7 em 14 dias, generalista), CVM — Notícias (parado: item mais recente com 33 dias;
+# fonte só brasileira) e CFA — Market Integrity (parado há 32 dias; o feed do Enterprising
+# Investor dá XML inválido). O CFPB passou do Newsroom (parado) para o feed geral «Recent updates».
+# Entra o FSB (Basileia, G20): regulação financeira internacional, no lugar da CVM.
+# Termos: reprodução só não comercial, com crédito, como o BIS (amarelo; uso pauta + citação).
+- name: FSB — Financial Stability Board
+  url: https://www.fsb.org/feed/
+  tier: oficial
+  lang: en
+  notes: 'organismo internacional (G20/BIS); termos: reprodução só não comercial — usar como pauta + citação com link, sem reproduzir texto (como o BIS)'

@@ -118,7 +118,13 @@ def add_idea(body: ManualIdea) -> dict:
 @router.post("/publish-due", summary="Pede a publicação do que está aprovado e na hora")
 def publish_due() -> dict:
     with session_scope() as db:
-        return publishing.publish_due(db)
+        result = publishing.publish_due(db)
+    # A newsletter retida às 07:00 (posts do dia à espera de aprovação) sai daqui: quando a
+    # fila do dia esvazia ou chega `newsletter_hold_until` (23/11).
+    if newsletter.held_ready():
+        QUEUES["fast"].enqueue(newsletter.send_daily, kwargs={"final": True}, job_timeout=1800)
+        result = {**result, "newsletter": "released"}
+    return result
 
 
 @router.post("/approval-batch", summary="E-mail com o que espera aprovação (lotes)")

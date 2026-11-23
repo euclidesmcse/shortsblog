@@ -25,7 +25,6 @@ import ipaddress
 import socket
 import ssl
 import time
-import urllib.robotparser
 from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import urljoin, urlsplit
@@ -35,6 +34,7 @@ import httpx
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.services.robots import DISALLOW_ALL, Robots
 
 log = get_logger(__name__)
 
@@ -73,8 +73,8 @@ def _accept_language(language: str | None) -> str:
     if not code or code.lower().startswith("pt"):
         return f"{settings.content_locale},pt;q=0.9,en;q=0.8"
     return f"{code},en;q=0.8,*;q=0.5" if not code.lower().startswith("en") else "en,*;q=0.5"
-# host → (expira, parser | None). None = sem robots.txt utilizável → permitido.
-_robots: dict[str, tuple[float, urllib.robotparser.RobotFileParser | None]] = {}
+# host → (expira, regras | None). None = sem robots.txt utilizável → permitido.
+_robots: dict[str, tuple[float, Robots | None]] = {}
 # host → instante (monotónico) do último pedido; R42. Os testes substituem `_sleep`.
 _last_hit: dict[str, float] = {}
 _sleep = time.sleep
@@ -264,22 +264,16 @@ def _fetch(url: str, *, max_bytes: int, timeout_s: float, accept: str,
     raise FetchError("too_many_redirects")
 
 
-def _disallow_all() -> urllib.robotparser.RobotFileParser:
-    parser = urllib.robotparser.RobotFileParser()
-    parser.parse(["User-agent: *", "Disallow: /"])
-    return parser
-
-
-_DISALLOW_ALL = _disallow_all()
+_DISALLOW_ALL = DISALLOW_ALL
 ROBOTS_RETRY_S = 600
 ROBOTS_MAX_HOSTS = 5000
 
 
-def _robots_for(host: str) -> urllib.robotparser.RobotFileParser | None:
+def _robots_for(host: str) -> Robots | None:
     cached = _robots.get(host)
     if cached and cached[0] > time.monotonic():
         return cached[1]
-    parser: urllib.robotparser.RobotFileParser | None = None
+    parser: Robots | None = None
     ttl = ROBOTS_TTL_S
     try:
         # Maior que o teto: lê-se o início (R42) — proibir o sítio inteiro por um ficheiro
@@ -287,8 +281,7 @@ def _robots_for(host: str) -> urllib.robotparser.RobotFileParser | None:
         page = _fetch(f"https://{host}/robots.txt", max_bytes=ROBOTS_MAX_BYTES,
                       timeout_s=settings.http_timeout, accept="text/plain, */*", truncate=True)
         if page.status == 200:
-            parser = urllib.robotparser.RobotFileParser()
-            parser.parse(page.text.splitlines())
+            parser = Robots.parse(page.text.splitlines())   # RFC 9309 (curingas, 23/11)
         elif page.status in (401, 403, 429) or page.status >= 500:
             # Convenção: robots.txt proibido = o sítio não quer robôs. Com erro do servidor
             # não se sabe o que ele quer: trata-se como proibido (RFC 9309) e volta-se a

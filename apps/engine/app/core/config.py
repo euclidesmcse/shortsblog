@@ -120,6 +120,10 @@ class Settings(BaseSettings):
     # A edição leva o que saiu desde a edição anterior (aprovado tarde não fica de fora), mas
     # nunca mais do que estas horas para trás (newsletter parada dias não vira uma edição gigante).
     newsletter_catchup_hours: int = 72
+    # 23/11: a edição das 07:00 saiu com 1 post porque os 6 do dia foram aprovados às 07:01.
+    # Com post do dia ainda à espera de aprovação, a edição espera até esta hora local (vazio
+    # desliga); sai assim que a fila do dia esvaziar (verificado a cada `publish-due`).
+    newsletter_hold_until: str = "10:00"
     newsletter_rate_ip_hour: int = 5        # pedidos de cadastro por IP e hora
     newsletter_rate_email_day: int = 3      # e-mails de confirmação por endereço e dia
 

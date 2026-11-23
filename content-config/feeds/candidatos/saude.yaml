@@ -6,26 +6,32 @@ feeds:
   url: https://www.gov.br/saude/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Anvisa — Notícias
   url: https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: ANS — Notícias
   url: https://www.gov.br/ans/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Fiocruz — Notícias
   url: https://portal.fiocruz.br/rss.xml
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: INCA — Notícias
   url: https://www.gov.br/inca/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Instituto Butantan — Notícias
   url: https://butantan.gov.br/rss
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: OPAS — Notícias (português)
   url: https://www.paho.org/pt/rss.xml
   tier: oficial
@@ -38,11 +44,13 @@ feeds:
   url: https://www.nih.gov/news-releases/feed.xml
   tier: oficial
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: FDA Press Announcements
   url: https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
+  fora: 'inválido em 23/11/2026: item mais recente sem link HTTPS'
 - name: ECDC — News
   url: https://www.ecdc.europa.eu/en/taxonomy/term/1244/feed
   tier: oficial
@@ -53,11 +61,6 @@ feeds:
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: a decisão não vale para o Brasil; dizer sempre a jurisdição'
-- name: Senado — Notícias
-  url: https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS
-  tier: oficial
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: Câmara — Saúde
   url: https://www.camara.leg.br/noticias/rss/dinamico/SAUDE
   tier: oficial
@@ -71,10 +74,7 @@ feeds:
   url: https://agencia.fapesp.br/rss/
   tier: academico
   lang: pt
-- name: Jornal da USP
-  url: https://jornal.usp.br/feed/
-  tier: academico
-  lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: Revista Pesquisa FAPESP
   url: https://revistapesquisa.fapesp.br/feed/
   tier: academico
@@ -84,14 +84,17 @@ feeds:
   url: https://www.bmj.com/rss/recent.xml
   tier: academico
   lang: en
+  fora: 'inválido em 23/11/2026: redireciona para fora de HTTPS'
 - name: The Lancet — Online first
   url: https://www.thelancet.com/rssfeed/lancet_online.xml
   tier: academico
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: NEJM — Current
   url: https://www.nejm.org/action/showFeed?jc=nejm&type=etoc&feed=rss
   tier: academico
   lang: en
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: JAMA — Current
   url: https://jamanetwork.com/rss/site_3/67.xml
   tier: academico
@@ -106,10 +109,12 @@ feeds:
   url: https://www.cochrane.org/news/feed
   tier: academico
   lang: en
+  fora: 'inválido em 23/11/2026: redireciona para fora de HTTPS'
 - name: Harvard Health Blog
   url: https://www.health.harvard.edu/blog/feed
   tier: academico
   lang: en
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: G1 Saúde
   url: https://g1.globo.com/rss/g1/saude/
   tier: veiculo
@@ -122,38 +127,31 @@ feeds:
   url: https://www.cnnbrasil.com.br/saude/feed/
   tier: veiculo
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: KFF Health News
   url: https://kffhealthnews.org/feed/
   tier: veiculo
   lang: en
-- name: Ministério da Saúde — Notícias (2)
-  url: https://www.gov.br/saude/pt-br/assuntos/noticias/2026/RSS
-  tier: oficial
-  lang: pt
 - name: Conselho Nacional de Saúde
   url: https://www.gov.br/conselho-nacional-de-saude/pt-br/assuntos/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: EBSERH — Notícias
   url: https://www.gov.br/ebserh/pt-br/comunicacao/noticias/RSS
   tier: oficial
   lang: pt
+  fora: 'centrado no Brasil (D-110)'
 - name: MedlinePlus — What's New
   url: https://medlineplus.gov/feeds/whatsnew.xml
   tier: oficial
   lang: en
+  fora: 'válido em 23/11/2026, mas nunca aprovado: só entra por proposta'
 - name: NCI — Cancer Currents
   url: https://www.cancer.gov/news-events/cancer-currents-blog/rss
   tier: oficial
   lang: en
-- name: UN News — Health
-  url: https://news.un.org/feed/subscribe/en/news/topic/health/feed/rss.xml
-  tier: oficial
-  lang: en
-- name: ONU News — Saúde
-  url: https://news.un.org/feed/subscribe/pt/news/topic/health/feed/rss.xml
-  tier: oficial
-  lang: pt
+  fora: 'inválido em 23/11/2026: HTTP 404'
 - name: eLife — Latest
   url: https://elifesciences.org/rss/recent.xml
   tier: academico
@@ -164,21 +162,18 @@ feeds:
   tier: academico
   lang: en
   notes: 'artigos científicos: citar o estudo e não extrapolar conclusões clínicas'
+  fora: 'inválido em 23/11/2026: item mais recente sem link HTTPS'
 - name: SciELO em Perspectiva
   url: https://blog.scielo.org/feed/
   tier: academico
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'desligado em produção (poda ou decisão anterior)'
 - name: The Conversation Brasil
   url: https://theconversation.com/br/articles.atom
   tier: veiculo
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: Veja Saúde
-  url: https://saude.abril.com.br/feed/
-  tier: veiculo
-  lang: pt
-  notes: 'bem-estar e aconselhamento: não transformar em conselho clínico; confirmar em fonte oficial ou estudo'
 - name: Metrópoles — Saúde
   url: https://www.metropoles.com/saude/feed
   tier: veiculo
@@ -189,6 +184,7 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'bem-estar e aconselhamento: não transformar em conselho clínico; confirmar em fonte oficial ou estudo'
+  fora: 'centrado no Brasil (D-110)'
 - name: ScienceDaily — Health & Medicine
   url: https://www.sciencedaily.com/rss/health_medicine.xml
   tier: veiculo
@@ -206,10 +202,6 @@ feeds:
   tier: oficial
   lang: en
   notes: 'sistema público do Reino Unido'
-- name: Noticias ONU — Salud
-  url: https://news.un.org/feed/subscribe/es/news/topic/health/feed/rss.xml
-  tier: oficial
-  lang: es
 - name: Infobae — Salud
   url: https://www.infobae.com/arc/outboundfeeds/rss/category/salud/
   tier: veiculo
@@ -220,6 +212,7 @@ feeds:
   tier: oficial
   lang: en
   notes: 'NIH/NLM, domínio público com exceções pontuais; dizer sempre a jurisdição (EUA)'
+  fora: 'o robots.txt proíbe o nosso robô (23/11/2026)'
 - name: UKHSA — News (gov.uk)
   url: https://www.gov.uk/government/organisations/uk-health-security-agency.atom
   tier: oficial
@@ -240,11 +233,6 @@ feeds:
   tier: academico
   lang: en
   notes: 'CC BY; dados de saúde de alcance mundial (D-102)'
-- name: Health Canada — News
-  url: https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentofhealth&type=newsreleases&format=atom
-  tier: oficial
-  lang: en
-  notes: 'só pauta (sem-leitura canada.ca): reprodução comercial exige permissão; dizer a jurisdição (Canadá)'
 - name: CDC — MMWR
   url: https://tools.cdc.gov/api/v2/resources/media/132599.rss
   tier: oficial
@@ -255,3 +243,21 @@ feeds:
   tier: veiculo
   lang: en
   notes: 'CC BY 3.0; saúde pelo mundo (D-110)'
+# 23/11/2026 (docs/reviews/E14-feeds-poda-saude-2026-11-23.md): saíram Senado — Notícias (média 1,1),
+# Jornal da USP (1,7) e Veja Saúde (2,9) — brasileiras de baixo rendimento. Entram três fontes
+# científicas de acesso aberto (CC BY) e alcance mundial; servem de «estudo» para o official_only.
+- name: Eurosurveillance (ECDC)
+  url: https://www.eurosurveillance.org/rss/content/eurosurveillance/latestarticles?fmt=rss
+  tier: academico
+  lang: en
+  notes: 'revista do ECDC, CC BY desde 2016; vigilância de doenças infecciosas na Europa e no mundo; citar o estudo e dizer a jurisdição'
+- name: PLOS Global Public Health
+  url: https://journals.plos.org/globalpublichealth/feed/atom
+  tier: academico
+  lang: en
+  notes: 'artigos científicos (CC BY), saúde pública mundial: citar o estudo e não extrapolar conclusões clínicas'
+- name: PLOS Neglected Tropical Diseases
+  url: https://journals.plos.org/plosntds/feed/atom
+  tier: academico
+  lang: en
+  notes: 'artigos científicos (CC BY), doenças tropicais negligenciadas pelo mundo: citar o estudo e não extrapolar conclusões clínicas'
