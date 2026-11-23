@@ -171,3 +171,21 @@ def test_rota_exige_bearer_chave_e_token_configurado(pt, client, monkeypatch):
     monkeypatch.setattr(settings, "pauta_webhook_token", "")
     assert client.post("/api/pauta/brevo-inbound", json=body, headers=ok).status_code == 503
     assert len(queued) == 1
+
+
+def test_conta_por_onde_a_chave_chegou(pt, client, monkeypatch):
+    """R61: a chave sai do endereço (`?k=`, gravado nos logs de acesso) para o cabeçalho; o
+    motor conta cada caminho para se saber quando o Brevo já manda o cabeçalho."""
+    from app.core.cache import get_daily
+
+    monkeypatch.setattr(pauta, "enqueue_ingest", lambda **kw: None)
+    ok = {"Authorization": f"Bearer {TOKEN}"}
+    body = {"key": "pauta-secreto", "sender": SENDER, "subject": "s", "html": HTML}
+    for via in ("header", "header", "query", None):
+        sent = {**body, "key_via": via} if via else body
+        assert client.post("/api/pauta/brevo-inbound", json=sent, headers=ok).status_code == 200
+    assert (get_daily("pauta_key_via:header"), get_daily("pauta_key_via:query"),
+            get_daily("pauta_key_via:unknown")) == (2, 1, 1)
+    assert (get_daily("pauta_key_match:current"), get_daily("pauta_key_match:previous")) == (4, 0)
+    bad = client.post("/api/pauta/brevo-inbound", json={**body, "key_via": "url"}, headers=ok)
+    assert bad.status_code == 422

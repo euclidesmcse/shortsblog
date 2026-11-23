@@ -13,13 +13,19 @@ robots.txt) e o modelo continua sem ferramentas. Regras que não se negociam:
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
 import httpx
+import redis
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.core import cache
 from app.core.config import settings
+from app.core.localtime import local_zone
 from app.core.logging import get_logger
 from app.services import discovery, terms, vault
 from app.services.ai import chain
@@ -176,6 +182,46 @@ def _ask(client: httpx.Client, query: str, *, category: str, time_range: str,
     return urls
 
 
+_CAPPED_AT = "sb:searxng:capped_at:"
+
+
+def _mark_capped() -> None:
+    """Guarda a hora em que a fila normal bateu no teto do dia (a 1.ª vez), para o resumo."""
+    with contextlib.suppress(redis.RedisError):
+        cache.redis_client.set(f"{_CAPPED_AT}{date.today().isoformat()}",
+                               datetime.now(local_zone()).strftime("%H:%M"),
+                               nx=True, ex=172_800)
+
+
+def usage(db: Session, local_date: date) -> dict[str, Any]:
+    """As buscas do dia para o resumo: consultas gastas, teto, reserva do resgate, hora em
+    que a fila normal bateu no teto e os jobs cujas pautas ficaram sem busca por isso."""
+    stamp = local_date.isoformat()
+    try:
+        used = int(cache.redis_client.get(f"counter:searxng_queries:{stamp}") or 0)
+        capped_at = cache.redis_client.get(f"{_CAPPED_AT}{stamp}")
+    except redis.RedisError:
+        used, capped_at = 0, None
+    cap = vault.limit("searxng_daily_cap")
+    start = datetime.combine(local_date, time(0), tzinfo=local_zone())
+    rows = db.execute(text("""
+        SELECT e.job_id, j.site_key, count(*) AS ideas
+          FROM publication_events e JOIN publication_jobs j ON j.id = e.job_id
+         WHERE e.event_type = 'search_reinforcement'
+           AND e.timestamp_utc >= :start AND e.timestamp_utc < :end
+           AND (e.details->>'capped')::boolean AND NOT (e.details->>'job_capped')::boolean
+           AND (e.details->>'queries')::int = 0
+         GROUP BY e.job_id, j.site_key ORDER BY e.job_id"""),
+        {"start": start, "end": start + timedelta(days=1)}).mappings().all()
+    return {"used": used, "cap": cap, "reserve": rescue_reserve(cap),
+            "capped_at": str(capped_at) if capped_at else "", "jobs": [dict(r) for r in rows]}
+
+
+def rescue_reserve(daily: int) -> int:
+    """Consultas do teto do dia que só o resgate gasta: `searxng_rescue_reserve`, no máximo 1/4."""
+    return max(0, min(settings.searxng_rescue_reserve, daily // 4))
+
+
 def _spend(job_id: int | None = None, pocket: str = "") -> str:
     """Gasta uma consulta dos tetos diários. Devolve `""` se gastou, ou o teto que travou.
 
@@ -186,9 +232,17 @@ def _spend(job_id: int | None = None, pocket: str = "") -> str:
     fontes e chega exatamente quando o job já gastou o bolso normal na fila inteira —
     sem bolso próprio ela morria `job_capped` com 0 consultas (10/11: requeue do 240).
     O teto do dia vale para todos os bolsos; o resgate é 1 por job, logo o custo extra
-    fica limitado a mais um `searxng_job_cap`.
+    fica limitado a mais um `searxng_job_cap`. O bolso `rescue` também tem as últimas
+    `rescue_reserve` consultas do dia só para ele (23/11).
     """
-    if cache.get_daily("searxng_queries") >= vault.limit("searxng_daily_cap"):
+    used, daily = cache.get_daily("searxng_queries"), vault.limit("searxng_daily_cap")
+    if used >= daily:
+        _mark_capped()
+        return "daily"
+    # As últimas consultas do dia ficam para o resgate (23/11, #404): ele chega quando a fila
+    # normal já falhou e nasce sem fontes, então sem busca o job bloqueia de certeza.
+    if pocket != "rescue" and used >= daily - rescue_reserve(daily):
+        _mark_capped()
         return "daily"
     job_cap = vault.limit("searxng_job_cap")
     budgeted = job_id is not None and job_cap > 0

@@ -72,6 +72,19 @@ def test_encerrar_carencia(env_token):
         assert not vault.end_grace(db, "sb_api_token", "teste")
 
 
+def test_diz_qual_token_foi_apresentado(env_token):
+    """R61: só a chave NOVA prova que o outro lado já passou ao novo e a carência pode acabar."""
+    assert vault.token_match("sb_api_token", OLD) == "current"      # do ambiente, sem troca
+    new = rotate("sb_api_token")
+    assert vault.token_match("sb_api_token", new) == "current"
+    assert vault.token_match("sb_api_token", OLD) == "previous"
+    assert vault.token_match("sb_api_token", "outro") == ""
+    assert vault.token_match("sb_api_token", "") == ""
+    with session_scope() as db:
+        vault.end_grace(db, "sb_api_token", "teste")
+    assert vault.token_match("sb_api_token", OLD) == ""
+
+
 def test_segunda_troca_mantem_so_o_imediatamente_anterior(env_token):
     first = rotate("sb_api_token")
     second = rotate("sb_api_token")

@@ -7,8 +7,10 @@
  *              o token WordPress↔motor da newsletter; quem valida o remetente, a chave do
  *              webhook e extrai os itens é o motor.
  *
- * A chave do Brevo vai no endereço (`/wp-json/sb/v1/pauta/brevo?k=…`) e quem a confere é o
- * motor (`pauta_webhook_token`). Sem `SB_NEWSLETTER_API`/`SB_NEWSLETTER_TOKEN`, a rota
+ * A chave do Brevo vai no cabeçalho `X-SB-Pauta-Key` (R61: no endereço, `?k=…`, ficava em
+ * claro nos logs de acesso) e quem a confere é o motor (`pauta_webhook_token`). O `?k=` ainda
+ * vale durante a troca; o motor conta por onde a chave chegou (`key_via`) para se saber
+ * quando já se pode tirá-lo do endereço do webhook. Sem `SB_NEWSLETTER_API`/`SB_NEWSLETTER_TOKEN`, a rota
  * responde 503 e o Brevo tenta de novo. E-mail é entrada não confiável: nada daqui vira
  * instrução; o conteúdo segue ao motor como dado, truncado.
  */
@@ -43,6 +45,17 @@ function sb_pauta_auth_headers(array $item): array
     return $out;
 }
 
+/** A chave do webhook: cabeçalho primeiro (R61), endereço só durante a troca. */
+function sb_pauta_key(WP_REST_Request $request): array
+{
+    $header = trim((string) $request->get_header('x_sb_pauta_key'));
+    if ($header !== '') {
+        return [substr($header, 0, 200), 'header'];
+    }
+    $query = (string) $request->get_param('k');
+    return [substr($query, 0, 200), $query !== '' ? 'query' : ''];
+}
+
 add_action('rest_api_init', static function (): void {
     register_rest_route('sb/v1', '/pauta/brevo', [
         'methods' => 'POST',
@@ -54,6 +67,7 @@ add_action('rest_api_init', static function (): void {
             $payload = $request->get_json_params();
             $items = is_array($payload['items'] ?? null) ? $payload['items']
                 : (is_array($payload['Items'] ?? null) ? $payload['Items'] : []);
+            [$key, $via] = sb_pauta_key($request);
             $done = 0;
             foreach (array_slice($items, 0, 10) as $item) {
                 if (!is_array($item)) {
@@ -62,7 +76,8 @@ add_action('rest_api_init', static function (): void {
                 $from = $item['From'] ?? [];
                 $sender = is_array($from) ? (string) ($from['Address'] ?? '') : (string) $from;
                 $result = sb_pauta_call('brevo-inbound', [
-                    'key' => substr((string) $request->get_param('k'), 0, 200),
+                    'key' => $key,
+                    'key_via' => $via,
                     'sender' => substr($sender, 0, 320),
                     'subject' => substr((string) ($item['Subject'] ?? ''), 0, 500),
                     'html' => substr((string) ($item['RawHtmlBody'] ?? ''), 0, 1000000),

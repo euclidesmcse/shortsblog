@@ -347,3 +347,33 @@ def test_lote_marca_o_que_chega_depois_do_dia(blog, monkeypatch):
     digests.approval_batch(datetime.now(UTC),
                            lambda to, name, subject, html: sent.append(html) or "ref")
     assert "<b>atrasado</b>" in sent[0] and "20/11" in sent[0]
+
+
+def test_lote_diz_ate_quando_a_reserva_cobre_o_job_que_nao_sai(blog, monkeypatch):
+    """22/11: a reserva da Política só cobria o 386 se aprovada até 04:28 — o lote não dizia."""
+    monkeypatch.setattr(settings, "approval_notify_email", "ed@example.com")
+    monkeypatch.setattr(settings, "public_base_url", "https://painel.exemplo.test")
+    now = datetime.now(UTC)
+    failed = slot(blog, now - timedelta(hours=2))
+    advance(failed, "QUEUED", "CLAIMED", "RESEARCHING", "BLOCKED", blocked_reason="sem fontes")
+    with session_scope() as db:
+        kept = reserve.ensure(db, now)[0]
+    advance(kept, *PRODUCING)
+    sent: list[str] = []
+    digests.approval_batch(now, lambda to, name, subject, html: sent.append(html) or "ref")
+    limit = reserve.cover_deadline("BLOCKED", row(failed)["due_at_utc"])
+    when = digests._when(limit)
+    assert f"aprove até {when} para cobrir o job #{failed}" in sent[0]
+    assert f"aprovada até {when}, cobre o horário deste job" in sent[0]
+    # Passado o prazo, o lote diz que já não dá.
+    late = {**dict(row(failed)), "due_at_utc": now - timedelta(hours=30)}
+    note = digests._reserve_note(late, {blog: {"status": "AWAITING_APPROVAL", "id": kept}}, now)
+    assert "o prazo para cobrir este horário já passou" in note
+
+
+def test_prazo_de_cobertura_segue_a_expiracao():
+    due = datetime(2026, 11, 22, 7, 28, tzinfo=UTC)
+    blocked = due + timedelta(hours=settings.job_expire_hours)
+    assert reserve.cover_deadline("BLOCKED", due) == blocked
+    assert reserve.cover_deadline("QUEUED", due) == due + timedelta(
+        hours=settings.late_production_hours)

@@ -288,21 +288,28 @@ def mail_ready() -> bool:
 
 def token_matches(key: str, presented: str) -> bool:
     """O token apresentado é o atual ou, durante a carência de uma troca, o anterior."""
+    return token_match(key, presented) != ""
+
+
+def token_match(key: str, presented: str) -> str:
+    """Qual token foi apresentado: «current», «previous» (na carência de uma troca) ou "".
+    Saber qual é o que diz se o outro lado já passou ao novo (R61: o Brevo demorou a aplicar
+    a configuração nova do webhook, e só a chave nova prova que já se pode acabar a carência)."""
     current = get(key)
     if not current or not presented:
-        return False
+        return ""
     if hmac.compare_digest(presented.encode(), current.encode()):
-        return True
+        return "current"
     row = _rows().get(key)
     if not row or not row.get("previous_enc") or not row.get("previous_until"):
-        return False
+        return ""
     if row["previous_until"] <= datetime.now(UTC):
-        return False
+        return ""
     try:
         previous = decrypt(row["previous_enc"])
     except InvalidToken:
-        return False
-    return hmac.compare_digest(presented.encode(), previous.encode())
+        return ""
+    return "previous" if hmac.compare_digest(presented.encode(), previous.encode()) else ""
 
 
 def bearer_matches(key: str, authorization: str) -> bool:

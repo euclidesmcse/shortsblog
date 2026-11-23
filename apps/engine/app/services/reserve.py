@@ -186,6 +186,15 @@ def cover(db: Session, now: datetime | None = None) -> list[tuple[int, int]]:
     return done
 
 
+def cover_deadline(status: str, due: datetime) -> datetime:
+    """Até quando um slot que não vai sair ainda pode ser coberto: até a expiração dele na
+    reconciliação (`dispatcher.reconcile`) — `late_production_hours` depois do horário se nem foi
+    produzido, `job_expire_hours` nos outros casos (bloqueado, falhado, rejeitado)."""
+    hours = (settings.late_production_hours if status in ("PLANNED", "QUEUED", "RETRY_WAIT")
+             else settings.job_expire_hours)
+    return due + timedelta(hours=hours)
+
+
 def _late_for(db: Session, site_key: str, slot_date: Any, moment: datetime) -> int | None:
     """O post atrasado mais novo do blog que ainda pode cobrir este slot (dia posterior ao dele,
     dentro de `late_hold_hours`). A cota D-110 já o conta (foi escolhido e entrou na janela)."""

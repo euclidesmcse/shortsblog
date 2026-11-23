@@ -50,7 +50,7 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
     for site, status, n in db.execute(
         text(
             "SELECT site_key, status, count(*) FROM publication_jobs WHERE local_date = :d "
-            "AND NOT reserve GROUP BY 1, 2"
+            "AND NOT reserve GROUP BY 1, 2 ORDER BY 1, 2"
         ),
         {"d": day},
     ).all():
@@ -59,7 +59,7 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
         )
     for site, n in db.execute(
         text("SELECT site_key, count(*) FROM publication_jobs WHERE local_date = :d "
-             "AND NOT reserve GROUP BY 1"),
+             "AND NOT reserve GROUP BY 1 ORDER BY 1"),
         {"d": day},
     ).all():
         out.append(("sb_slots_planned_today", "Slots planeados hoje por blog", {"site": site}, n))
@@ -131,7 +131,8 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
                       lead(timestamp_utc) OVER (PARTITION BY job_id ORDER BY id) AS next_ts
                  FROM publication_events
                 WHERE event_type = 'status_changed' AND timestamp_utc > now() - interval '7 days') e
-            WHERE next_ts IS NOT NULL AND to_status = ANY(:s) GROUP BY to_status"""
+            WHERE next_ts IS NOT NULL AND to_status = ANY(:s) GROUP BY to_status
+            ORDER BY to_status"""
         ),
         {"s": [*_PRODUCING, "AWAITING_APPROVAL"]},
     ).all():
@@ -158,7 +159,7 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
     for provider, outcome, n in db.execute(
         text(
             "SELECT provider, outcome, count(*) FROM provider_usage "
-            "WHERE created_at > now() - interval '24 hours' GROUP BY 1, 2"
+            "WHERE created_at > now() - interval '24 hours' GROUP BY 1, 2 ORDER BY 1, 2"
         )
     ).all():
         out.append(
@@ -175,7 +176,8 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
             WHERE created_at > now() - interval '24 hours' GROUP BY 1
            UNION ALL
            SELECT provider, 'month', COALESCE(sum(cost_usd), 0) FROM provider_usage
-            WHERE created_at > now() - interval '30 days' GROUP BY 1"""
+            WHERE created_at > now() - interval '30 days' GROUP BY 1
+            ORDER BY 2, 1"""
         )
     ).all():
         out.append(
@@ -189,7 +191,7 @@ def samples(db: Session, now: datetime | None = None) -> list[Sample]:
     for name, enabled, status in db.execute(
         text(
             "SELECT p.name, p.enabled, COALESCE(h.status, 'unknown') FROM ai_providers p "
-            "LEFT JOIN ai_provider_health h ON h.provider_id = p.id"
+            "LEFT JOIN ai_provider_health h ON h.provider_id = p.id ORDER BY p.name"
         )
     ).all():
         out.append(

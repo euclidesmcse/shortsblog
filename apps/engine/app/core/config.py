@@ -225,6 +225,10 @@ class Settings(BaseSettings):
     # Orçamento por job (4/11): um job sozinho não pode esgotar o teto do dia — o requeue do
     # 174 gastou as 60 consultas em 10 min e todos os jobs de 5/11 rodaram `capped`. 0 desliga.
     searxng_job_cap: int = 20             # consultas por job por dia
+    # Parte do teto do dia guardada para a pauta de resgate/reserva (23/11: o teto acabou às
+    # 17:33 no 5.º blog; o requeue da #404 e as 5 pautas de resgate rodaram com 0 consultas e
+    # o job bloqueou). Limitada a 1/4 do teto, para não matar a fila normal com tetos baixos.
+    searxng_rescue_reserve: int = 15
     searxng_cache_hours: int = 6
     searxng_max_results: int = 8          # ligações de reforço por ideia
     recipe_search_results: int = 12       # modo receita: mais candidatas (muitas não têm receita)

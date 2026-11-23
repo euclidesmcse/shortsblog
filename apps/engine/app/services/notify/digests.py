@@ -26,6 +26,7 @@ from app.services import (
     read_failures,
     reserve,
     vault,
+    websearch,
     wp_updates,
 )
 from app.services.notify import mail
@@ -76,7 +77,7 @@ def _missing_jobs(db: Session, today: Any) -> list[dict[str, Any]]:
     A reserva guardada (D-115) não é slot: os problemas dela não entram aqui.
     """
     return [dict(r) for r in db.execute(
-        text("""SELECT j.id, j.site_key, j.status, j.local_date, j.blocked_reason,
+        text("""SELECT j.id, j.site_key, j.status, j.local_date, j.blocked_reason, j.due_at_utc,
                        (SELECT title FROM job_translations t
                          WHERE t.job_id = j.id AND t.language = 'pt-BR') AS title
                   FROM publication_jobs j JOIN sites s ON s.site_key = j.site_key
@@ -170,15 +171,32 @@ def _covered(row: dict[str, Any]) -> bool:
     return reserve.is_covered(row.get("blocked_reason"))
 
 
-def _reserve_note(site_key: str, reserves: dict[str, dict[str, Any]]) -> str:
+def _when(moment: datetime) -> str:
+    return moment.astimezone(local_zone()).strftime("%d/%m %H:%M")
+
+
+def _deadline(row: dict[str, Any], now: datetime) -> datetime | None:
+    """Prazo para a reserva cobrir este job (None: já não dá, ou o job não tem horário)."""
+    if not row.get("due_at_utc") or row["status"] == "EXPIRED":
+        return None
+    limit = reserve.cover_deadline(row["status"], row["due_at_utc"])
+    return limit if limit > now else None
+
+
+def _reserve_note(row: dict[str, Any], reserves: dict[str, dict[str, Any]],
+                  now: datetime | None = None) -> str:
     """O que acontece com o horário deste blog se o job não sair (D-115)."""
-    ready = reserves.get(site_key)
+    ready = reserves.get(row["site_key"])
     if ready and ready["status"] == "APPROVED":
         return ("Se não sair a tempo, a reserva aprovada "
                 f"«{_one_line(ready['title'] or '')}» publica no horário.")
     if ready and ready["status"] == "AWAITING_APPROVAL":
+        limit = _deadline(row, now or datetime.now(UTC))
+        if limit is None:
+            return (f"A reserva deste blog (job #{ready['id']}) está à espera da sua aprovação, "
+                    "mas o prazo para cobrir este horário já passou.")
         return (f"A reserva deste blog (job #{ready['id']}) está à espera da sua aprovação "
-                "neste lote: aprovada, cobre o horário se este job não sair.")
+                f"neste lote: aprovada até {_when(limit)}, cobre o horário deste job.")
     if ready:
         return "A reserva deste blog ainda está a ser produzida."
     return "Este blog ainda não tem reserva."
@@ -197,6 +215,13 @@ def _approval_html(items: list[tuple[dict[str, Any], str, str]], base: str,
         ]
     else:
         parts.append('<h2 style="margin:0 0 4px">Nenhum artigo à espera neste lote</h2>')
+    # Reserva à espera que pode cobrir um job que não vai sair: o prazo vai junto dela.
+    moment = datetime.now(UTC)
+    covers: dict[str, tuple[int, datetime]] = {}
+    for gone in missing or []:
+        limit = None if _covered(gone) else _deadline(gone, moment)
+        if limit and (gone["site_key"] not in covers or limit < covers[gone["site_key"]][1]):
+            covers[gone["site_key"]] = (int(gone["id"]), limit)
     site = None
     for row, approve, reject in items:
         if row["site_key"] != site:
@@ -207,6 +232,10 @@ def _approval_html(items: list[tuple[dict[str, Any], str, str]], base: str,
         score = (row["review_report"] or {}).get("score")
         kind = (" · <b>reserva</b>: artigo atemporal guardado para o dia em que o post do blog "
                 "não sair (D-115)" if row.get("reserve") else "")
+        cover = covers.get(row["site_key"]) if row.get("reserve") else None
+        if cover:
+            kind += (f' · <b style="color:#9a3412">aprove até {_esc(_when(cover[1]))} para cobrir '
+                     f"o job #{cover[0]}</b>, que não vai sair")
         if row.get("late"):
             kind = (f" · <b>atrasado</b>: o dia dele ({row['local_date']:%d/%m}) já passou; "
                     "aprovado, não sai junto com o de hoje: só cobre um horário que falhar")
@@ -234,7 +263,7 @@ def _approval_html(items: list[tuple[dict[str, Any], str, str]], base: str,
                  else _GONE.get(row["status"], row["status"]))
         note = "" if covered else (
             f'<div style="color:#365;font-size:13px;margin-top:4px">'
-            f"{_esc(_reserve_note(row['site_key'], reserves or {}))}</div>")
+            f"{_esc(_reserve_note(row, reserves or {}))}</div>")
         parts.append(
             f'<div style="margin:0 0 8px;padding:10px 12px;border:1px solid '
             f'{"#cfe3d4" if covered else "#f0c9c9"};'
@@ -308,6 +337,8 @@ def build_digest(db: Session, local_date: Any) -> dict[str, Any]:
         "wp_updates": wp_updates.summary(db),
         "feeds": feed_health.summary(db),
         "read_failures": read_failures.summary(),
+        "read_by_design": read_failures.by_design(),
+        "search": websearch.usage(db, local_date),
     }
 
 
@@ -382,8 +413,20 @@ _READ_ERRORS = {**_FEED_ERRORS, "ai_disallowed": "robots.txt proíbe robôs de I
                 "http_202": "202 (desafio anti-robô)", "http_404": "404", "http_429": "429"}
 
 
-def _read_failures_html(rows: list[dict[str, Any]] | None) -> list[str]:
-    """Sítios cujas páginas-fonte mais falham na leitura (read_failures, últimos 7 dias)."""
+def _read_failures_html(rows: list[dict[str, Any]] | None,
+                        by_design: list[tuple[str, int]] | None = None) -> list[str]:
+    """Sítios cujas páginas-fonte mais falham na leitura (read_failures, últimos 7 dias).
+    Os recusados de propósito (robots.txt contra IA) vão numa linha só, informativa."""
+    parts = _read_failures_alert(rows)
+    if by_design:
+        listed = ", ".join(f"{_esc(site)} ×{n}" for site, n in by_design[:8])
+        parts.append('<p style="color:#667;font-size:13px;margin:6px 0 0">Só pauta, como '
+                     "previsto (o robots.txt proíbe robôs de IA; nada a fazer): "
+                     f"{listed}.</p>")
+    return parts
+
+
+def _read_failures_alert(rows: list[dict[str, Any]] | None) -> list[str]:
     if not rows:
         return []
     parts = ['<h3 style="margin:22px 0 4px">Sítios que não se deixam ler</h3>',
@@ -397,6 +440,25 @@ def _read_failures_html(rows: list[dict[str, Any]] | None) -> list[str]:
                      f'<span style="color:#667">({_esc(why)})</span></li>')
     parts.append("</ul>")
     return parts
+
+
+def _search_html(info: dict[str, Any] | None) -> list[str]:
+    """Buscas na web do dia contra o teto (23/11: o teto de 60 acabava no 5.º blog)."""
+    if not info or not info.get("cap"):
+        return []
+    line = (f"{info['used']} de {info['cap']} consultas "
+            f"(as últimas {info['reserve']} ficam para o resgate).")
+    warn = info.get("capped_at") or info.get("jobs")
+    if info.get("capped_at"):
+        line += f" A fila normal chegou ao teto às {_esc(info['capped_at'])}."
+    if info.get("jobs"):
+        jobs = ", ".join(f"#{j['job_id']} ({_esc(j['site_key'])}, {j['ideas']} pauta(s))"
+                         for j in info["jobs"][:10])
+        line += f" Ficaram sem busca: {jobs}."
+    color = "#8a5a00" if warn else "#667"
+    return ['<h3 style="margin:22px 0 4px">Buscas na web</h3>',
+            f'<p style="color:{color};font-size:14px;margin:0">{"⚠️ " if warn else ""}'
+            f"{line}</p>"]
 
 
 def _digest_html(data: dict[str, Any]) -> str:
@@ -455,7 +517,8 @@ def _digest_html(data: dict[str, Any]) -> str:
         parts.append("</ul>")
     parts += _updates_html(data.get("wp_updates"))
     parts += _feeds_html(data.get("feeds"))
-    parts += _read_failures_html(data.get("read_failures"))
+    parts += _search_html(data.get("search"))
+    parts += _read_failures_html(data.get("read_failures"), data.get("read_by_design"))
     parts.append("</div>")
     return "".join(parts)
 

@@ -54,3 +54,23 @@ def test_a_pesquisa_regista_falhas_e_leituras_certas(monkeypatch):
     assert rows["bloqueado.test"]["kinds"] == {"http_403": 1}
     assert rows["vazio.test"]["kinds"] == {"no_text": 1}
     assert "bom.test" not in rows
+
+
+def test_recusa_pelo_robots_de_ia_nao_entra_no_alerta_e_vira_linha_informativa(monkeypatch):
+    """23/11: a dw.com aparecia toda semana no alerta, mas o robots.txt dela proíbe robôs de IA
+    e o feed é só pauta de propósito (D-070) — não há nada a corrigir."""
+    monkeypatch.setattr(settings, "read_fail_alert_min", 3)
+    for _ in range(7):
+        read_failures.failed("dw.com", "ai_disallowed", NOW)
+    for _ in range(3):
+        read_failures.failed("un.org", "no_text", NOW)
+    read_failures.failed("un.org", "ai_disallowed", NOW)
+    rows = read_failures.summary(NOW)
+    assert rows == [{"site": "un.org", "fails": 3, "ok": 0, "kinds": {"no_text": 3}}]
+    designed = read_failures.by_design(NOW)
+    assert designed == [("dw.com", 7), ("un.org", 1)]
+    html = "".join(digests._read_failures_html(rows, designed))
+    assert "Sítios que não se deixam ler" in html and "un.org" in html
+    assert "Só pauta, como previsto" in html and "dw.com ×7" in html
+    only = "".join(digests._read_failures_html([], designed))
+    assert "Sítios que não se deixam ler" not in only and "dw.com ×7" in only

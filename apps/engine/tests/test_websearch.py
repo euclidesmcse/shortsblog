@@ -1,6 +1,7 @@
 """Reforço de pesquisa por busca na web (D-063, E14.5b): só ligações, teto, cache, sem bloquear."""
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import httpx
@@ -277,3 +278,66 @@ def test_official_only_continua_consultando_ate_ter_oficiais(searx):
     assert links == ["https://www.saude.gov.br/n", "https://who.int/y", "https://cdc.gov/z"]
     # As rodadas de notícia correram (antes a busca parava na 1.ª rodada geral).
     assert [r["categories"] for r in searx.requests] == ["general", "general", "news"]
+
+
+def test_ultimas_consultas_do_dia_ficam_para_o_resgate(searx, monkeypatch):
+    """23/11, #404: o teto de 60 acabou às 17:33 no 5.º blog; no requeue as 5 pautas de resgate
+    rodaram com 0 consultas e o job bloqueou. As últimas consultas do dia são só do resgate."""
+    monkeypatch.setattr(settings, "searxng_daily_cap", 40)
+    monkeypatch.setattr(settings, "searxng_rescue_reserve", 15)
+    assert websearch.rescue_reserve(40) == 10            # no máximo 1/4 do teto
+    assert websearch.rescue_reserve(120) == 15
+    assert websearch.rescue_reserve(0) == 0
+    cache.incr_daily("searxng_queries", 30)              # 30 de 40: a fila normal já não busca
+    normal: dict = {}
+    assert websearch.search("Notícia comum sem fontes", site=SITE, stats=normal) == []
+    assert normal["capped"] is True and normal["queries"] == 0
+    rescue: dict = {}
+    websearch.search("Separação de poderes: como funciona", site=SITE, stats=rescue,
+                     job_id=404, pocket="rescue")
+    assert rescue["capped"] is False and rescue["queries"] > 0
+    cache.incr_daily("searxng_queries", 40)              # o teto vale também para o resgate
+    late: dict = {}
+    websearch.search("Outro tema de resgate", site=SITE, stats=late, job_id=404, pocket="rescue")
+    assert late["capped"] is True and late["queries"] == 0
+
+
+def test_resumo_das_buscas_do_dia(searx, monkeypatch):
+    from datetime import date
+
+    from sqlalchemy import text
+
+    from app.core.db import session_scope
+    from app.services import sites
+    from app.services.notify import digests
+
+    monkeypatch.setattr(settings, "searxng_daily_cap", 60)
+    today = date.today()
+    with session_scope() as db:
+        sites.sync(db)
+        job = db.execute(text(
+            """INSERT INTO publication_jobs
+                 (site_key, local_date, slot_number, due_at_utc, produce_after_utc, status)
+               VALUES ('politica', :d, 1, now(), now(), 'BLOCKED') RETURNING id"""),
+            {"d": today}).scalar_one()
+        for capped, job_capped, queries in ((True, False, 0), (True, False, 0),
+                                            (True, True, 0), (False, False, 3)):
+            db.execute(text(
+                "INSERT INTO publication_events (job_id, event_type, details) "
+                "VALUES (:j, 'search_reinforcement', CAST(:d AS jsonb))"),
+                {"j": job, "d": json.dumps({"capped": capped, "job_capped": job_capped,
+                                            "queries": queries})})
+    cache.incr_daily("searxng_queries", 45)
+    websearch.search("Notícia que já não cabe", site=SITE)   # 45 ≥ 60 − 15: marca a hora
+    with session_scope() as db:
+        info = websearch.usage(db, today)
+    assert info["used"] == 45 and info["cap"] == 60 and info["reserve"] == 15
+    assert len(info["capped_at"]) == 5                        # HH:MM
+    assert info["jobs"] == [{"job_id": job, "site_key": "politica", "ideas": 2}]
+    html = "".join(digests._search_html(info))
+    assert "45 de 60 consultas" in html and "chegou ao teto" in html
+    assert f"#{job} (politica, 2 pauta(s))" in html
+    quiet = "".join(digests._search_html({"used": 10, "cap": 60, "reserve": 15,
+                                          "capped_at": "", "jobs": []}))
+    assert "⚠️" not in quiet and "10 de 60" in quiet
+    assert digests._search_html({"used": 0, "cap": 0, "reserve": 0, "jobs": []}) == []
