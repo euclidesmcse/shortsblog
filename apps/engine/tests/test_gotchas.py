@@ -50,7 +50,8 @@ def test_gotcha1_migracoes_reais_aplicam_em_base_vazia(fresh_database):
                                "018_newsletter_covers.sql", "019_rescue_origin.sql",
                                "020_users.sql", "021_idea_timeless.sql",
                                "022_system_secrets.sql", "023_idea_country.sql",
-                               "024_drop_legacy_pipeline.sql", "025_reserve_posts.sql"]
+                               "024_drop_legacy_pipeline.sql", "025_reserve_posts.sql",
+                               "026_feed_capped.sql"]
     with fresh_database.connect() as conn:
         # JSON com ':' do seed chegou intacto (não foi lido como bind).
         value = conn.execute(text("SELECT value FROM settings "

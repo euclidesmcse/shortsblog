@@ -33,11 +33,6 @@ feeds:
   tier: oficial
   lang: en
   notes: até ~50 discursos/dia de BCs do mundo todo; volume alto (feed_max_items limita)
-- name: BIS — Estatísticas
-  url: https://www.bis.org/doclist/all_statistics.rss
-  domain: www.bis.org
-  tier: oficial
-  lang: en
 - name: CFPB — Recent updates
   url: https://www.consumerfinance.gov/activity-log/feed/
   domain: www.consumerfinance.gov
@@ -45,11 +40,6 @@ feeds:
   lang: en
   notes: proteção ao consumidor financeiro dos EUA; bom fit com Finanças Pessoais; feed geral do CFPB
     (comunicados, relatórios, normas) no lugar do Newsroom, parado desde 14/10 (23/11)
-- name: Câmara — Economia
-  url: https://www.camara.leg.br/noticias/rss/dinamico/ECONOMIA
-  domain: www.camara.leg.br
-  tier: oficial
-  lang: pt
 - name: EBA — News
   url: https://www.eba.europa.eu/rss.xml
   domain: www.eba.europa.eu
@@ -98,17 +88,13 @@ feeds:
   domain: libertystreeteconomics.newyorkfed.org
   tier: oficial
   lang: en
-- name: OMC — Latest news
-  url: https://www.wto.org/library/rss/latest_news_e.xml
-  domain: www.wto.org
+- name: OECD — Ecoscope (blog dos economistas)
+  url: https://oecdecoscope.blog/feed/
+  domain: oecdecoscope.blog
   tier: oficial
   lang: en
-- name: RBA — Media releases
-  url: https://www.rba.gov.au/rss/rss-cb-media-releases.xml
-  domain: www.rba.gov.au
-  tier: oficial
-  lang: en
-  notes: 'autoridade estrangeira: dizer sempre a jurisdição; feed curto (1 item em 29/10)'
+  notes: 'blog dos economistas da OCDE: opinião dos autores, não posição da OCDE; termos da OCDE (reuso
+    comercial com citação; CC BY 4.0 desde 7/2024)'
 - name: SEC — Press Releases
   url: https://www.sec.gov/news/pressreleases.rss
   domain: www.sec.gov
@@ -127,12 +113,6 @@ feeds:
   tier: agencia
   lang: pt
   notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
-- name: Agência Brasil — Geral
-  url: https://agenciabrasil.ebc.com.br/rss/geral/feed.xml
-  domain: agenciabrasil.ebc.com.br
-  tier: agencia
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: Agência Brasil — Internacional
   url: https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml
   domain: agenciabrasil.ebc.com.br
@@ -211,13 +191,6 @@ feeds:
   tier: veiculo
   lang: en
   notes: blog pessoal de finanças (dados/comportamento); fit com «Finanças Pessoais»
-- name: Outras Palavras
-  url: https://outraspalavras.net/feed/
-  domain: outraspalavras.net
-  tier: veiculo
-  lang: pt
-  notes: CC; viés editorial forte (aceito pelo Euclides em 29/10); só pauta na prática (robots bloqueia
-    robôs de IA)
 - name: Seu Dinheiro
   url: https://www.seudinheiro.com/feed/
   domain: www.seudinheiro.com
@@ -234,18 +207,6 @@ feeds:
   tier: fornecedor
   lang: en
   notes: licença MIT; relatórios técnicos semanais
-- name: Ethereum Foundation — Blog
-  url: https://blog.ethereum.org/en/feed.xml
-  domain: blog.ethereum.org
-  tier: fornecedor
-  lang: en
-  notes: anúncios do próprio protocolo; cabe na editoria «Investimentos»
-- name: arXiv — econ
-  url: https://rss.arxiv.org/rss/econ
-  domain: rss.arxiv.org
-  tier: academico
-  lang: en
-  notes: papers novos por dia útil; feed pode vir vazio fora de dia de anúncio
 - name: arXiv — q-fin
   url: https://rss.arxiv.org/rss/q-fin
   domain: rss.arxiv.org
@@ -282,12 +243,6 @@ feeds:
   tier: academico
   lang: en
   notes: CC BY; dados e gráficos de alcance mundial (D-102)
-- name: ProMarket — Stigler Center
-  url: https://www.promarket.org/feed/
-  domain: www.promarket.org
-  tier: academico
-  lang: en
-  notes: Stigler Center (U. Chicago); concorrência e regulação
 - name: Tax Foundation
   url: https://taxfoundation.org/feed/
   domain: taxfoundation.org
@@ -302,18 +257,6 @@ feeds:
   notes: CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)
 - name: The Conversation — Business (global)
   url: https://theconversation.com/global/business/articles.atom
-  domain: theconversation.com
-  tier: academico
-  lang: en
-  notes: CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)
-- name: The Conversation — UK Business
-  url: https://theconversation.com/uk/business/articles.atom
-  domain: theconversation.com
-  tier: academico
-  lang: en
-  notes: CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)
-- name: The Conversation — US Economy
-  url: https://theconversation.com/us/business/articles.atom
   domain: theconversation.com
   tier: academico
   lang: en

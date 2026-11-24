@@ -182,6 +182,7 @@ feeds:
   tier: academico
   lang: en
   notes: 'agregador de comunicados de imprensa: localizar e citar o estudo original; não é fonte de corroboração'
+  fora: 'poda 3 (23/11/2026): 20 ideias, média 0,1, 0 posts'
 - name: Gazeta do Povo — Bom Gourmet
   url: https://www.gazetadopovo.com.br/feed/rss/bomgourmet.xml
   tier: veiculo
@@ -191,6 +192,7 @@ feeds:
   url: https://www.metropoles.com/gastronomia/feed
   tier: veiculo
   lang: pt
+  fora: 'poda 3 (23/11/2026): 0 ideias em 14 dias'
 - name: CNN Brasil — Viagem & Gastronomia
   url: https://www.cnnbrasil.com.br/viagemegastronomia/feed/
   tier: veiculo
@@ -243,6 +245,7 @@ feeds:
   url: https://www.loveandoliveoil.com/feed
   tier: veiculo
   lang: en
+  fora: 'poda 3 (23/11/2026): 0 ideias em 14 dias'
 - name: Receitas que Amo
   url: https://www.receitasqueamo.com.br/feed/
   tier: veiculo
@@ -284,6 +287,7 @@ feeds:
   tier: oficial
   lang: en
   notes: 'só pauta (sem-leitura fao.org): termos limitam a produtos/serviços não comerciais; dizer o organismo (FAO/ONU)'
+  fora: 'poda 3 (23/11/2026): 11 ideias, média 0,0, 0 posts'
 # 23/11/2026 (docs/reviews/E14-feeds-poda-saude-2026-11-23.md): saíram Jornal da USP (média 0,0 em
 # 106 notas), Casa Vogue (0,2), Casa e Jardim (0,5), Claudia (0,5), Veja SP — Comer & Beber (1,6) e
 # Prazeres da Mesa (1,7): só geravam descarte na triagem. Directo al Paladar (3,0) fica: gerou posts.

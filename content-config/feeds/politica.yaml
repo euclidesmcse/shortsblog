@@ -25,32 +25,6 @@ feeds:
   domain: www.camara.leg.br
   tier: oficial
   lang: pt
-- name: Câmara — Direito e Justiça
-  url: https://www.camara.leg.br/noticias/rss/dinamico/DIREITO-E-JUSTICA
-  domain: www.camara.leg.br
-  tier: oficial
-  lang: pt
-- name: Câmara — Direitos Humanos
-  url: https://www.camara.leg.br/noticias/rss/dinamico/DIREITOS-HUMANOS
-  domain: www.camara.leg.br
-  tier: oficial
-  lang: pt
-- name: Câmara — Política
-  url: https://www.camara.leg.br/noticias/rss/dinamico/POLITICA
-  domain: www.camara.leg.br
-  tier: oficial
-  lang: pt
-- name: Câmara — Relações Exteriores
-  url: https://www.camara.leg.br/noticias/rss/dinamico/RELACOES-EXTERIORES
-  domain: www.camara.leg.br
-  tier: oficial
-  lang: pt
-- name: Câmara — Últimas notícias
-  url: https://www.camara.leg.br/noticias/rss/ultimas-noticias
-  domain: www.camara.leg.br
-  tier: oficial
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: GOV.UK — News
   url: https://www.gov.uk/search/news-and-communications.atom
   domain: www.gov.uk
@@ -103,18 +77,6 @@ feeds:
   tier: agencia
   lang: pt
   notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
-- name: Agência Brasil — Justiça
-  url: https://agenciabrasil.ebc.com.br/rss/justica/feed.xml
-  domain: agenciabrasil.ebc.com.br
-  tier: agencia
-  lang: pt
-  notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
-- name: Agência Brasil — Política
-  url: https://agenciabrasil.ebc.com.br/rss/politica/feed.xml
-  domain: agenciabrasil.ebc.com.br
-  tier: agencia
-  lang: pt
-  notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
 - name: Agência Pública
   url: https://apublica.org/feed/
   domain: apublica.org
@@ -122,12 +84,6 @@ feeds:
   lang: pt
   notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou
     agência'
-- name: Aos Fatos (checagem)
-  url: https://www.aosfatos.org/noticias/feed/
-  domain: www.aosfatos.org
-  tier: veiculo
-  lang: pt
-  notes: 'checagem de factos: útil para verificar afirmações, não como fonte única de notícia'
 - name: CartaCapital — Política
   url: https://www.cartacapital.com.br/politica/feed/
   domain: www.cartacapital.com.br
@@ -135,13 +91,6 @@ feeds:
   lang: pt
   notes: 'linha editorial marcada: usar para descobrir temas; confirmar os factos em fonte oficial ou
     agência'
-- name: Congresso em Foco
-  url: https://www.congressoemfoco.com.br/feed/
-  domain: www.congressoemfoco.com.br
-  tier: veiculo
-  lang: pt
-  notes: 'host próprio desde 11/2026: o antigo congressoemfoco.uol.com.br ficou sem DNS (visto em 2 e
-    8/11)'
 - name: DW Brasil
   url: https://rss.dw.com/rdf/rss-br-all
   domain: rss.dw.com
@@ -159,16 +108,6 @@ feeds:
   tier: veiculo
   lang: en
   notes: Alemanha/Europa
-- name: Estadão — Política
-  url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/politica/
-  domain: www.estadao.com.br
-  tier: veiculo
-  lang: pt
-- name: Folha — Poder
-  url: https://feeds.folha.uol.com.br/poder/rss091.xml
-  domain: feeds.folha.uol.com.br
-  tier: veiculo
-  lang: pt
 - name: France 24 — English
   url: https://www.france24.com/en/rss
   domain: www.france24.com
@@ -219,11 +158,6 @@ feeds:
   tier: veiculo
   lang: en
   notes: América do Sul, Mercosul
-- name: Nexo Jornal
-  url: https://www.nexojornal.com.br/rss.xml
-  domain: www.nexojornal.com.br
-  tier: veiculo
-  lang: pt
 - name: Observador — Mundo
   url: https://observador.pt/seccao/mundo/feed/
   domain: observador.pt

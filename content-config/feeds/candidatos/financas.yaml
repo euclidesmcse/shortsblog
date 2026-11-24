@@ -44,6 +44,7 @@ feeds:
   url: https://www.camara.leg.br/noticias/rss/dinamico/ECONOMIA
   tier: oficial
   lang: pt
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 23 ideias, média 4,0, 0 posts'
 - name: Federal Reserve — Press Releases
   url: https://www.federalreserve.gov/feeds/press_all.xml
   tier: oficial
@@ -53,7 +54,7 @@ feeds:
   url: https://www.imf.org/en/News/RSS
   tier: oficial
   lang: en
-  fora: 'inválido em 23/11/2026: HTTP 404'
+  fora: 'sem RSS em 23/11/2026: o sítio novo do FMI dá 404 em todo endereço de RSS e o mediacenter.imf.org devolve 202 vazio (desafio anti-robô); os termos exigem permissão para cópia sistemática e proíbem treino de LLM'
 - name: BIS — Press releases
   url: https://www.bis.org/doclist/all_pressrels.rss
   tier: oficial
@@ -73,7 +74,7 @@ feeds:
   url: https://www.worldbank.org/en/news/rss.xml
   tier: oficial
   lang: en
-  fora: 'inválido em 23/11/2026: HTTP 404'
+  fora: 'sem RSS em 23/11/2026: rss.xml dá 404; a API search.worldbank.org (format=atom) devolve XML inválido (prefixo wb: sem declarar) com links http; as páginas de notícias são montadas em JS'
 - name: Agência Brasil — Economia
   url: https://agenciabrasil.ebc.com.br/rss/economia/feed.xml
   tier: agencia
@@ -136,12 +137,18 @@ feeds:
   url: https://www.oecd.org/newsroom/index.xml
   tier: oficial
   lang: en
-  fora: 'inválido em 23/11/2026: HTTP 403'
+  fora: 'sem RSS em 23/11/2026: oecd.org responde 403 a todo pedido do nosso robô (firewall; o robots.txt deixa) e não se achou feed oficial novo; a OCDE entra pelo blog Ecoscope'
+- name: OECD — Ecoscope (blog dos economistas)
+  url: https://oecdecoscope.blog/feed/
+  tier: oficial
+  lang: en
+  notes: 'blog dos economistas da OCDE: opinião dos autores, não posição da OCDE; termos da OCDE (reuso comercial com citação; CC BY 4.0 desde 7/2024)'
 - name: Agência Brasil — Geral
   url: https://agenciabrasil.ebc.com.br/rss/geral/feed.xml
   tier: agencia
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'poda 3 (23/11/2026): Brasil (D-110), generalista: 49 ideias, média 1,0, 0 posts'
 - name: Estadão — Economia
   url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/economia/
   tier: veiculo
@@ -203,6 +210,7 @@ feeds:
   url: https://www.wto.org/library/rss/latest_news_e.xml
   tier: oficial
   lang: en
+  fora: 'poda 3 (23/11/2026): 12 ideias, média 1,0, 0 posts'
 - name: EBA — News
   url: https://www.eba.europa.eu/rss.xml
   tier: oficial
@@ -242,10 +250,12 @@ feeds:
   tier: oficial
   lang: en
   notes: 'autoridade estrangeira: dizer sempre a jurisdição; feed curto (1 item em 29/10)'
+  fora: 'poda 3 (23/11/2026): 0 ideias em 14 dias'
 - name: BIS — Estatísticas
   url: https://www.bis.org/doclist/all_statistics.rss
   tier: oficial
   lang: en
+  fora: 'poda 3 (23/11/2026): 0 ideias em 14 dias (desde 29/10 sem pauta)'
 - name: The Conversation — Business (global)
   url: https://theconversation.com/global/business/articles.atom
   tier: academico
@@ -256,11 +266,13 @@ feeds:
   tier: academico
   lang: en
   notes: 'CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)'
+  fora: 'poda 3 (23/11/2026): 13 ideias, média 1,5, 0 posts'
 - name: The Conversation — UK Business
   url: https://theconversation.com/uk/business/articles.atom
   tier: academico
   lang: en
   notes: 'CC BY-ND; só pauta na prática (robots bloqueia robôs de IA)'
+  fora: 'poda 3 (23/11/2026): 11 ideias, média 1,8, 0 posts'
 - name: Global Voices — Economics
   url: https://globalvoices.org/-/topics/economics-business/feed/
   tier: veiculo
@@ -291,11 +303,13 @@ feeds:
   tier: academico
   lang: en
   notes: 'Stigler Center (U. Chicago); concorrência e regulação'
+  fora: 'poda 3 (23/11/2026): 10 ideias, média 2,0, 0 posts'
 - name: Ethereum Foundation — Blog
   url: https://blog.ethereum.org/en/feed.xml
   tier: fornecedor
   lang: en
   notes: 'anúncios do próprio protocolo; cabe na editoria «Investimentos»'
+  fora: 'poda 3 (23/11/2026): 0 ideias em 14 dias'
 - name: Bitcoin Optech
   url: https://bitcoinops.org/feed.xml
   tier: fornecedor
@@ -320,6 +334,7 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'CC; viés editorial forte (aceito pelo Euclides em 29/10); só pauta na prática (robots bloqueia robôs de IA)'
+  fora: 'poda 3 (23/11/2026), decisão do Euclides: 82 ideias em 14 dias, média 1,1, 0 posts'
 # Reteste dos transientes da triagem (30/10, «pode retestar os transientes também»):
 # arXiv q-fin/econ ok (anunciam por dia útil; o «sem itens» de 29/10 era transiente).
 # Vitalik ficou fora (post mais novo com 34 dias — reavaliar quando voltar a publicar);
@@ -334,6 +349,7 @@ feeds:
   tier: academico
   lang: en
   notes: 'papers novos por dia útil; feed pode vir vazio fora de dia de anúncio'
+  fora: 'poda 3 (23/11/2026): 256 ideias em 14 dias, média 1,0, 0 posts (enche a triagem)'
 - name: Banco do Japão — Novidades (EN)
   url: https://www.boj.or.jp/en/rss/whatsnew.xml
   tier: oficial

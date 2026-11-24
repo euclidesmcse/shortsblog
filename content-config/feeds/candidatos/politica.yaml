@@ -11,11 +11,13 @@ feeds:
   url: https://www.camara.leg.br/noticias/rss/dinamico/POLITICA
   tier: oficial
   lang: pt
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 3 ideias, média 2,0, 0 posts'
 - name: Câmara — Últimas notícias
   url: https://www.camara.leg.br/noticias/rss/ultimas-noticias
   tier: oficial
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'poda 3 (23/11/2026): Brasil (D-110), generalista: 165 ideias, média 2,3, 0 posts'
 - name: TSE — Notícias
   url: https://www.tse.jus.br/comunicacao/noticias/rss
   tier: oficial
@@ -74,11 +76,13 @@ feeds:
   tier: agencia
   lang: pt
   notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 37 ideias, média 3,3, 0 posts'
 - name: Agência Brasil — Justiça
   url: https://agenciabrasil.ebc.com.br/rss/justica/feed.xml
   tier: agencia
   lang: pt
   notes: 'agência pública de notícias: confirmar posições do governo e da oposição noutras fontes'
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 48 ideias, média 3,1, 0 posts'
 - name: Agência Brasil — Internacional
   url: https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml
   tier: agencia
@@ -88,6 +92,7 @@ feeds:
   url: https://feeds.folha.uol.com.br/poder/rss091.xml
   tier: veiculo
   lang: pt
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 339 ideias, média 3,2, 0 posts'
 - name: G1 Política
   url: https://g1.globo.com/rss/g1/politica/
   tier: veiculo
@@ -96,6 +101,7 @@ feeds:
   url: https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/politica/
   tier: veiculo
   lang: pt
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 370 ideias, média 2,9, 0 posts'
 - name: O Globo — Política
   url: https://oglobo.globo.com/rss/politica/
   tier: veiculo
@@ -125,6 +131,7 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'host próprio desde 11/2026: o antigo congressoemfoco.uol.com.br ficou sem DNS (visto em 2 e 8/11)'
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 345 ideias, média 3,3, 0 posts'
 - name: Agência Pública
   url: https://apublica.org/feed/
   tier: veiculo
@@ -134,6 +141,7 @@ feeds:
   url: https://www.nexojornal.com.br/rss.xml
   tier: veiculo
   lang: pt
+  fora: 'poda 3 (23/11/2026): Brasil (D-110), só pauta (D-113): 70 ideias, média 1,2, 0 posts'
 - name: Veja — Política
   url: https://veja.abril.com.br/politica/feed/
   tier: veiculo
@@ -149,6 +157,7 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'checagem de factos: útil para verificar afirmações, não como fonte única de notícia'
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 28 ideias, média 2,2, 0 posts'
 - name: DW Brasil
   url: https://rss.dw.com/rdf/rss-br-all
   tier: veiculo
@@ -178,14 +187,17 @@ feeds:
   url: https://www.camara.leg.br/noticias/rss/dinamico/DIREITO-E-JUSTICA
   tier: oficial
   lang: pt
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 25 ideias em 14 dias, média 3,0, 0 posts'
 - name: Câmara — Relações Exteriores
   url: https://www.camara.leg.br/noticias/rss/dinamico/RELACOES-EXTERIORES
   tier: oficial
   lang: pt
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 5 ideias, média 3,0, 0 posts'
 - name: Câmara — Direitos Humanos
   url: https://www.camara.leg.br/noticias/rss/dinamico/DIREITOS-HUMANOS
   tier: oficial
   lang: pt
+  fora: 'poda 3 (23/11/2026): Brasil (D-110): 39 ideias, média 2,5, 0 posts'
 - name: Senado — Agência Senado (áudio)
   url: https://www12.senado.leg.br/radio/feed/RSS
   tier: oficial

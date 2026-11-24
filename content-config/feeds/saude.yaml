@@ -116,12 +116,6 @@ feeds:
   tier: veiculo
   lang: en
   notes: 'agregador de comunicados de imprensa: localizar e citar o estudo original; não é fonte de corroboração'
-- name: The Conversation Brasil
-  url: https://theconversation.com/br/articles.atom
-  domain: theconversation.com
-  tier: veiculo
-  lang: pt
-  notes: 'feed generalista: filtrar por tema antes de virar ideia'
 - name: eLife — Latest
   url: https://elifesciences.org/rss/recent.xml
   domain: elifesciences.org

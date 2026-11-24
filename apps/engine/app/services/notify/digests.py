@@ -336,6 +336,8 @@ def build_digest(db: Session, local_date: Any) -> dict[str, Any]:
         "target": sum(b["target"] for b in blogs),
         "wp_updates": wp_updates.summary(db),
         "feeds": feed_health.summary(db),
+        "new_feeds": feed_health.newcomers(db),
+        "intake": feed_health.intake(db, local_date),
         "read_failures": read_failures.summary(),
         "read_by_design": read_failures.by_design(),
         "search": websearch.usage(db, local_date),
@@ -411,6 +413,45 @@ _READ_ERRORS = {**_FEED_ERRORS, "ai_disallowed": "robots.txt proíbe robôs de I
                 "not_https": "redireciona para HTTP", "content_type": "não é página nem PDF",
                 "no_text": "sem texto (paywall ou só JavaScript)", "http_403": "403 (bloqueio)",
                 "http_202": "202 (desafio anti-robô)", "http_404": "404", "http_429": "429"}
+
+
+def _intake_html(rows: list[dict[str, Any]] | None) -> list[str]:
+    """Entrada de pautas (feed_health.intake): o que os feeds trouxeram e o teto cortou."""
+    if not rows:
+        return []
+    parts = ['<h3 style="margin:22px 0 4px">Entrada de pautas</h3>',
+             '<p style="color:#667;font-size:14px;margin:0 0 4px">Ideias novas de feed no dia: '
+             f"entraram · triadas · com nota ≥ {settings.triage_min_relevance} · cortadas pelo "
+             f"teto de {settings.feed_max_ideas_day} por feed em 24 h:</p>",
+             '<ul style="margin:0;padding-left:18px;font-size:14px">']
+    for row in rows:
+        top = ", ".join(f"{_esc(name)} {n}" for name, n in row["top_capped"])
+        more = f' <span style="color:#667">({top})</span>' if top else ""
+        parts.append(f"<li><b>{_esc(row['site'])}</b> — {row['ideas']} · {row['triaged']} · "
+                     f"{row['good']} · {row['capped']}{more}</li>")
+    parts.append("</ul>")
+    return parts
+
+
+def _new_feeds_html(rows: list[dict[str, Any]] | None) -> list[str]:
+    """Fontes novas (feed_health.newcomers): o que cada feed recente já trouxe."""
+    if not rows:
+        return []
+    parts = ['<h3 style="margin:22px 0 4px">Fontes novas</h3>',
+             '<p style="color:#667;font-size:14px;margin:0 0 4px">Feeds ligados nos últimos '
+             f"{settings.feed_new_days} dias: ideias · com nota ≥ {settings.triage_min_relevance} "
+             "· nota média · pegadas · posts publicados:</p>"
+             '<ul style="margin:0;padding-left:18px;font-size:14px">']
+    for row in rows:
+        since = row["since"].astimezone(local_zone()).strftime("%d/%m")
+        average = f"{row['average']:.1f}".replace(".", ",") if row["average"] is not None else "–"
+        quiet = ' <span style="color:#9a3412">(nada ainda)</span>' if not row["ideas"] else ""
+        parts.append(f"<li><b>{_esc(row['site'])}</b> · {_esc(row['name'])} "
+                     f'<span style="color:#667">(desde {since})</span> — {row["ideas"]} · '
+                     f"{row['good']} · {average} · {row['taken']} · <b>{row['posts']}</b>"
+                     f"{quiet}</li>")
+    parts.append("</ul>")
+    return parts
 
 
 def _read_failures_html(rows: list[dict[str, Any]] | None,
@@ -517,6 +558,8 @@ def _digest_html(data: dict[str, Any]) -> str:
         parts.append("</ul>")
     parts += _updates_html(data.get("wp_updates"))
     parts += _feeds_html(data.get("feeds"))
+    parts += _intake_html(data.get("intake"))
+    parts += _new_feeds_html(data.get("new_feeds"))
     parts += _search_html(data.get("search"))
     parts += _read_failures_html(data.get("read_failures"), data.get("read_by_design"))
     parts.append("</div>")

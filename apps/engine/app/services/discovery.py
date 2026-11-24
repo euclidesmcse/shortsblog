@@ -39,6 +39,7 @@ from sqlalchemy.orm import Session
 
 from app.core import cache
 from app.core.config import settings
+from app.core.localtime import local_zone
 from app.core.logging import get_logger
 from app.services import fetcher, listing, terms
 
@@ -297,12 +298,13 @@ class DiscoveryResult:
     duplicates: int = 0          # mesma história, outra fonte (ficam como corroboração)
     known: int = 0               # ligação já vista neste blog
     skipped: int = 0             # sem data/ligação utilizável, ou antigos
+    capped: int = 0              # deixados de fora pelo teto diário do feed
     errors: dict[str, str] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         return {"sources": self.sources, "failed": self.failed, "new": self.new,
                 "duplicates": self.duplicates, "known": self.known, "skipped": self.skipped,
-                "errors": self.errors}
+                "capped": self.capped, "errors": self.errors}
 
 
 def _entry_date(entry: Any) -> datetime | None:
@@ -420,6 +422,19 @@ def _newest_first(items: list[tuple[str, str, datetime | None]]
     return sorted(items, key=lambda item: item[2] or floor, reverse=True)
 
 
+def _idea_budget(db: Session, source_id: int, moment: datetime) -> int | None:
+    """Quantas ideias novas o feed ainda pode trazer (`feed_max_ideas_day` em 24 h móveis);
+    None = sem teto. Só contam as primárias: as repetidas (corroboração) não vão à triagem."""
+    if settings.feed_max_ideas_day <= 0:
+        return None
+    used = db.execute(
+        text("""SELECT count(*) FROM ideas WHERE source_id = :i AND duplicate_of IS NULL
+                   AND created_at >= :since"""),
+        {"i": source_id, "since": moment - timedelta(hours=24)},
+    ).scalar_one()
+    return settings.feed_max_ideas_day - int(used)
+
+
 def discover_site(db: Session, site_key: str, now: datetime | None = None) -> DiscoveryResult:
     """Lê os feeds (e as páginas de notícias) de um blog e guarda as recentes como ideias."""
     moment = now or datetime.now(UTC)
@@ -445,6 +460,8 @@ def discover_site(db: Session, site_key: str, now: datetime | None = None) -> Di
                        {"n": moment, "st": exc.kind, "i": source_id})
             continue
         items = _newest_first(_page_items(page) if is_page else _feed_items(page.body))
+        budget = _idea_budget(db, source_id, moment)
+        capped_before = result.capped
         stored = 0
         for raw_title, raw_link, date in items[: settings.feed_max_items]:
             title = re.sub(r"\s+", " ", raw_title).strip()
@@ -453,11 +470,24 @@ def discover_site(db: Session, site_key: str, now: datetime | None = None) -> Di
             if not title or not link or not in_window:
                 result.skipped += 1
                 continue
+            if budget is not None and budget <= 0:
+                # Teto gasto: o que já está no blog conta como visto; o resto fica de fora.
+                seen = db.execute(text("SELECT 1 FROM ideas WHERE site_key = :s "
+                                       "AND canonical_url = :u"),
+                                  {"s": site_key, "u": link}).first()
+                if seen:
+                    result.known += 1
+                    stored += 1
+                else:
+                    result.capped += 1
+                continue
             outcome, _ = store_idea(db, site_key=site_key, origin="rss", topic=title, url=link,
                                     published_at=date, source_id=source_id, now=moment)
             stored += 1
             if outcome == "new":
                 result.new += 1
+                if budget is not None:
+                    budget -= 1
             elif outcome == "duplicate":
                 result.duplicates += 1
             else:
@@ -465,6 +495,13 @@ def discover_site(db: Session, site_key: str, now: datetime | None = None) -> Di
         db.execute(text("""UPDATE sources SET last_checked_at = :n, last_status = 'ok',
                                   fail_count = 0, last_items = :c WHERE id = :i"""),
                    {"n": moment, "c": stored, "i": source_id})
+        if result.capped > capped_before:
+            db.execute(text("""INSERT INTO feed_capped (local_date, source_id, ideas)
+                               VALUES (:d, :i, :c)
+                               ON CONFLICT (local_date, source_id)
+                               DO UPDATE SET ideas = feed_capped.ideas + EXCLUDED.ideas"""),
+                       {"d": moment.astimezone(local_zone()).date(), "i": source_id,
+                        "c": result.capped - capped_before})
     return result
 
 

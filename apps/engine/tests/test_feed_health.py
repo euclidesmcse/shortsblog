@@ -57,3 +57,72 @@ def test_erro_seguido_e_fonte_calada_aparecem_e_o_resto_nao():
     assert "Fontes paradas" in html and "erro HTTP, 504 leituras seguidas (~21 dias)" in html
     assert "Feed abandonado (30 dias)" in html and "nunca trouxe pauta" in html
     assert digests._feeds_html({"failing": [], "silent": []}) == []
+
+
+def test_fontes_novas_mostram_o_que_ja_trouxeram():
+    """23/11: a próxima poda sai dos números das fontes recentes, não de consulta à mão."""
+    with session_scope() as db:
+        sites.sync(db)
+        db.execute(text("UPDATE sites SET enabled = (site_key = 'saude')"))
+        db.execute(text("DELETE FROM sources"))
+    old = _source("Fonte antiga", age_days=60)
+    _idea(old, 1, "Notícia de uma fonte que não é nova")
+    fresh = _source("PLOS Global Public Health", age_days=3)
+    _idea(fresh, 1, "Estudo mundial sobre resistência a antibióticos em hospitais")
+    _idea(fresh, 2, "Relatório compara vacinação infantil em cinquenta países")
+    _source("Sem nada ainda", age_days=1)
+    _source("Outro blog", age_days=2, site="politica")                   # blog desligado
+    with session_scope() as db:
+        db.execute(text("UPDATE ideas SET relevance = CASE WHEN topic LIKE 'Estudo%' THEN 8 "
+                        "ELSE 3 END, status = CASE WHEN topic LIKE 'Estudo%' THEN 'used' "
+                        "ELSE status END"))
+        idea = db.execute(text("SELECT id FROM ideas WHERE topic LIKE 'Estudo%'")).scalar_one()
+        db.execute(text("""INSERT INTO publication_jobs (site_key, local_date, slot_number,
+                                                         due_at_utc, produce_after_utc,
+                                                         status, idea_id)
+                           VALUES ('saude', :d, 1, :n, :n, 'PUBLISHED_CONFIRMED', :i)"""),
+                   {"d": NOW.date(), "n": NOW, "i": idea})
+        rows = feed_health.newcomers(db, NOW)
+    assert [(r["name"], r["ideas"], r["good"], r["average"], r["taken"], r["posts"])
+            for r in rows] == [("PLOS Global Public Health", 2, 1, 5.5, 1, 1),
+                               ("Sem nada ainda", 0, 0, None, 0, 0)]
+    html = "".join(digests._new_feeds_html(rows))
+    assert "Fontes novas" in html and "PLOS Global Public Health" in html
+    assert "2 · 1 · 5,5 · 1 · <b>1</b>" in html and "(nada ainda)" in html
+    assert digests._new_feeds_html([]) == []
+
+
+def test_entrada_de_pautas_do_dia_com_o_que_o_teto_cortou():
+    """24/11 (D-118): a medição do teto sai no resumo, sem consulta à mão."""
+    with session_scope() as db:
+        sites.sync(db)
+        db.execute(text("UPDATE sites SET enabled = site_key IN ('saude', 'cloud')"))
+        db.execute(text("DELETE FROM sources"))
+    big = _source("Medical Xpress")
+    small = _source("PLOS")
+    with session_scope() as db:
+        for source, topic in ((big, "Estudo mundial sobre resistência a antibióticos"),
+                              (big, "Relatório compara vacinação infantil em cinquenta países"),
+                              (small, "Surto de cólera avança no leste da África")):
+            discovery.store_idea(db, site_key="saude", origin="rss", topic=topic,
+                                 url=f"https://x.test/{abs(hash(topic))}", now=NOW,
+                                 source_id=source)
+        db.execute(text("UPDATE ideas SET created_at = :c"), {"c": NOW})
+    _idea(small, 2, "Notícia de outro dia que não entra na conta")
+    with session_scope() as db:
+        db.execute(text("UPDATE ideas SET relevance = CASE WHEN topic LIKE 'Estudo%' THEN 8 "
+                        "WHEN topic LIKE 'Relat%' THEN 3 END"))
+        for source, n in ((big, 30), (small, 2)):
+            db.execute(text("INSERT INTO feed_capped VALUES (:d, :s, :n)"),
+                       {"d": NOW.date(), "s": source, "n": n})
+        db.execute(text("INSERT INTO feed_capped VALUES (:d, :s, 99)"),
+                   {"d": NOW.date() - timedelta(days=1), "s": big})      # outro dia
+        rows = feed_health.intake(db, NOW.date())
+    assert rows == [
+        {"site": "cloud", "ideas": 0, "triaged": 0, "good": 0, "capped": 0, "top_capped": []},
+        {"site": "saude", "ideas": 3, "triaged": 2, "good": 1, "capped": 32,
+         "top_capped": [("Medical Xpress", 30), ("PLOS", 2)]}]
+    html = "".join(digests._intake_html(rows))
+    assert "Entrada de pautas" in html and "teto de 40 por feed" in html
+    assert "<b>saude</b> — 3 · 2 · 1 · 32" in html and "(Medical Xpress 30, PLOS 2)" in html
+    assert digests._intake_html([]) == []

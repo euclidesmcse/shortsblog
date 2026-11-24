@@ -82,12 +82,6 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
-- name: Mistral AI News
-  url: https://mistral.ai/rss.xml
-  domain: mistral.ai
-  tier: fornecedor
-  lang: en
-  notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
 - name: OpenAI News
   url: https://openai.com/news/rss.xml
   domain: openai.com

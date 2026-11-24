@@ -6,13 +6,6 @@
 # o texto nem as imagens do feed; o artigo é escrito de raiz, com atribuição e link.
 site_key: culinaria
 feeds:
-- name: FAO — Newsroom
-  url: https://www.fao.org/feeds/fao-newsroom-rss
-  domain: www.fao.org
-  tier: oficial
-  lang: en
-  notes: 'só pauta (sem-leitura fao.org): termos limitam a produtos/serviços não comerciais; dizer o organismo
-    (FAO/ONU)'
 - name: Directo al Paladar
   url: https://www.directoalpaladar.com/feedburner.xml
   domain: www.directoalpaladar.com
@@ -48,16 +41,6 @@ feeds:
   domain: www.loveandlemons.com
   tier: veiculo
   lang: en
-- name: Love and Olive Oil
-  url: https://www.loveandoliveoil.com/feed
-  domain: www.loveandoliveoil.com
-  tier: veiculo
-  lang: en
-- name: Metrópoles — Gastronomia
-  url: https://www.metropoles.com/gastronomia/feed
-  domain: www.metropoles.com
-  tier: veiculo
-  lang: pt
 - name: Minimalist Baker
   url: https://minimalistbaker.com/feed/
   domain: minimalistbaker.com
@@ -108,9 +91,3 @@ feeds:
   tier: academico
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
-- name: ScienceDaily — Nutrition
-  url: https://www.sciencedaily.com/rss/health_medicine/nutrition.xml
-  domain: www.sciencedaily.com
-  tier: academico
-  lang: en
-  notes: 'agregador de comunicados de imprensa: localizar e citar o estudo original; não é fonte de corroboração'

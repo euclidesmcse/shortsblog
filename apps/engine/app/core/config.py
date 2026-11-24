@@ -203,10 +203,16 @@ class Settings(BaseSettings):
     fetch_host_interval_s: float = 1.0
     # Descoberta: itens lidos por feed, idade máxima de uma notícia e validade de uma ideia.
     feed_max_items: int = 30
+    # Teto de ideias NOVAS (não repetidas) por feed em 24 h (24/11): Infobae, Exame,
+    # InfoMoney e Poder360 mandavam 100–120 por dia, quase todas com nota < 5, e a triagem
+    # gastava cota a lê-las. Ficam as mais recentes. 0 desliga.
+    feed_max_ideas_day: int = 40
     # Resumo diário (feed_health, 22/11): fonte com tantas leituras seguidas com erro (a
     # descoberta corre de hora em hora) ou sem pauta nova há tantos dias aparece para olhar.
     feed_fail_alert_runs: int = 24
     feed_silent_days: int = 14
+    # «Fontes novas» (23/11): feeds ligados há até tantos dias, com o que já trouxeram.
+    feed_new_days: int = 14
     # Resumo diário (read_failures): sítios com pelo menos tantas falhas de leitura na semana.
     read_fail_alert_min: int = 5
     read_fail_alert_top: int = 15

@@ -158,6 +158,47 @@ def test_itens_sem_data_antigos_no_futuro_ou_sem_https_ficam_de_fora(feeds, two_
     assert [i["canonical_url"] for i in ideas()] == ["https://a.test/5"]
 
 
+def test_teto_diario_de_ideias_por_feed_fica_com_as_mais_novas(feeds, two_sites, monkeypatch):
+    """24/11: Infobae, Exame e Poder360 mandavam 100–120 ideias por dia à triagem."""
+    monkeypatch.setattr(settings, "feed_max_ideas_day", 3)
+    topics = ("Parlamento aprova orçamento", "Terremoto atinge litoral chileno",
+              "Banco central corta juros", "Eleição presidencial na Coreia",
+              "Seca reduz safra de trigo")
+    news = [(t, f"https://a.test/n{n}", NOW - timedelta(hours=n))
+            for n, t in enumerate(topics, start=1)]
+    feeds["https://a.test/feed"] = rss(*reversed(news))          # o feed vem do mais velho
+    result = discover("saude")
+    assert (result.new, result.capped) == (3, 2)
+    # O corte fica contado por dia local e fonte, para o resumo diário.
+    assert [(r["local_date"], r["ideas"]) for r in fetch(
+        "SELECT local_date, ideas FROM feed_capped")] == [(NOW.date(), 2)]
+    assert [i["canonical_url"] for i in ideas()] == [f"https://a.test/n{n}" for n in (1, 2, 3)]
+    # Na hora seguinte o teto continua gasto; passadas 24 h, volta a haver vaga.
+    later = discover("saude")
+    assert (later.new, later.known, later.capped) == (0, 3, 2)
+    assert fetch("SELECT ideas FROM feed_capped")[0]["ideas"] == 4
+    with session_scope() as db:
+        db.execute(text("UPDATE ideas SET created_at = :t"), {"t": NOW - timedelta(hours=25)})
+    again = discover("saude")
+    assert (again.new, again.known, again.capped) == (2, 3, 0)
+
+
+def test_teto_zero_desliga_e_repetidas_nao_gastam_o_teto(feeds, two_sites, monkeypatch):
+    monkeypatch.setattr(settings, "feed_max_ideas_day", 1)
+    feeds["https://a.test/feed"] = rss((VACINA, "https://a.test/n1", YESTERDAY))
+    feeds["https://b.test/feed"] = rss((VACINA, "https://b.test/n1", YESTERDAY),
+                                       ("Outra notícia totalmente distinta da primeira",
+                                        "https://b.test/n2", YESTERDAY))
+    result = discover("saude")             # em B, a 1.ª é repetição de A e não gasta a vaga
+    assert (result.new, result.duplicates, result.capped) == (2, 1, 0)
+    monkeypatch.setattr(settings, "feed_max_ideas_day", 0)
+    feeds["https://a.test/feed"] = rss(*[(t, f"https://a.test/m{n}", YESTERDAY) for n, t in
+                                         enumerate(("Greve geral paralisa portos europeus",
+                                                    "Vacina contra dengue ganha aprovação",
+                                                    "Cúpula do G20 termina sem consenso"))])
+    assert (r := discover("saude")).new == 3 and r.capped == 0
+
+
 def test_feed_em_falha_nao_impede_os_outros(feeds, two_sites):
     feeds["https://a.test/feed"] = fetcher.FetchError("blocked_address", "a.test → 10.0.0.1")
     feeds["https://b.test/feed"] = rss((VACINA, "https://b.test/n1", YESTERDAY))

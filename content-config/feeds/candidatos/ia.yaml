@@ -69,6 +69,7 @@ feeds:
   tier: fornecedor
   lang: en
   notes: 'comunicação do próprio fornecedor: fonte primária do anúncio, não avaliação independente'
+  fora: 'poda 3 (23/11/2026): 0 ideias em 14 dias'
 - name: Anthropic News
   # Sem RSS oficial (/rss.xml, /news/rss.xml e /feed.xml dão 404): lê-se a página de notícias,
   # que o robots.txt permite (E14.5i). Só título, ligação e data, como num feed (D-013).

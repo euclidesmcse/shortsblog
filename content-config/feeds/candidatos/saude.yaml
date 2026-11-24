@@ -146,7 +146,7 @@ feeds:
   url: https://medlineplus.gov/feeds/whatsnew.xml
   tier: oficial
   lang: en
-  fora: 'válido em 23/11/2026, mas nunca aprovado: só entra por proposta'
+  fora: 'não é notícia (23/11/2026): 1 item por mês com o resumo das mudanças do sítio, todos com o mesmo link /whatsnew/'
 - name: NCI — Cancer Currents
   url: https://www.cancer.gov/news-events/cancer-currents-blog/rss
   tier: oficial
@@ -174,6 +174,7 @@ feeds:
   tier: veiculo
   lang: pt
   notes: 'feed generalista: filtrar por tema antes de virar ideia'
+  fora: 'poda 3 (23/11/2026): 48 ideias, média 1,7, 0 posts'
 - name: Metrópoles — Saúde
   url: https://www.metropoles.com/saude/feed
   tier: veiculo
@@ -261,3 +262,20 @@ feeds:
   tier: academico
   lang: en
   notes: 'artigos científicos (CC BY), doenças tropicais negligenciadas pelo mundo: citar o estudo e não extrapolar conclusões clínicas'
+- name: Africa CDC — News
+  url: https://africacdc.org/feed/
+  tier: oficial
+  lang: en
+  notes: 'agência de saúde pública da União Africana: dizer sempre a jurisdição'
+  fora: 'válido em 23/11/2026 (robots deixa, também a IA), mas os termos não estão publicados («All rights reserved» no rodapé); decisão do Euclides em 23/11/2026: fica fora sem termos publicados (como o TPI, D-071)'
+- name: MSF — Latest
+  url: https://www.msf.org/rss/all
+  tier: veiculo
+  lang: en
+  notes: 'ONG humanitária (Médecins Sans Frontières): é parte interessada; confirmar números noutras fontes'
+  fora: 'válido em 23/11/2026 (robots deixa, também a IA), mas o msf.org não publica termos de uso e outros sítios da MSF limitam o uso a pessoal ou não comercial; decisão do Euclides em 23/11/2026: fica fora sem termos publicados (como o TPI, D-071)'
+- name: Health Policy Watch
+  url: https://healthpolicy-watch.news/feed/
+  tier: veiculo
+  lang: en
+  fora: 'termos proíbem o uso comercial: «personal and non-commercial use only» (página About, 23/11/2026; D-071)'
