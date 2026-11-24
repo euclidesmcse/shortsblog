@@ -14,7 +14,7 @@
 #  SB_HTTPS_PORT, COMPOSE_PROJECT_NAME. SB_NO_UP=1 só gera os arquivos (não sobe nada).
 #
 #  Imagens (E19.3): sem SB_IMAGE_TAG, o motor e o gateway são construídos a partir do repositório.
-#  Com SB_IMAGE_TAG=<versão> (ex.: v0.1.2), são baixadas de SB_REGISTRY (padrão
+#  Com SB_IMAGE_TAG=<versão> (ex.: v0.1.3), são baixadas de SB_REGISTRY (padrão
 #  ghcr.io/euclidesmcse) — enquanto as imagens forem privadas, antes: docker login ghcr.io.
 # =========================================================================
 set -euo pipefail
